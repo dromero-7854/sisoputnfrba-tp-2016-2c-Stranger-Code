@@ -6,8 +6,12 @@
  */
 #include<stdio.h>
 #include<stdlib.h>
-int main (void) {
-	printf("Hola Mundo!");
+
+int main_hola (void) {
+
+	char respuesta;
+
+	printf("Hola Mundo!\n");
 	return EXIT_SUCCESS;
 }
 
