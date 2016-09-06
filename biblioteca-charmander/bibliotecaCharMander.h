@@ -5,9 +5,10 @@
  *      Author: utnso
  */
 
-#ifndef BIBLIOTECACHARMANDER_H_
-#define BIBLIOTECACHARMANDER_H_
+#ifndef BIBLIOTECA_CHARMANDER_BIBLIOTECACHARMANDER_H_
+#define BIBLIOTECA_CHARMANDER_BIBLIOTECACHARMANDER_H_
 
 int socket_servidor();
-
-#endif /* BIBLIOTECACHARMANDER_H_ */
+void conectar(char* socket_servidor, char* puerto_servidor);
+void aceptar_conexion(int socket);
+#endif /* BIBLIOTECA_CHARMANDER_BIBLIOTECACHARMANDER_H_ */
