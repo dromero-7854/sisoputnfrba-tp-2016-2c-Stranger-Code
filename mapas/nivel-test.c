@@ -99,7 +99,7 @@ int main(void) {
 		MoverPersonaje(items, '#', x, y);
 
 		if((p == x) && (q == y)) {
-			BorrarItem(items, '#'); //si chocan, borramos uno (!)
+			BorrarItem(items, '#');
 		}
 		if((p == 25 && q == 5) || (x == 25 && y == 5)) restarRecurso(items, '$');
 
