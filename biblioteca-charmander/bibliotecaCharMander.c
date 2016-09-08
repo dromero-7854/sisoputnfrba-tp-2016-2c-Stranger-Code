@@ -14,12 +14,13 @@
 #include <netdb.h>
 #include <unistd.h>
 
-
+#define MAX 1024
 
 int socket_servidor()
 {
 	struct addrinfo addrAux, *res, *p;
 	int sockfd;
+
 
 
 	memset(&addrAux, 0, sizeof addrAux);
@@ -28,9 +29,9 @@ int socket_servidor()
 	addrAux.ai_flags = AI_PASSIVE;
 
 
-	if(getaddrinfo(NULL, "30000", &addrAux, &res)!= 0)
+	if(getaddrinfo(NULL, "6667", &addrAux, &res)!= 0)
 	{
-		printf("error en addrAux");
+		printf("error en getaddrinfo");
 	}
 	for(p= res; p->ai_next != NULL; p = p->ai_next)
 	{
@@ -57,5 +58,83 @@ int socket_servidor()
 			printf("error en listen");
 			exit(1);
 		}
+
+	printf("se creo servidor!!!\n");
 	return sockfd;
+}
+
+void conectar (char* socket_servidor, char* puerto_servidor)
+{
+	struct addrinfo addrAux, *res, *p;
+	int sockfd;
+
+
+	memset(&addrAux, 0, sizeof addrAux);
+	addrAux.ai_family = AF_UNSPEC;
+	addrAux.ai_socktype = SOCK_STREAM;
+
+	if(getaddrinfo(socket_servidor, puerto_servidor , &addrAux, &res)!= 0)
+		{
+			printf("error en getaddrinfo");
+		}
+
+	for(p=res; p != NULL; p = p->ai_next)
+	{
+		if((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1)
+		{
+			continue;
+		}
+
+		if(connect(sockfd, res->ai_addr, res->ai_addrlen) == -1)
+		{
+			close(sockfd);
+			continue;
+		}
+		break;
+	}
+
+	if(p == NULL)
+	{
+		printf("no se pudo conectar a ningun servidor\n");
+		exit(1);
+	}
+
+	printf("se conecto!!!!\n");
+	char buf[MAX];
+	char buf2[MAX];
+	int recibido;
+	while(1)
+	{
+		/*recibido = recv(sockfd, (void*) buf2, MAX, 0);
+		if (recibido == 0) break;
+		printf("%s", buf2);*/
+		fgets(buf, MAX, stdin);
+		if (!strcmp(buf,"exit\n")) exit(1);
+		send(sockfd, buf, strlen(buf) + 1, 0);
+	}
+}
+
+void aceptar_conexion(int socket)
+{
+	struct sockaddr_in aux;
+	int tamanio = sizeof(aux);
+	int nuevoSocket;
+	char bufRecibido[MAX];
+	char bufEnvio[MAX];
+	nuevoSocket = accept(socket, (struct sockaddr *) &aux, &tamanio);
+	printf("se conecto alguien!!!\n");
+
+		int recibido;
+		while(1)
+			{
+			recibido = recv(nuevoSocket, (void*) bufRecibido, MAX, 0);
+			if (recibido == 0) break;
+			printf("%s", bufRecibido);
+			/*fgets(bufEnvio, MAX, stdin);
+			if (!strcmp(bufEnvio,"exit\n")) exit(1);
+			send(nuevoSocket, bufEnvio, strlen(bufEnvio) + 1, 0);*/
+			}
+	close(socket);
+	printf("hubo error\n");
+
 }
