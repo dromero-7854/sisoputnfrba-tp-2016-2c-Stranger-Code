@@ -12,6 +12,9 @@
 #include <nivel.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <commons/collections/list.h>
+#include <bibliotecaCharMander.c>
 
 void rnd(int *x, int max){
 	*x += (rand() % 3) - 1;
@@ -106,5 +109,7 @@ int main(void) {
 	BorrarItem(items, '#');
 	BorrarItem(items, '@');
 
-	nivel_gui_terminar();
+
+	return 0;
+
 }
