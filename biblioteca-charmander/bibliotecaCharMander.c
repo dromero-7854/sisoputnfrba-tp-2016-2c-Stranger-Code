@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include "bibliotecaCharMander.h"
 
 #define MAX 1024
 
@@ -27,7 +28,7 @@ int socket_servidor()
 	addrAux.ai_family = AF_UNSPEC;
 	addrAux.ai_socktype = SOCK_STREAM;
 	addrAux.ai_flags = AI_PASSIVE;
-
+	int yes = 1;
 
 	if(getaddrinfo(NULL, "6667", &addrAux, &res)!= 0)
 	{
@@ -40,9 +41,15 @@ int socket_servidor()
 		{
 			continue;
 		}
+		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,sizeof(int)) == -1)
+		{
+		perror("setsockopt");
+		exit(1);
+		}
 
 		if(bind(sockfd,res->ai_addr, res->ai_addrlen )== -1)
 		{
+			close(sockfd);
 			continue;
 		}
 		break;
@@ -105,12 +112,13 @@ void conectar (char* socket_servidor, char* puerto_servidor)
 	int recibido;
 	while(1)
 	{
-		/*recibido = recv(sockfd, (void*) buf2, MAX, 0);
-		if (recibido == 0) break;
-		printf("%s", buf2);*/
+
 		fgets(buf, MAX, stdin);
 		if (!strcmp(buf,"exit\n")) exit(1);
 		send(sockfd, buf, strlen(buf) + 1, 0);
+		/*recibido = recv(sockfd, (void*) buf2, MAX, 0);
+		if (recibido == 0) break;
+		printf("%s", buf2);*/
 	}
 }
 
@@ -127,12 +135,13 @@ void aceptar_conexion(int socket)
 		int recibido;
 		while(1)
 			{
-			recibido = recv(nuevoSocket, (void*) bufRecibido, MAX, 0);
-			if (recibido == 0) break;
-			printf("%s", bufRecibido);
+
 			/*fgets(bufEnvio, MAX, stdin);
 			if (!strcmp(bufEnvio,"exit\n")) exit(1);
 			send(nuevoSocket, bufEnvio, strlen(bufEnvio) + 1, 0);*/
+			recibido = recv(nuevoSocket, (void*) bufRecibido, MAX, 0);
+			if (recibido == 0) break;
+			printf("%s", bufRecibido);
 			}
 	close(socket);
 	printf("hubo error\n");

@@ -48,6 +48,8 @@ int main(void) {
 	CrearPersonaje(items, '@', p, q);
 	CrearPersonaje(items, '#', x, y);
 
+	CrearCaja(items, '$', 25, 5, 5);
+
 	nivel_gui_dibujar(items, "Aguante Stranger Code vieja no me importa nada");
 
 	while ( 1 ) {
@@ -100,16 +102,19 @@ int main(void) {
 		MoverPersonaje(items, '#', x, y);
 
 		if((p == x) && (q == y)) {
-			BorrarItem(items, '#'); //si chocan, borramos uno (!)
+			BorrarItem(items, '#');
 		}
+		if((p == 25 && q == 5) || (x == 25 && y == 5)) restarRecurso(items, '$');
 
 		nivel_gui_dibujar(items, "");
+
 	}
 
 	BorrarItem(items, '#');
 	BorrarItem(items, '@');
 
+	BorrarItem(items, '$');
 
-	return 0;
+	nivel_gui_terminar();
 
 }
