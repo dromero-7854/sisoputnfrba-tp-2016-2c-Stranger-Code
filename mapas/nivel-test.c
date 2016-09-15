@@ -32,9 +32,6 @@ int main(void) {
 	int x = 1;
 	int y = 1;
 
-	int ex1 = 10, ey1 = 14;
-	int ex2 = 20, ey2 = 3;
-
 	nivel_gui_inicializar();
 
     nivel_gui_get_area_nivel(&rows, &cols);
@@ -50,7 +47,7 @@ int main(void) {
 	nivel_gui_dibujar(items, "Aguante Stranger Code vieja no me importa nada");
 
 	while ( 1 ) {
-		int key = getch();
+		/*int key = getch();
 
 		switch( key ) {
 
@@ -82,7 +79,7 @@ int main(void) {
 				nivel_gui_terminar();
 				exit(0);
 			break;
-		}
+		}*/
 
 		if(p <= 1) vaALaIzq = false;
 		if(p >= cols) vaALaIzq = true;
@@ -104,6 +101,8 @@ int main(void) {
 		if((p == 25 && q == 5) || (x == 25 && y == 5)) restarRecurso(items, '$');
 
 		nivel_gui_dibujar(items, "");
+
+		sleep(1);
 
 	}
 
