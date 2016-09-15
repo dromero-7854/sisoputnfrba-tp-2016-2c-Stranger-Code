@@ -154,33 +154,34 @@ int aceptar_conexion(int socket)
 }
 
 void manejar_select(int socket){
-	fd_set lectura;
+	fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
 	fdMax = socket;
 	FD_ZERO(&lectura);
-	FD_SET(socket, &lectura);
+	FD_ZERO(&master);
+	FD_SET(socket, &master);
 	while(1){
+		lectura = master;
 		select(fdMax +1, &lectura, NULL, NULL, NULL);
 		for(a = 0 ; a <= fdMax ; a++){
-			if(FD_ISSET(socket, &lectura))
-			{
-				nuevaConexion = aceptar_conexion(socket);
-				FD_SET(nuevaConexion, &lectura);
-				if(nuevaConexion > fdMax) fdMax = nuevaConexion;
-			}
-			if(FD_ISSET(a, &lectura)){
-			printf("recibiendo de: %d\n", a);
-			recibido = recv(a,  (void*) buf, 512, 0);
-			if(recibido <= 0){
-				printf("error\n");
-				close(a);
-				FD_CLR(a, &lectura);
-			} else{
-			printf("%s", buf);
-			}
+		if(FD_ISSET(a, &lectura)){
+				if(a == socket){
+					nuevaConexion = aceptar_conexion(socket);
+					FD_SET(nuevaConexion, &master);
+					if(nuevaConexion > fdMax) fdMax = nuevaConexion;
+				}else {
+				recibido = recv(a,  (void*) buf, 512, 0);
+				if(recibido <= 0){
+					printf("error\n");
+					close(a);
+					FD_CLR(a, &master);
+				} else{
+					printf("recibiendo de: %d\n", a);
+					printf("%s", buf);
+				}
 			}
 		}
 	}
-
+	}
 }
