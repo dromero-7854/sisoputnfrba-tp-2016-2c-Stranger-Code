@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include "bibliotecaCharMander.h"
 
 #define MAX 1024
 
@@ -27,7 +28,7 @@ int socket_servidor()
 	addrAux.ai_family = AF_UNSPEC;
 	addrAux.ai_socktype = SOCK_STREAM;
 	addrAux.ai_flags = AI_PASSIVE;
-
+	int yes = 1;
 
 	if(getaddrinfo(NULL, "6667", &addrAux, &res)!= 0)
 	{
@@ -40,9 +41,15 @@ int socket_servidor()
 		{
 			continue;
 		}
+		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,sizeof(int)) == -1)
+		{
+		perror("setsockopt");
+		exit(1);
+		}
 
 		if(bind(sockfd,res->ai_addr, res->ai_addrlen )== -1)
 		{
+			close(sockfd);
 			continue;
 		}
 		break;
@@ -60,6 +67,7 @@ int socket_servidor()
 		}
 
 	printf("se creo servidor!!!\n");
+	printf("escuchando en socket: %d\n", sockfd);
 	return sockfd;
 }
 
@@ -105,16 +113,20 @@ void conectar (char* socket_servidor, char* puerto_servidor)
 	int recibido;
 	while(1)
 	{
+		printf("Escribi lo que quieras mandar...\n");
+		fgets(buf, MAX, stdin);
+		if (!strcmp(buf,"exit\n")) exit(1);
+		if(send(sockfd, buf, strlen(buf) + 1, 0) == -1)
+			{
+			printf("no se pudo mandar \n");
+			}
 		/*recibido = recv(sockfd, (void*) buf2, MAX, 0);
 		if (recibido == 0) break;
 		printf("%s", buf2);*/
-		fgets(buf, MAX, stdin);
-		if (!strcmp(buf,"exit\n")) exit(1);
-		send(sockfd, buf, strlen(buf) + 1, 0);
 	}
 }
 
-void aceptar_conexion(int socket)
+int aceptar_conexion(int socket)
 {
 	struct sockaddr_in aux;
 	int tamanio = sizeof(aux);
@@ -122,19 +134,54 @@ void aceptar_conexion(int socket)
 	char bufRecibido[MAX];
 	char bufEnvio[MAX];
 	nuevoSocket = accept(socket, (struct sockaddr *) &aux, &tamanio);
-	printf("se conecto alguien!!!\n");
+	printf("se conecto alguien en: %d \n", nuevoSocket);
 
-		int recibido;
+		/*int recibido;
 		while(1)
 			{
+
+			fgets(bufEnvio, MAX, stdin);
+			if (!strcmp(bufEnvio,"exit\n")) exit(1);
+			send(nuevoSocket, bufEnvio, strlen(bufEnvio) + 1, 0);
 			recibido = recv(nuevoSocket, (void*) bufRecibido, MAX, 0);
 			if (recibido == 0) break;
 			printf("%s", bufRecibido);
-			/*fgets(bufEnvio, MAX, stdin);
-			if (!strcmp(bufEnvio,"exit\n")) exit(1);
-			send(nuevoSocket, bufEnvio, strlen(bufEnvio) + 1, 0);*/
 			}
 	close(socket);
-	printf("hubo error\n");
+	printf("hubo error\n");*/
+	return nuevoSocket;
 
+}
+
+void manejar_select(int socket){
+	fd_set lectura, master;
+	int nuevaConexion, a, recibido, fdMax;
+	char buf[512];
+	fdMax = socket;
+	FD_ZERO(&lectura);
+	FD_ZERO(&master);
+	FD_SET(socket, &master);
+	while(1){
+		lectura = master;
+		select(fdMax +1, &lectura, NULL, NULL, NULL);
+		for(a = 0 ; a <= fdMax ; a++){
+		if(FD_ISSET(a, &lectura)){
+				if(a == socket){
+					nuevaConexion = aceptar_conexion(socket);
+					FD_SET(nuevaConexion, &master);
+					if(nuevaConexion > fdMax) fdMax = nuevaConexion;
+				}else {
+				recibido = recv(a,  (void*) buf, 512, 0);
+				if(recibido <= 0){
+					printf("error\n");
+					close(a);
+					FD_CLR(a, &master);
+				} else{
+					printf("recibiendo de: %d\n", a);
+					printf("%s", buf);
+				}
+			}
+		}
+	}
+	}
 }

@@ -10,5 +10,6 @@
 
 int socket_servidor();
 void conectar(char* socket_servidor, char* puerto_servidor);
-void aceptar_conexion(int socket);
+int aceptar_conexion(int socket);
+void manejar_select(int socket);
 #endif /* BIBLIOTECA_CHARMANDER_BIBLIOTECACHARMANDER_H_ */
