@@ -22,18 +22,21 @@ void rnd(int *x, int max){
 	*x = (*x>0) ? *x : 1;
 }
 
+int moverJugador(char a, t_list* items, int x, int y, int p, int q, bool movVert);
+
 int main(void) {
 
 	t_list* items = list_create();
-
-	bool vaALaIzq = true;
-	bool vaArriba = true;
 
 	int rows, cols;
 	int q, p;
 
 	int x = 1;
 	int y = 1;
+
+	bool vaVertical[2];
+	vaVertical[0] = 0;
+	vaVertical[1] = 0;
 
 	nivel_gui_inicializar();
 
@@ -45,75 +48,70 @@ int main(void) {
 	CrearPersonaje(items, '@', p, q);
 	CrearPersonaje(items, '#', x, y);
 
-	CrearCaja(items, '$', 25, 5, 5);
+	CrearCaja(items, 'P', 25, 5, 5);
+	CrearCaja(items, 'B', 10, 19, 5);
 
 	nivel_gui_dibujar(items, "Aguante Stranger Code vieja no me importa nada");
 
-	while ( 1 ) {
-		/*int key = getch();
+	while(1) {
 
-		switch( key ) {
+		sleep(1);
 
-			case KEY_UP:
-				if (y > 1) {
-					y--;
-				}
-			break;
+		moverJugador('#', items, x, y, 25, 5, vaVertical[0]);
 
-			case KEY_DOWN:
-				if (y < rows) {
-					y++;
-				}
-			break;
+		moverJugador('@', items, p, q, 10, 19, vaVertical[1]);
 
-			case KEY_LEFT:
-				if (x > 1) {
-					x--;
-				}
-			break;
-			case KEY_RIGHT:
-				if (x < cols) {
-					x++;
-				}
-			break;
+		if(x != 25 && !vaVertical[0]) {
 
-			case 'Q':
-			case 'q':
-				nivel_gui_terminar();
-				exit(0);
-			break;
-		}*/
+			x < p ? x++ : x--;
 
-		if(p <= 1) vaALaIzq = false;
-		if(p >= cols) vaALaIzq = true;
+			if(y != 5) vaVertical[0] = 1;
 
-		if(q <= 1) vaArriba = false;
-		if(q >= rows) vaArriba = true;
+		}
+		else if( y != 5 && vaVertical[0]) {
+			y < 5 ? y++ : y--;
 
-		if(vaALaIzq) MoverPersonaje(items, '@', --p, q);
-		if(!vaALaIzq) MoverPersonaje(items, '@', ++p, q);
+			if(x != 25) vaVertical[0] = 0;
 
-		if(vaArriba) MoverPersonaje(items, '@', p, --q);
-		if(!vaArriba) MoverPersonaje(items, '@', p, ++q);
+		}
+		else vaVertical[0] = !vaVertical[0];
 
 		MoverPersonaje(items, '#', x, y);
 
-		if((p == x) && (q == y)) {
-			BorrarItem(items, '#');
-		}
-		if((p == 25 && q == 5) || (x == 25 && y == 5)) restarRecurso(items, '$');
+		if((p == 25 && q == 5) || (x == 25 && y == 5)) restarRecurso(items, 'P');
 
 		nivel_gui_dibujar(items, "");
-
-		sleep(1);
 
 	}
 
 	BorrarItem(items, '#');
 	BorrarItem(items, '@');
 
-	BorrarItem(items, '$');
+	BorrarItem(items, 'P');
+	BorrarItem(items, 'B');
 
 	nivel_gui_terminar();
+
+}
+int moverJugador(char a, t_list* items, int x, int y, int p, int q, bool movVert) {
+
+	if(x != p) {
+
+		x < p ? x++ : x--;
+
+		if(y != q) movVert = 1;
+
+	}
+	else if( y != q ) {
+		y < q ? y++ : y--;
+
+		if(x != p) movVert = 0;
+
+	}
+	else movVert = !movVert;
+
+	MoverPersonaje(items, a, x, y);
+
+	return 1;
 
 }
