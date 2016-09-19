@@ -1,0 +1,5 @@
+$ gcc fuse-example.c -o fuse-example -DFUSE_USE_VERSION=27 -D_FILE_OFFSET_BITS=64 -lpthread -lfuse 
+$ ./fuse-example ./mnt/pokedex
+
+Para enviar parámetros customizados
+$ ./fuse-example ./mnt/pokedex --welcome-msg "Welcome to fuse example!" -f 

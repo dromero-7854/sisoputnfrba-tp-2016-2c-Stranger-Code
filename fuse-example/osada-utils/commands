@@ -1,0 +1,3 @@
+$ touch osada-fs
+$ truncate -s 2G osada-fs
+$ ./osada-format osada-fs
