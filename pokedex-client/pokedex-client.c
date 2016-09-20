@@ -61,7 +61,7 @@ int main(int argc , char * argv[]) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return 1;
 	}
-	char * resp = malloc(msg_length);
+	char * resp = malloc(resp_length);
 	received_bytes = recv(server_socket, resp, resp_length, 0);
 	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
