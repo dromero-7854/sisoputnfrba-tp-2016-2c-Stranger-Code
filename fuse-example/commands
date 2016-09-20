@@ -1,5 +1,14 @@
-$ gcc fuse-example.c -o fuse-example -DFUSE_USE_VERSION=27 -D_FILE_OFFSET_BITS=64 -lpthread -lfuse 
-$ ./fuse-example ./mnt/pokedex
 
-Para enviar parámetros customizados
-$ ./fuse-example ./mnt/pokedex --welcome-msg "Welcome to fuse example!" -f 
+Compilar
+>> utnso@utnso40:~$ gcc fuse-example.c -o fuse-example -DFUSE_USE_VERSION=27 -D_FILE_OFFSET_BITS=64 -lpthread -lfuse 
+
+Montar filesystem en el directorio ./mnt/pokedex 
+(En el directorio en el que estoy parado, existe un subdirectorio vacio /mnt/pokedex/)
+>> utnso@utnso40:~$ ./fuse-example ./mnt/pokedex
+
+Para enviar parámetros customizados al montar filesystem
+>> utnso@utnso40:~$ ./fuse-example ./mnt/pokedex --welcome-msg "Bienvenido al Ejemplo" -f 
+
+Importante: Desmontar 
+(debo estar parado en el directorio donde se encuentra el subdirectorio vacio /mnt/pokedex/)
+utnso@utnso40:~$ fusermount -u ./mnt/pokedex
