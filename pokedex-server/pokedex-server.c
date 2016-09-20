@@ -16,6 +16,8 @@
 
 #define PORT "33000"
 #define BACKLOG 5
+#define HEADER_MSG_LENGHT 4
+#define HEADER_RESP_LENGHT 4
 
 int main(int argc , char * argv[]) {
 
@@ -32,50 +34,73 @@ int main(int argc , char * argv[]) {
 	int listenning_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	bind(listenning_socket,server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
-
-	//TODO for(;;){}
-	printf("pokedex server: welcome!...\n");
+	printf("pokedex server: welcome to pokedex-server 1.0v!...\n");
 	printf("pokedex server: beautiful day to hunt pokemons...\n");
 	printf("pokedex server: waiting for clients...\n");
-	listen(listenning_socket, BACKLOG); // blocking syscall
 
-	// << client connection >>
-	struct sockaddr_in addr; // client data (ip, port, etc.)
-	socklen_t addrlen = sizeof(addr);
-	int client_socket = accept(listenning_socket, (struct sockaddr *) &addr, &addrlen);
 
-	printf("pokedex server: connected client! waiting messages...\n");
+	for (;;) {
 
-	int status = 1;
-	size_t msg_length;
-	recv(client_socket, &msg_length, 4, 0);
-	char msg[msg_length];
-	while (status != 0){
-		status = recv(client_socket, msg, msg_length, 0);
-		if (status != 0) {
-			printf("pokedex server: Hi client %d\n", client_socket);
-			printf("pokedex server: please tell me, what do you need?: %s\n", msg);
+		listen(listenning_socket, BACKLOG); // blocking syscall
 
-			// TODO
+		// << client connection >>
+		struct sockaddr_in addr; // client data (ip, port, etc.)
+		socklen_t addrlen = sizeof(addr);
+		int client_socket = accept(listenning_socket, (struct sockaddr *) &addr, &addrlen);
+		printf("pokedex server: hi client %d!!\n", client_socket);
+		printf("pokedex server: waiting messages...\n");
 
-			// response
-			char * resp = malloc(178 + 1);
-			strcpy(resp, "nombre=Red\nsimbolo=@\nhojaDeViaje=[PuebloPaleta,CiudadVerde,CiudadPlateada]\nobj[PuebloPaleta]=[P,B,G]\nobj[CiudadVerde]=[C,Z,C]\nobj[CiudadPlateada]=[P,M,P,M,S]\nvidas=5\nreintentos=0");
-
-			// response serialization
-			size_t resp_length = strlen(resp) + 1;
-			void * buffer = malloc(4 + resp_length);
-			memcpy(buffer, &resp_length, 4);
-			memcpy(buffer + 4, resp, resp_length);
-
-			// << sending response >>
-			write(client_socket , buffer, 4 + resp_length);
-
-			free(buffer);
+		// << receiving message >>
+		// message lenght
+		uint32_t msg_length;
+		uint32_t received_bytes = recv(client_socket, &msg_length, HEADER_MSG_LENGHT, 0);
+		if (received_bytes <= 0) {
+			printf("pokedex server: client %d disconnected...\n", client_socket);
+			return 1;
 		}
+		// message
+		char * msg = malloc(msg_length);
+		received_bytes = recv(client_socket, msg, msg_length, 0);
+		if (received_bytes <= 0) {
+			printf("pokedex server: client %d disconnected...\n", client_socket);
+			return 1;
+		}
+		msg[received_bytes] = '\0';
+		printf("pokedex server: please tell me, what do you need?: %s\n", msg);
+
+
+		//
+		// TODO OSADA-FS
+		//
+
+		free(msg);
+
+
+
+
+
+
+
+
+
+
+		// << sending response >>
+		char * resp = malloc(178);
+		strcpy(resp, "nombre=Red\nsimbolo=@\nhojaDeViaje=[PuebloPaleta,CiudadVerde,CiudadPlateada]\nobj[PuebloPaleta]=[P,B,G]\nobj[CiudadVerde]=[C,Z,C]\nobj[CiudadPlateada]=[P,M,P,M,S]\nvidas=5\nreintentos=0");
+
+		// serialization
+		size_t resp_msg_length = strlen(resp);
+		void * buffer = malloc(HEADER_RESP_LENGHT + resp_msg_length);
+		memcpy(buffer, &resp_msg_length, HEADER_RESP_LENGHT);
+		memcpy(buffer + HEADER_RESP_LENGHT, resp, resp_msg_length);
+
+		// sending...
+		write(client_socket , buffer, HEADER_RESP_LENGHT + resp_msg_length);
+		free(buffer);
+		printf("pokedex server: Bye client %d! \n", client_socket);
+		close(client_socket);
+
 	}
-	printf("pokedex server: Bye client %d! \n", client_socket);
-	close(client_socket);
 
 	close(listenning_socket);
 	return EXIT_SUCCESS;
