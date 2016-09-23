@@ -13,11 +13,12 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <commons/log.h>
 #include "bibliotecaCharMander.h"
 
 #define MAX 1024
 
-int socket_servidor()
+int socket_servidor(char* puerto, t_log* log)
 {
 	struct addrinfo addrAux, *res, *p;
 	int sockfd;
@@ -30,9 +31,9 @@ int socket_servidor()
 	addrAux.ai_flags = AI_PASSIVE;
 	int yes = 1;
 
-	if(getaddrinfo(NULL, "6667", &addrAux, &res)!= 0)
+	if(getaddrinfo(NULL, puerto, &addrAux, &res)!= 0)
 	{
-		printf("error en getaddrinfo");
+		log_error(log, "Hubo error en el getaddrinfo");
 	}
 	for(p= res; p->ai_next != NULL; p = p->ai_next)
 	{
@@ -55,23 +56,27 @@ int socket_servidor()
 		break;
 
 	}
+
+	freeaddrinfo(res);
+
 	if(p== NULL)
 	{
-		printf("error en el socket");
+		log_error(log, "Hubo error al conseguir socket");
 		exit(1);
 	}
 	if(listen(sockfd, 15)== -1)
 		{
-			printf("error en listen");
+			log_error(log, "Hubo error en el listen");
 			exit(1);
 		}
 
 	printf("se creo servidor!!!\n");
 	printf("escuchando en socket: %d\n", sockfd);
+	log_trace(log, "Se creo servidor, escuchando en : %d", sockfd);
 	return sockfd;
 }
 
-void conectar (char* socket_servidor, char* puerto_servidor)
+void conectar (char* socket_servidor, char* puerto_servidor, t_log* log)
 {
 	struct addrinfo addrAux, *res, *p;
 	int sockfd;
@@ -96,6 +101,7 @@ void conectar (char* socket_servidor, char* puerto_servidor)
 		if(connect(sockfd, res->ai_addr, res->ai_addrlen) == -1)
 		{
 			close(sockfd);
+			log_error(log, "Fallo el connect");
 			continue;
 		}
 		break;
@@ -103,10 +109,12 @@ void conectar (char* socket_servidor, char* puerto_servidor)
 
 	if(p == NULL)
 	{
+		log_error(log, "No encuentra servidores a los que conectarse");
 		printf("no se pudo conectar a ningun servidor\n");
 		exit(1);
 	}
 
+	log_trace(log, "Pudo conectarse a un server");
 	printf("se conecto!!!!\n");
 	char buf[MAX];
 	char buf2[MAX];
@@ -126,7 +134,7 @@ void conectar (char* socket_servidor, char* puerto_servidor)
 	}
 }
 
-int aceptar_conexion(int socket)
+int aceptar_conexion(int socket, t_log* log)
 {
 	struct sockaddr_in aux;
 	int tamanio = sizeof(aux);
@@ -134,6 +142,7 @@ int aceptar_conexion(int socket)
 	char bufRecibido[MAX];
 	char bufEnvio[MAX];
 	nuevoSocket = accept(socket, (struct sockaddr *) &aux, &tamanio);
+	log_trace(log, "Se conecto alguien");
 	printf("se conecto alguien en: %d \n", nuevoSocket);
 
 		/*int recibido;
@@ -153,7 +162,7 @@ int aceptar_conexion(int socket)
 
 }
 
-void manejar_select(int socket){
+void manejar_select(int socket, t_log* log){
 	fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
@@ -167,7 +176,7 @@ void manejar_select(int socket){
 		for(a = 0 ; a <= fdMax ; a++){
 		if(FD_ISSET(a, &lectura)){
 				if(a == socket){
-					nuevaConexion = aceptar_conexion(socket);
+					nuevaConexion = aceptar_conexion(socket, log);
 					FD_SET(nuevaConexion, &master);
 					if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 				}else {
