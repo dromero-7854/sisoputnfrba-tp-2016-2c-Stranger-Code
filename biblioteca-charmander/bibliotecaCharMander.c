@@ -76,7 +76,7 @@ int socket_servidor(char* puerto, t_log* log)
 	return sockfd;
 }
 
-void conectar (char* socket_servidor, char* puerto_servidor, t_log* log)
+int conectar (char* socket_servidor, char* puerto_servidor, t_log* log)
 {
 	struct addrinfo addrAux, *res, *p;
 	int sockfd;
@@ -106,7 +106,7 @@ void conectar (char* socket_servidor, char* puerto_servidor, t_log* log)
 		}
 		break;
 	}
-
+	freeaddrinfo(res);
 	if(p == NULL)
 	{
 		log_error(log, "No encuentra servidores a los que conectarse");
@@ -116,22 +116,7 @@ void conectar (char* socket_servidor, char* puerto_servidor, t_log* log)
 
 	log_trace(log, "Pudo conectarse a un server");
 	printf("se conecto!!!!\n");
-	char buf[MAX];
-	char buf2[MAX];
-	int recibido;
-	while(1)
-	{
-		printf("Escribi lo que quieras mandar...\n");
-		fgets(buf, MAX, stdin);
-		if (!strcmp(buf,"exit\n")) exit(1);
-		if(send(sockfd, buf, strlen(buf) + 1, 0) == -1)
-			{
-			printf("no se pudo mandar \n");
-			}
-		/*recibido = recv(sockfd, (void*) buf2, MAX, 0);
-		if (recibido == 0) break;
-		printf("%s", buf2);*/
-	}
+	return sockfd;
 }
 
 int aceptar_conexion(int socket, t_log* log)
@@ -139,58 +124,14 @@ int aceptar_conexion(int socket, t_log* log)
 	struct sockaddr_in aux;
 	int tamanio = sizeof(aux);
 	int nuevoSocket;
-	char bufRecibido[MAX];
-	char bufEnvio[MAX];
+
 	nuevoSocket = accept(socket, (struct sockaddr *) &aux, &tamanio);
+
 	log_trace(log, "Se conecto alguien");
 	printf("se conecto alguien en: %d \n", nuevoSocket);
 
-		/*int recibido;
-		while(1)
-			{
-
-			fgets(bufEnvio, MAX, stdin);
-			if (!strcmp(bufEnvio,"exit\n")) exit(1);
-			send(nuevoSocket, bufEnvio, strlen(bufEnvio) + 1, 0);
-			recibido = recv(nuevoSocket, (void*) bufRecibido, MAX, 0);
-			if (recibido == 0) break;
-			printf("%s", bufRecibido);
-			}
-	close(socket);
-	printf("hubo error\n");*/
 	return nuevoSocket;
 
 }
 
-void manejar_select(int socket, t_log* log){
-	fd_set lectura, master;
-	int nuevaConexion, a, recibido, fdMax;
-	char buf[512];
-	fdMax = socket;
-	FD_ZERO(&lectura);
-	FD_ZERO(&master);
-	FD_SET(socket, &master);
-	while(1){
-		lectura = master;
-		select(fdMax +1, &lectura, NULL, NULL, NULL);
-		for(a = 0 ; a <= fdMax ; a++){
-		if(FD_ISSET(a, &lectura)){
-				if(a == socket){
-					nuevaConexion = aceptar_conexion(socket, log);
-					FD_SET(nuevaConexion, &master);
-					if(nuevaConexion > fdMax) fdMax = nuevaConexion;
-				}else {
-				recibido = recv(a,  (void*) buf, 512, 0);
-				if(recibido <= 0){
-					printf("error\n");
-					close(a);
-					FD_CLR(a, &master);
-				} else{
-					printf("recibiendo de: %d\n", a);
-					printf("%s", buf);
-				}
-			}
-		}
-	}
-	}
-}
+

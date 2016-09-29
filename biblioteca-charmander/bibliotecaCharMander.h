@@ -9,7 +9,7 @@
 #define BIBLIOTECA_CHARMANDER_BIBLIOTECACHARMANDER_H_
 
 int socket_servidor(char* puerto, t_log* log);
-void conectar(char* socket_servidor, char* puerto_servidor, t_log* log);
+int conectar(char* socket_servidor, char* puerto_servidor, t_log* log);
 int aceptar_conexion(int socket, t_log* log);
-void manejar_select(int socket, t_log* log);
+
 #endif /* BIBLIOTECA_CHARMANDER_BIBLIOTECACHARMANDER_H_ */
