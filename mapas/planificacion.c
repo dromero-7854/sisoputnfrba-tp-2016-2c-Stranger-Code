@@ -6,11 +6,19 @@
  */
 #include <stdint.h>
 #include <commons/log.h>
+#include <commons/collections/queue.h>
 #include "planificacion.h"
 
 void handshake(int socketCliente, t_log* logger);
+void planificar(void);
 
 #define MENSAJE_BIENVENIDA "Bienvenido al mapa"
+#define QUANTUM 3
+typedef struct {
+	int fd;
+	int posx;
+	int posy;
+}t_entrenador;
 
 void handshake(int socketCliente, t_log* logger){
 
@@ -38,4 +46,24 @@ void handshake(int socketCliente, t_log* logger){
 	printf("FUNCIONOO\n");
 	printf("%s", buffer);
 	free(buffer);
+}
+
+void planificar(){
+	t_queue *colaListos, *colaBloqueados;
+
+	colaListos = queue_create();
+	colaBloqueados = queue_create();
+
+	int q, quantum;
+	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
+
+	while(1){
+		quantum = 0;
+		for(q = 0; q < QUANTUM; q++){ // QUANTUM lo va a leer de config
+
+			entrenador = queue_pop(colaListos);
+			atenderSolicitud(entrenador->fd);
+			quantum ++;
+		}
+	}
 }
