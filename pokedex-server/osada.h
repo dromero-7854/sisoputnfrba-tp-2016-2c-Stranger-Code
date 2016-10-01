@@ -1,3 +1,9 @@
+/*
+ * pokedex-server-osada.h
+ *
+ *  Created on: 18/9/2016
+ *      Author: utnso
+ */
 #include <stdint.h>
 
 #ifndef __OSADA_H__
@@ -9,8 +15,6 @@
 typedef unsigned char osada_block[OSADA_BLOCK_SIZE];
 typedef uint32_t osada_block_pointer;
 
-// set __attribute__((packed)) for this whole section
-// See http://stackoverflow.com/a/11772340/641451
 #pragma pack(push, 1)
 
 typedef struct {
@@ -23,15 +27,11 @@ typedef struct {
 	unsigned char padding[40]; // useless bytes just to complete the block size
 } osada_header;
 
-_Static_assert( sizeof(osada_header) == sizeof(osada_block), "osada_header size does not match osada_block size");
-
 typedef enum __attribute__((packed)) {
-    DELETED = '\0',
-    REGULAR = '\1',
-    DIRECTORY = '\2',
+	DELETED = '\0',
+	REGULAR = '\1',
+	DIRECTORY = '\2',
 } osada_file_state;
-
-_Static_assert( sizeof(osada_file_state) == 1, "osada_file_state is not a char type");
 
 typedef struct {
 	osada_file_state state;
@@ -42,8 +42,6 @@ typedef struct {
 	osada_block_pointer first_block;
 } osada_file;
 
-_Static_assert( sizeof(osada_file) == (sizeof(osada_block) / 2.0), "osada_file size does not half osada_block size");
-
 #pragma pack(pop)
 
-#endif __OSADA_H__
+#endif

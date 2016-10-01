@@ -1,5 +1,5 @@
 /*
- * osada-fs-fuse.c
+ * pokedex-client.c
  *
  *  Created on: 16/9/2016
  *      Author: Dante Romero
@@ -15,6 +15,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <commons/config.h>
 
 /**
  * TODO Remove (only for test)
@@ -23,156 +24,156 @@
 #define DEFAULT_FILE_NAME "hello"
 #define DEFAULT_FILE_PATH "/" DEFAULT_FILE_NAME
 
-/**
- * Pokedex Server
- */
-#define IP "127.0.0.1"
-#define PORT "33000"
-#define HEADER_MSG_LENGHT 4
-#define HEADER_RESP_LENGHT 4
+#define RES_MKDIR_OK 1
+#define RES_READDIR_ISDIR 1
+#define RES_READDIR_ISEMPTYDIR 2
+#define RES_GETATTR_ISDIR 1
+#define RES_GETATTR_ENOTDIR 2
 
-/**
- * Almacenar parametros pasados por linea de comando a la funcion principal de FUSE
- */
+const uint8_t REQ_MKDIR = 1;
+const uint8_t REQ_READ_DIR = 2;
+const uint8_t REQ_GET_ATTR = 3;
+
+t_config * conf; 					// properties file
+struct addrinfo hints;				// pokedex-server: socket connection
+struct addrinfo * server_info;		//
+
 struct t_runtime_options {
 	char * welcome_msg;
 } runtime_options;
 
-/**
- * Macro para definir nuestros propios parametros que queremos que FUSE interprete.
- */
 #define CUSTOM_FUSE_OPT_KEY(t, p, v) { t, offsetof(struct t_runtime_options, p), v }
 
-/**
- * @DESC
- * 	Metadata de un archivo/directorio (tamaño, tipo, permisos, dueño, etc...)
- *
- * @PARAMETROS
- * 	path 	- el path es relativo al punto de montaje y es la forma mediante la cual debemos encontrar
- * 		  	  el archivo o directorio que nos solicitan
- * 	stbuf 	- estructura es la que debemos completar
- *
- * @DOCUMENTACION
- * 	memset	- http://www.tutorialspoint.com/c_standard_library/c_function_memset.htm
- *
- * @RETURN
- * 	O		- archivo/directorio encontrado
- * 	-ENOENT	- archivo/directorio no encontrado
- */
-static int osada_getattr(const char * path, struct stat * stbuf) {
+void open_connection(int *);
+void close_connection(int *);
+void load_properties_file(void);
+
+int pk_mkdir(const char * path, mode_t mode) {
+	int server_socket;
+	open_connection(&server_socket);
+	// << sending message >>
+	uint8_t prot_ope_code_size = 1;
+	uint8_t prot_path_size = 4;
+	uint8_t req_ope_code = REQ_MKDIR;
+	uint32_t req_path_size = strlen(path);
+	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+	memcpy(buffer, &req_ope_code, prot_ope_code_size);
+	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	free(buffer);
+	// << receiving message >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = 0;
+	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+		printf("pokedex client: server %d disconnected...\n", server_socket);
+	}
+	if (resp_code == RES_MKDIR_OK) {
+		// TODO
+	}
+	close_connection(&server_socket);
+	return 0;
+}
+
+static int pk_getattr(const char * path, struct stat * stbuf) {
 	int res = 0;
 	memset(stbuf, 0, sizeof(struct stat));
-	// path == "/" >> atributos punto de montaje
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
-	} else if (strcmp(path, DEFAULT_FILE_PATH) == 0) {
-		stbuf->st_mode = S_IFREG | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen(DEFAULT_FILE_CONTENT);
+	} else if (strlen(path) > 0) {
+		int server_socket;
+		open_connection(&server_socket);
+		// << sending message >>
+		uint8_t req_ope_code = REQ_GET_ATTR;
+		uint32_t req_path_size = strlen(path);
+		uint8_t prot_ope_code_size = 1;
+		uint8_t prot_path_size = 4;
+		void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+		memcpy(buffer, &req_ope_code, prot_ope_code_size);
+		memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+		memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+		send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+		free(buffer);
+		// << receiving message >>
+		uint8_t prot_resp_code_size = 1;
+		uint8_t resp_code = 0;
+		if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+			printf("pokedex client: server %d disconnected...\n", server_socket);
+		}
+		if (resp_code == RES_GETATTR_ISDIR) {
+			stbuf->st_mode = S_IFDIR | 7777;
+			stbuf->st_nlink = 2;
+		} else {
+			res = -ENOENT;
+		}
+		close_connection(&server_socket);
 	} else {
 		res = -ENOENT;
 	}
 	return res;
 }
 
-/**
- * @DESC
- * 	Lista de archivos o directorios que se encuentra dentro de un directorio.
- *
- * @PARAMETROS
- * 	path	- el path es relativo al punto de montaje y es la forma mediante la cual debemos
- * 		   	  encontrar el archivo o directorio que nos solicitan
- * 	buf 	- buffer donde se colocaran los nombres de los archivos y directorios
- * 			  que esten dentro del directorio indicado por el path
- * 	filler 	- puntero a una función, la cual sabe como guardar una cadena dentro del campo buf
- *
- * @RETURN
- * 	O		- directorio encontrado
- * 	-ENOENT - directorio no encontrado
- */
-static int osada_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info * fi) {
+
+static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info * fi) {
 	(void) offset;
 	(void) fi;
 
-
-
-	// << Connecting pokedex server... >>
-	struct addrinfo hints;
-	struct addrinfo * server_info;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-
-	getaddrinfo(IP, PORT, &hints, &server_info);
-	int server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-	connect(server_socket, server_info->ai_addr, server_info->ai_addrlen);
-	freeaddrinfo(server_info);
-
-
-	// << sending message >>
-	// message
-	char * msg = malloc(38);
-	strcpy(msg, "/mnt/pokedex/Entrenadores/Ash/metadata");
-
-	// message serialization
-	uint32_t msg_length = strlen(msg);
-	void * buffer = malloc(HEADER_MSG_LENGHT + msg_length);
-	memcpy(buffer, &msg_length, HEADER_MSG_LENGHT);
-	memcpy(buffer + HEADER_MSG_LENGHT, msg, msg_length);
-
-	// sending
-	send(server_socket, buffer, HEADER_MSG_LENGHT + msg_length, 0);
-	free(buffer);
-
-
-	// << receiving message >>
-	// response lenght
-	uint32_t resp_length;
-	uint32_t received_bytes = recv(server_socket, &resp_length, HEADER_RESP_LENGHT, 0);
-	if (received_bytes <= 0) {
-		printf("pokedex client: server %d disconnected...\n", server_socket);
-		return 1;
-	}
-	char * resp = malloc(resp_length);
-	received_bytes = recv(server_socket, resp, resp_length, 0);
-	if (received_bytes <= 0) {
-		printf("pokedex client: server %d disconnected...\n", server_socket);
-		return 1;
-	}
-	resp[received_bytes] = '\0';
-	printf("pokedex client: response >> %s\n", resp);
-	free(resp);
-
-	// << disconnecting pokedex server >>
-	close(server_socket);
-
-
-	if (strcmp(path, "/") != 0)
-		return -ENOENT;
-	// "." y ".." entradas validas. La primera es una referencia al directorio donde estamos parados
-	//  y la segunda indica el directorio padre.
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
-	filler(buf, DEFAULT_FILE_NAME, NULL, 0);
+
+	int server_socket;
+	open_connection(&server_socket);
+	// << sending message >>
+	uint8_t req_ope_code = REQ_READ_DIR;
+	uint32_t req_path_size = strlen(path);
+	uint8_t prot_ope_code_size = 1;
+	uint8_t prot_path_size = 4;
+	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+	memcpy(buffer, &req_ope_code, prot_ope_code_size);
+	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	free(buffer);
+
+	// << receiving message >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code;
+	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return 1;
+	}
+	if (resp_code == RES_READDIR_ISDIR) {
+		uint32_t prot_resp_size = 4;
+		uint32_t resp_size;
+		if (recv(server_socket, &resp_size, prot_resp_size, 0) <= 0) {
+			printf("pokedex client: server %d disconnected...\n", server_socket);
+			return 1;
+		}
+		char * resp = malloc(resp_size);
+		recv(server_socket, resp, resp_size, 0);
+		if (recv(server_socket, resp, resp_size, 0)) {
+			printf("pokedex client: server %d disconnected...\n", server_socket);
+			return 1;
+		}
+
+		char * dir = strtok(resp, ",");
+		int dir_len;
+		while (dir != NULL) {
+			dir_len = strlen(dir);
+			if (dir_len > 0) {
+				filler(buf, dir, NULL, 0);
+			}
+			dir = strtok (NULL, ",");
+		}
+
+		free(resp);
+	}
+	close_connection(&server_socket);
 	return 0;
 }
 
-/**
- * @DESC
- * Pedido para tratar de abrir un archivo.
- *
- * @PARAMETROS
- * 	path 	- el path es relativo al punto de montaje y es la forma mediante la cual debemos
- * 		      encontrar el archivo o directorio que nos solicitan
- * 	fi 		- estructura que contiene la metadata del archivo indicado en el path
- *
- * @RETURN
- *	O 		- archivo encontrado
- *	-EACCES - archivo no accesible
- */
-static int osada_open(const char * path, struct fuse_file_info * fi) {
+static int pk_open(const char * path, struct fuse_file_info * fi) {
 	if (strcmp(path, DEFAULT_FILE_PATH) != 0)
 		return -ENOENT;
 	if ((fi->flags & 3) != O_RDONLY)
@@ -180,27 +181,7 @@ static int osada_open(const char * path, struct fuse_file_info * fi) {
 	return 0;
 }
 
-/**
- * @DESC
- * Pedido para obtener el contenido de un archivo.
- *
- * @PARAMETROS
- * 	path 	- el path es relativo al punto de montaje y es la forma mediante la cual debemos
- * 			  encontrar el archivo o directorio que nos solicitan
- *	buf 	- buffer donde se va a guardar el contenido solicitado
- * 	size 	- cuanto tenemos que leer
- * 	offset 	- a partir de que posición del archivo tenemos que leer
- *
- * @RETURN
- * 	Si se usa el parametro direct_io los valores de retorno son:
- * 		0		- archivo encontrado
- * 		-ENOENT - ocurrió un error
- * 	Si el parametro direct_io no esta presente se retorna:
- * 		la cantidad de bytes leidos
- * 		-ENOENT	- ocurrió un error
- * 	Este comportamiento es igual para la funcion write
- */
-static int osada_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
+static int pk_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
 	size_t len;
 	(void) fi;
 	if (strcmp(path, DEFAULT_FILE_PATH) != 0)
@@ -215,11 +196,12 @@ static int osada_read(const char * path, char * buf, size_t size, off_t offset, 
 	return size;
 }
 
-static struct fuse_operations osada_oper = {
-	.getattr = osada_getattr,
-	.readdir = osada_readdir,
-	.open = osada_open,
-	.read = osada_read
+static struct fuse_operations pk_oper = {
+	.getattr = pk_getattr,
+	.mkdir = pk_mkdir,
+	.readdir = pk_readdir,
+	.open = pk_open,
+	.read = pk_read
 };
 
 enum {
@@ -237,28 +219,36 @@ static struct fuse_opt fuse_options[] = {
 	FUSE_OPT_END
 };
 
-// Dentro de los argumentos que recibe nuestro programa obligatoriamente
-// debe estar el path al directorio donde vamos a montar nuestro FS
 int main(int argc, char* argv[]) {
+	load_properties_file();
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
-
-	// Limpio la estructura que va a contener los parámetros
 	memset(&runtime_options, 0, sizeof(struct t_runtime_options));
-
 	if (fuse_opt_parse(&args, &runtime_options, fuse_options, NULL) == -1) {
-		/** Parsing options error **/
 		perror("Invalid arguments!");
 		return EXIT_FAILURE;
 	}
-
-	// Si se paso el parametro --welcome-msg el campo welcome_msg deberia tener el valor pasado
 	if( runtime_options.welcome_msg != NULL ){
 		printf("%s\n", runtime_options.welcome_msg);
 	}
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
 
-	// Esta es la funcion principal de FUSE, es la que se encarga de realizar el montaje,
-	// comunicarse con el kernel, delegar todo en varios threads
-	return fuse_main(args.argc, args.argv, &osada_oper, NULL);
+	return fuse_main(args.argc, args.argv, &pk_oper, NULL);
+}
 
+void open_connection(int * server_socket) {
+	getaddrinfo(config_get_string_value(conf, "pokedex.server.ip"), config_get_string_value(conf, "pokedex.server.port"), &hints, &server_info);
+	* server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
+	connect(* server_socket, server_info->ai_addr, server_info->ai_addrlen);
+	freeaddrinfo(server_info);
+}
+
+void close_connection(int * server_socket) {
+	close(* server_socket);
+}
+
+void load_properties_file(void) {
+	conf = config_create("./conf/pokedex-client.properties");
 }
