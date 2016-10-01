@@ -49,21 +49,34 @@ void handshake(int socketCliente, t_log* logger){
 }
 
 void planificar(){
-	t_queue *colaListos, *colaBloqueados;
+
 
 	colaListos = queue_create();
 	colaBloqueados = queue_create();
 
 	int q, quantum;
-	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
+	t_entrenador* entrenador;
 
 	while(1){
 		quantum = 0;
+		verificarBloqueados();
 		for(q = 0; q < QUANTUM; q++){ // QUANTUM lo va a leer de config
 
 			entrenador = queue_pop(colaListos);
-			atenderSolicitud(entrenador->fd);
+			atenderSolicitud(entrenador);
 			quantum ++;
 		}
+		if (quantum == QUANTUM){
+			queue_push(colaListos, entrenador);
+		} else {
+			queue_push(colaBloqueados, entrenador);
+		}
 	}
+}
+void verificarBloqueados(){
+	//no hace nada
+}
+
+void atenderSolicitud(){
+	//no hace nada
 }
