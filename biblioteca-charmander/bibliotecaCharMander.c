@@ -134,4 +134,8 @@ int aceptar_conexion(int socket, t_log* log)
 
 }
 
-
+void meterStringEnEstructura(char** stringTo, char* stringFrom){
+	int cantLetras = strlen(stringFrom);
+	*stringTo = malloc(cantLetras + 1);
+	strcpy(*stringTo, stringFrom);
+}

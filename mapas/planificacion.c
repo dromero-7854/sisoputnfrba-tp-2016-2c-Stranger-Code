@@ -8,17 +8,14 @@
 #include <commons/log.h>
 #include <commons/collections/queue.h>
 #include "planificacion.h"
+#include "solicitudes.h"
 
 void handshake(int socketCliente, t_log* logger);
 void planificar(void);
 
 #define MENSAJE_BIENVENIDA "Bienvenido al mapa"
 #define QUANTUM 3
-typedef struct {
-	int fd;
-	int posx;
-	int posy;
-}t_entrenador;
+
 
 void handshake(int socketCliente, t_log* logger){
 
@@ -74,9 +71,5 @@ void planificar(){
 	}
 }
 void verificarBloqueados(){
-	//no hace nada
-}
-
-void atenderSolicitud(){
 	//no hace nada
 }

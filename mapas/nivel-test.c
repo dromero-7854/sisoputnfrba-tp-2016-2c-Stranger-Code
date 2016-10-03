@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <commons/collections/list.h>
-#include <commons/collections/queue.h>
 #include <bibliotecaCharMander.c>
 #include "nivel-test.h"
 #include "planificacion.h"
@@ -44,7 +42,7 @@ typedef struct PokeNest {
 
 int rows, cols;
 
-
+void leerConfiguracion(metadata* conf_metadata);
 void crearJugadores(t_list *listaPCB, t_list *items);
 void moverJugadores(t_list *listaPCB, t_list *items);
 void moverJugador(PCB *personaje, t_list *items,int x,int y);
@@ -75,8 +73,16 @@ int main(void) {/*
 	BorrarItem(items, 'B');
 
 	nivel_gui_terminar();*/
+	metadata* conf_metadata = malloc(sizeof(metadata));
+	leerConfiguracion(conf_metadata);
 
-
+	printf("%d \n", conf_metadata->tiempoChequeoDeadlock);
+	printf("%d \n", conf_metadata->batalla);
+	printf("%s \n", conf_metadata->algoritmo);
+	printf("%d \n", conf_metadata->quantum);
+	printf("%d \n", conf_metadata->retardo);
+	printf("%s \n", conf_metadata->ip);
+	printf("%s \n", conf_metadata->puerto);
 	return EXIT_SUCCESS;
 }
 
@@ -195,4 +201,15 @@ void manejar_select(int socket, t_log* log){
 				}
 		}
 	}
+}
+
+void leerConfiguracion(metadata* conf_metadata){
+	t_config* configuracion = config_create(DIRECCION_METADATA);
+	conf_metadata->tiempoChequeoDeadlock = config_get_int_value(configuracion, "TiempoChequeoDeadlock");
+	conf_metadata->batalla = config_get_int_value(configuracion, "Batalla");
+	meterStringEnEstructura(&(conf_metadata->algoritmo), config_get_string_value(configuracion, "algoritmo"));
+	meterStringEnEstructura(&(conf_metadata->ip), config_get_string_value(configuracion, "IP"));
+	meterStringEnEstructura(&(conf_metadata->puerto), config_get_string_value(configuracion, "Puerto"));
+	conf_metadata->retardo = config_get_int_value(configuracion, "retardo");
+	conf_metadata->quantum = config_get_int_value(configuracion, "quantum");
 }
