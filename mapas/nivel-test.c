@@ -14,7 +14,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <commons/collections/list.h>
+#include <commons/collections/queue.h>
 #include <bibliotecaCharMander.c>
+#include <pkmn/battle.h>
+#include <pkmn/factory.h>
 
 #define QUANTUM 5
 
@@ -23,12 +26,12 @@ typedef struct PCB {
 	char estado;
 	char *proximoMapa;
 	char *objetivos;
-	char vidas;
-	char reintentos;
+	int objetivoActual;
 	char posx;
 	char posy;
 	char quantum;
 	bool movVert;
+	bool bloq;
 
 } PCB;
 
@@ -37,6 +40,9 @@ typedef struct PokeNest {
 	char posx;
 	char posy;
 	char cantidad;
+	t_queue * colaBloqueados;
+	t_pokemon_type tipo;
+
 } PokeNest;
 
 int rows, cols;
@@ -59,7 +65,7 @@ int main(void) {
 	CrearCaja(items, 'P', 25, 5, 5);
 	CrearCaja(items, 'B', 10, 19, 5);
 
-	nivel_gui_dibujar(items, "Aguante Stranger Code vieja no me importa nada");
+	nivel_gui_dibujar(items, "Stranger Code");
 
 	moverJugadores(listaPCB, items);
 
@@ -86,6 +92,10 @@ void crearJugadores(t_list * listaPCB, t_list *items) {
 	ash.posy = 1;
 	ash.movVert = 0;
 	ash.quantum = 0;
+	char obj1[] = {'P', 'C'};
+	ash.objetivos = &obj1;
+	ash.objetivoActual = 0;
+	ash.bloq = false;
 
 	PCB misty;
 	misty.id = '@';
@@ -149,5 +159,100 @@ void moverJugador(PCB *personaje, t_list *items, int x, int y) {
 	else personaje->movVert = !personaje->movVert;
 
 	MoverPersonaje(items, personaje -> id, ((*personaje).posx), ((*personaje).posy));
+
+}
+void darRecurso(PCB * entrenador, PokeNest * poke, t_list * items) {
+
+
+	if(poke -> cantidad > 0) {
+		poke -> cantidad--;
+		entrenador ->objetivoActual++;
+		restarRecurso(items, poke->id);
+	}
+	else if(poke ->cantidad == 0) {
+		queue_push(poke -> colaBloqueados, (PCB *)entrenador);
+		entrenador->bloq= true;
+	}
+}
+void detectarDeadlock(t_list * entrenadores, t_list * pokenest) {
+
+	t_list * bloqueados = list_create();
+
+	int i, j;
+	int count1 = 0, count2 = 0;
+	int tamEntr = list_size(entrenadores);
+	int tamPok = list_size(pokenest);
+
+	int matrizRetenido[tamEntr][tamPok];
+	int matrizNecesita[tamEntr][tamPok];
+	int recursosDisponibles[tamPok];
+	int completado[tamEntr];
+
+	for(i = 0; i < tamEntr; i++) {
+		completado[i] = 0;
+
+		for(j = 0; j < tamPok; j++) {
+			matrizRetenido[i][j] = 0;
+			matrizNecesita[i][j] = 0;
+		}
+	}
+	for(i = 0; i < tamPok; i++) {
+		PokeNest * pok = list_get(pokenest, i);
+		recursosDisponibles[i] = pok -> cantidad;
+	}
+
+	for(i = 0; i < tamEntr; i++) {
+
+		PCB *entrenador = list_get(entrenadores, i);
+		int k = 0;
+		for(k = 0; k < entrenador->objetivoActual; k++){
+			char obj = *(entrenador->objetivos+k);
+
+			for( j = 0; j < tamPok; j++) {
+				PokeNest * pok = list_get(pokenest, j);
+
+				if(pok ->id == obj)
+					break;
+			}
+			matrizRetenido[i][j]++;
+		}
+		for(; entrenador ->objetivos+k != '\0'; k++) {
+			char obj = *(entrenador->objetivos+k);
+			for( j = 0; j < tamPok; j++) {
+				PokeNest * pok = list_get(pokenest, j);
+
+				if(pok ->id == obj)
+					break;
+			}
+			matrizNecesita[i][j]++;
+		}
+	}
+	while(count1 < tamEntr) {
+		count2 = count1;
+		int k = 0;
+		for(i = 0; i < tamEntr; i++) {
+
+			for(j = 0; j< tamPok; j++) {
+				if(matrizNecesita[i][j] <= recursosDisponibles[j])
+					k++;
+			}
+			if(k == tamPok && completado[i] == 0) {
+				completado[i] = 1;
+
+				for(j = 0; j < tamPok; j++) {
+					recursosDisponibles[j] += matrizRetenido[i][j];
+				}
+				count1++;
+			}
+			k = 0;
+		}
+		if(count1 == count2) {
+			//HAY DEADLOCK, HAY QUE LLAMAR AL ALGORITMO DE BATALLA
+			break;
+		}
+	}
+
+}
+void matarJugador(PCB * entrenador) {
 
 }
