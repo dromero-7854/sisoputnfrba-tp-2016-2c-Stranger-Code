@@ -32,8 +32,10 @@ void handshake(int socketCliente, t_log* logger){
 
 	memcpy(buffer, &cantLetras, sizeof(uint32_t));
 	memcpy(buffer + sizeof(uint32_t), msg_bienvenida, cantLetras + 1);
+	free(msg_bienvenida);
 
 	send(socketCliente, buffer, cantLetras + 1 + sizeof(uint32_t), 0);
+
 
 	recv(socketCliente, buffer, 3, 0);
 	if(strcmp(buffer, "OK")){
@@ -71,5 +73,5 @@ void planificar(){
 	}
 }
 void verificarBloqueados(){
-	//no hace nada
+	//hacer
 }
