@@ -4,7 +4,7 @@
  *  Created on: 22/9/2016
  *      Author: utnso
  */
-
+/*
 #include <curses.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -103,3 +103,4 @@ int main()
 
 	return EXIT_SUCCESS;
 }
+*/
