@@ -83,31 +83,46 @@ t_coor current_coor;
 t_log* logger;
 
 int main(int argc, char** argv){
-	char* temp_file = "entrenador.log";
-	t_mapa *current_mapa;
-	char* path;
+	if(argc!=3) {
+		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./Entrenador <nombre_entrenador> <ruta_archivo_metadata>\n");
+		exit(1);
+	}
 
-	logger = log_create(temp_file, "TEST",true, LOG_LEVEL_INFO);
+	char* nombreEntrenador = argv[1];
+	char* pathConfig = argv[2];
+	t_mapa *current_map;
+	char temp_file[255];
 
-	leer_metadata(path);
+	strcpy(temp_file, "entrenador_");
+	strcat(temp_file, nombreEntrenador);
+	strcat(temp_file, ".log");
+
+	logger = log_create(temp_file, "TEST", true, LOG_LEVEL_INFO);
+	log_info(logger, "Nombre del Entrenador: %s", nombreEntrenador);
+	log_info(logger, "Metadata del Entrenador: %s", pathConfig);
+	log_info(logger, "Log del Entrenador: %s\n", temp_file);
+
+	leer_metadata(pathConfig);
 
 	int pos = 0;
 	while(list_size(maps_list) > pos){
-		current_mapa = list_get(maps_list, pos);
+		current_map = list_get(maps_list, pos);
 		//conectar_mapa(current_mapa);
-		completar_mapa(current_mapa);
+		completar_mapa(current_map);
 		//desconectar_mapa(current_mapa);
 		pos++;
 	}
 
 	//liberar memoria
-	eliminar_maps_list();
+	destroy_maps_list();
     log_destroy(logger);
 
 	return 0;
 }
 
 int leer_metadata(char* path){
+	log_info(logger, "Cargando archivo de metadata: %s", path);
+
 	char *ip = "127.0.0.1";
 	char *port = "6700";
 	t_poke *poke_list;
@@ -124,6 +139,7 @@ int leer_metadata(char* path){
 	list_add(poke_list, poke_create("Raychu", "R"));
 	list_add(poke_list, poke_create("Bulbasaur", "B"));
 
+	log_info(logger, "Archivo de metadata cargado correctamente.");
 	return 0;
 }
 
@@ -142,7 +158,7 @@ int completar_mapa(t_mapa *mapa){
 		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d", pokemon->name, pokemon->coor.x, pokemon->coor.y);
 	}
 	//log de mapa completo
-	log_info(logger, "Felicitaciones! completaste el mapa %s.\n", mapa->name);
+	log_info(logger, "Felicitaciones! completaste el mapa: %s.\n", mapa->name);
 
 	return 0;
 }
@@ -164,7 +180,7 @@ int ubicar(t_poke *poke){
 	return 0;
 }
 
-int eliminar_maps_list(){
+int destroy_maps_list(){
 	log_info(logger, "Liberando memoria...");
 
 	int lenght = list_size(maps_list);
@@ -172,7 +188,7 @@ int eliminar_maps_list(){
 		log_info(logger, "\ttamaño de maps_list: %d", lenght);
 		//conectar_mapa( list_get(maps_list, pos) );
 		t_mapa *mapa = list_remove(maps_list, lenght-1);
-		eliminar_poke_list(mapa->poke_list);
+		destroy_poke_list(mapa->poke_list);
 		mapa_destroy(mapa);
 		lenght = list_size(maps_list);
 
@@ -182,7 +198,7 @@ int eliminar_maps_list(){
 	return 0;
 }
 
-int eliminar_poke_list(t_list *poke_list){
+int destroy_poke_list(t_list *poke_list){
 	int lenght = list_size(poke_list);
 	while( lenght > 0){
 		log_info(logger, "\t\ttamaño de poke_list: %d", lenght);
