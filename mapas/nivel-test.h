@@ -29,6 +29,15 @@ typedef struct {
 	int fd;
 	int posx;
 	int posy;
+
+	char id;
+	char estado;
+	char *proximoMapa;
+	char *objetivos;
+	int objetivoActual;
+	char quantum;
+	bool movVert;
+	bool bloq;
 }t_entrenador;
 
 typedef struct {
@@ -45,4 +54,19 @@ typedef struct {
 	t_pokemon* pokemon;
 	char* nombre;
 }t_infoPokemon;
+
+typedef struct {
+	t_list * entrenadores;
+	t_list * pokenests;
+} t_combo;
+
+typedef struct PokeNest {
+	char id;
+	char posx;
+	char posy;
+	char cantidad;
+	t_queue * colaBloqueados;
+	t_pokemon_type tipo;
+	t_list* listaPokemons;
+} PokeNest;
 #endif /* NIVEL_TEST_H_ */

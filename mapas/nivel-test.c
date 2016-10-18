@@ -18,39 +18,18 @@
 #include <bibliotecaCharMander.c>
 #include "nivel-test.h"
 #include "planificacion.h"
+#include <deteccionDeadlock.h>
+#include <pthread.h>
 
 
 #define QUANTUM 5
 
-typedef struct PCB {
-	char id;
-	char estado;
-	char *proximoMapa;
-	char *objetivos;
-	int objetivoActual;
-	char posx;
-	char posy;
-	char quantum;
-	bool movVert;
-	bool bloq;
-}PCB;
-
-typedef struct PokeNest {
-	char id;
-	char posx;
-	char posy;
-	char cantidad;
-	t_queue * colaBloqueados;
-	t_pokemon_type tipo;
-	t_list* listaPokemons;
-} PokeNest;
-
 int rows, cols;
 
 PokeNest* crearPokenest(char* rutaPokenest);
-void crearJugadores(t_list *listaPCB, t_list *items);
-void moverJugadores(t_list *listaPCB, t_list *items);
-void moverJugador(PCB *personaje, t_list *items,int x,int y);
+void crearJugadores(t_list *entrenadores, t_list *items);
+void moverJugadores(t_list *entrenadores, t_list *items);
+void moverJugador(t_entrenador *personaje, t_list *items,int x,int y);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 
@@ -58,26 +37,31 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta);
 int main(int argc, char* argv[]) {
 
 	t_list* items = list_create();
-	t_list *listaPCB = list_create();
+	t_list *entrenadores = list_create();
+	t_list * pokenests = lista_create();
 
 	nivel_gui_inicializar();
 
     nivel_gui_get_area_nivel(&rows, &cols);
 
-    crearJugadores(listaPCB, items);
+    crearJugadores(entrenadores, items);
 
-	CrearCaja(items, 'P', 25, 5, 5);
-	CrearCaja(items, 'B', 10, 19, 5);
 
 	nivel_gui_dibujar(items, "Stranger Code");
 
-	moverJugadores(listaPCB, items);
+	pthread_t pth;
+	t_combo comboListas;
+	comboListas.entrenadores = entrenadores;
+	comboListas.pokenests = pokenests;
 
-	BorrarItem(items, '#');
-	BorrarItem(items, '@');
+	if(pthread_create(&pth, NULL, detectarDeadlock, &comboListas)) {
 
-	BorrarItem(items, 'P');
-	BorrarItem(items, 'B');
+		fprintf(stderr, "Error creating thread\n");
+		return 1;
+
+	}
+
+	moverJugadores(entrenadores, items);
 
 	nivel_gui_terminar();
 
@@ -106,13 +90,13 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-void crearJugadores(t_list * listaPCB, t_list *items) {
+void crearJugadores(t_list * entrenadores, t_list *items) {
 
 	int q, p;
 	p = cols;
 	q = rows;
 
-	PCB ash;
+	t_entrenador ash;
 	ash.id = 35;
 	ash.posx = 1;
 	ash.posy = 1;
@@ -123,31 +107,31 @@ void crearJugadores(t_list * listaPCB, t_list *items) {
 	ash.objetivoActual = 0;
 	ash.bloq = false;
 
-	PCB misty;
+	t_entrenador misty;
 	misty.id = '@';
 	misty.posx = p;
 	misty.posy = q;
 	misty.movVert = 0;
 	misty.quantum = 0;
 
-	list_add(listaPCB, &ash);
-	list_add(listaPCB, &misty);
+	list_add(entrenadores, &ash);
+	list_add(entrenadores, &misty);
 
 	int i;
 
-	for(i = 0; i < list_size(listaPCB); i++) {
+	for(i = 0; i < list_size(entrenadores); i++) {
 
-		PCB *personaje = list_get(listaPCB, i);
+		t_entrenador *personaje = list_get(entrenadores, i);
 		CrearPersonaje(items, personaje -> id, personaje -> posx, personaje -> posy);
 	}
 }
-void moverJugadores(t_list * listaPCB, t_list *items)
+void moverJugadores(t_list * entrenadores, t_list *items)
 {
 	int i = 0;
 
 	while(1)
 	{
-		PCB *personaje = list_get(listaPCB, i);
+		t_entrenador *personaje = list_get(entrenadores, i);
 
 		while(personaje -> quantum < QUANTUM)
 		{
@@ -164,12 +148,12 @@ void moverJugadores(t_list * listaPCB, t_list *items)
 		personaje -> quantum = 0;
 
 		i++;
-		if(i == list_size(listaPCB)) i = 0;
+		if(i == list_size(entrenadores)) i = 0;
 
 	}
 }
 
-void moverJugador(PCB *personaje, t_list *items, int x, int y) {
+void moverJugador(t_entrenador *personaje, t_list *items, int x, int y) {
 
 	if(personaje-> posx < x && !(personaje->movVert)) {
 		personaje->posx < x ? personaje->posx++ : personaje->posx--;
@@ -188,7 +172,7 @@ void moverJugador(PCB *personaje, t_list *items, int x, int y) {
 
 }
 
-void darRecurso(PCB * entrenador, PokeNest * poke, t_list * items) {
+void darRecurso(t_entrenador * entrenador, PokeNest * poke, t_list * items) {
 
 
 	if(poke -> cantidad > 0) {
@@ -197,93 +181,10 @@ void darRecurso(PCB * entrenador, PokeNest * poke, t_list * items) {
 		restarRecurso(items, poke->id);
 	}
 	else if(poke ->cantidad == 0) {
-		queue_push(poke -> colaBloqueados, (PCB *)entrenador);
+		queue_push(poke -> colaBloqueados, (t_entrenador *)entrenador);
 		entrenador->bloq= true;
 	}
 }
-void detectarDeadlock(t_list * entrenadores, t_list * pokenest) {
-
-	t_list * bloqueados = list_create();
-
-	int i, j;
-	int count1 = 0, count2 = 0;
-	int tamEntr = list_size(entrenadores);
-	int tamPok = list_size(pokenest);
-
-	int matrizRetenido[tamEntr][tamPok];
-	int matrizNecesita[tamEntr][tamPok];
-	int recursosDisponibles[tamPok];
-	int completado[tamEntr];
-
-	for(i = 0; i < tamEntr; i++) {
-		completado[i] = 0;
-
-		for(j = 0; j < tamPok; j++) {
-			matrizRetenido[i][j] = 0;
-			matrizNecesita[i][j] = 0;
-		}
-	}
-	for(i = 0; i < tamPok; i++) {
-		PokeNest * pok = list_get(pokenest, i);
-		recursosDisponibles[i] = pok -> cantidad;
-	}
-
-	for(i = 0; i < tamEntr; i++) {
-
-		PCB *entrenador = list_get(entrenadores, i);
-		int k = 0;
-		for(k = 0; k < entrenador->objetivoActual; k++){
-			char obj = *(entrenador->objetivos+k);
-
-			for( j = 0; j < tamPok; j++) {
-				PokeNest * pok = list_get(pokenest, j);
-
-				if(pok ->id == obj)
-					break;
-			}
-			matrizRetenido[i][j]++;
-		}
-		for(; entrenador ->objetivos+k != '\0'; k++) {
-			char obj = *(entrenador->objetivos+k);
-			for( j = 0; j < tamPok; j++) {
-				PokeNest * pok = list_get(pokenest, j);
-
-				if(pok ->id == obj)
-					break;
-			}
-			matrizNecesita[i][j]++;
-		}
-	}
-	while(count1 < tamEntr) {
-		count2 = count1;
-		int k = 0;
-		for(i = 0; i < tamEntr; i++) {
-
-			for(j = 0; j< tamPok; j++) {
-				if(matrizNecesita[i][j] <= recursosDisponibles[j])
-					k++;
-			}
-			if(k == tamPok && completado[i] == 0) {
-				completado[i] = 1;
-
-				for(j = 0; j < tamPok; j++) {
-					recursosDisponibles[j] += matrizRetenido[i][j];
-				}
-				count1++;
-			}
-			k = 0;
-		}
-		if(count1 == count2) {
-			//HAY DEADLOCK, HAY QUE LLAMAR AL ALGORITMO DE BATALLA
-			break;
-		}
-	}
-
-}
-void matarJugador(PCB * entrenador) {
-
-}
-
 
 void manejar_select(int socket, t_log* log){
 	fd_set lectura, master;
