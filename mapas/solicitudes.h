@@ -12,4 +12,8 @@
 #define NOTIFICA_MOVIMIENTO 1
 #define CAPTURA_POKEMON 2
 
+extern t_list* listaPokenests;
+
+PokeNest* buscarPokenest(t_list* lista, char id);
+t_infoPokemon* buscarPrimerPokemon(t_list* listaPokemons);
 #endif /* SOLICITUDES_H_ */

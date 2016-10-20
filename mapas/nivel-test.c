@@ -18,7 +18,7 @@
 #include <bibliotecaCharMander.c>
 #include "nivel-test.h"
 #include "planificacion.h"
-#include <deteccionDeadlock.h>
+#include "deteccionDeadlock.h"
 #include <pthread.h>
 
 
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 
 	t_list* items = list_create();
 	t_list *entrenadores = list_create();
-	t_list * pokenests = lista_create();
+	t_list * pokenests = list_create();
 
 	nivel_gui_inicializar();
 
@@ -54,19 +54,19 @@ int main(int argc, char* argv[]) {
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = pokenests;
 
-	if(pthread_create(&pth, NULL, detectarDeadlock, &comboListas)) {
+	/*if(pthread_create(&pth, NULL, detectarDeadlock, &comboListas)) {
 
 		fprintf(stderr, "Error creating thread\n");
 		return 1;
 
-	}
+	}*/
 
 	moverJugadores(entrenadores, items);
 
 	nivel_gui_terminar();
 
 	char* rutaMetadata;
-	t_list* listaPokenests = list_create();
+	listaPokenests = list_create();
 	rutaMetadata = getRutaMetadata(argv[2], argv[1]);
 	metadata* conf_metadata = malloc(sizeof(metadata));
 	leerConfiguracion(conf_metadata, rutaMetadata);
@@ -215,9 +215,6 @@ void manejar_select(int socket, t_log* log){
 								}
 							close(a);
 							FD_CLR(a, &master);
-							} else {
-								log_trace(log, "Me estan hablando sin permiso");
-								printf("Que mandas?? Estas flashiando\n");
 							}
 						}
 				}

@@ -24,6 +24,8 @@ char* getRutaMetadata(char* ptoMnt, char* nombreMapa);
 
 
 t_queue *colaListos, *colaBloqueados;
+t_list *listaPokenests;
+int quantum;
 
 typedef struct {
 	int fd;

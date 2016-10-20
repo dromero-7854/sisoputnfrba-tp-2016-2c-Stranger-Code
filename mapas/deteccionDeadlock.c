@@ -5,7 +5,7 @@
  *      Author: utnso
  */
 
-#include <deteccionDeadlock.h>
+#include "deteccionDeadlock.h"
 
 bool estaBloqueado(t_entrenador * entrenador);
 
@@ -103,6 +103,10 @@ bool estaBloqueado(t_entrenador * entrenador) {
 
 	return (entrenador ->bloq);
 }
-t_entrenador * mandarAPelear(t_entrenador entrenador1, t_entrenador entrenador2);
-void matarEntrenador(t_entrenador * entrenador);
+t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2){
+
+}
+void matarEntrenador(t_entrenador * entrenador){
+
+}
 

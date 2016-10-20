@@ -10,9 +10,6 @@
 #include "planificacion.h"
 #include "solicitudes.h"
 
-void handshake(int socketCliente, t_log* logger);
-void planificar(void);
-
 #define MENSAJE_BIENVENIDA "Bienvenido al mapa"
 #define QUANTUM 3
 
@@ -53,18 +50,17 @@ void planificar(){
 	colaListos = queue_create();
 	colaBloqueados = queue_create();
 
-	int q, quantum;
+	//int q, quantum;
 	t_entrenador* entrenador;
 
 	while(1){
 		quantum = 0;
-		verificarBloqueados();
-		for(q = 0; q < QUANTUM; q++){ // QUANTUM lo va a leer de config
-
-			entrenador = queue_pop(colaListos);
-			atenderSolicitud(entrenador);
-			quantum ++;
+		if(!queue_is_empty(colaListos)){
+			entrenador = atender(colaListos);
+		} else {
+			entrenador = atender(colaBloqueados);
 		}
+
 		if (quantum == QUANTUM){
 			queue_push(colaListos, entrenador);
 		} else {
@@ -72,6 +68,17 @@ void planificar(){
 		}
 	}
 }
-void verificarBloqueados(){
-	//hacer
+
+t_entrenador* atender(t_queue* cola){
+	int q, capturo_pokemon;
+	quantum = 0;
+	t_entrenador* entrenador;
+	for(q = 0; q < QUANTUM; q++){ // QUANTUM lo va a leer de config
+
+		entrenador = queue_pop(colaListos);
+		atenderSolicitud(entrenador, &capturo_pokemon);
+		quantum ++;
+		if(capturo_pokemon) break;
+	}
+	return entrenador;
 }
