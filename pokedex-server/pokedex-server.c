@@ -26,7 +26,6 @@
 
 int HEADER_SIZE;
 int BITMAP_SIZE;
-int FILE_TABLE_SIZE;
 int MAPPING_TABLE_SIZE;
 int DATA_SIZE;
 
@@ -57,7 +56,7 @@ int ROOT = 0xFFFF;
 t_config * conf; 		// properties file
 int listenning_socket;	// socket connection
 struct stat sbuf; 		// osada filesystem
-int fd;					//
+int fd;					// osada filesystem
 void * osada_fs_ptr;	// osada filesystem >> pointer to the first block
 
 t_bitarray * bitmap;
@@ -136,7 +135,6 @@ int read_and_set(void) {
 
 	HEADER_SIZE = 1;
 	BITMAP_SIZE = (header_ptr->fs_blocks / 8) / OSADA_BLOCK_SIZE;
-	FILE_TABLE_SIZE = 1024;
 	MAPPING_TABLE_SIZE = 1 + ((((header_ptr->fs_blocks - HEADER_SIZE - BITMAP_SIZE - FILE_TABLE_SIZE) * 4) - 1) / OSADA_BLOCK_SIZE);
 	DATA_SIZE = header_ptr->fs_blocks - HEADER_SIZE - BITMAP_SIZE - FILE_TABLE_SIZE - MAPPING_TABLE_SIZE;
 
@@ -292,33 +290,32 @@ void osada_mkdir(int * client_socket) {
 
 int search_dir(const char * dir_name, int pb_pos) {
 	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
-	int pos = FILE_TABLE_0;
-	while (pos <= FILE_TABLE_1) {
-		if (file_table_ptr->state == DIRECTORY && file_table_ptr->parent_directory == pb_pos
+	int file_block_number = 1;
+	while (file_block_number <= FILE_BLOCKS_MOUNT) {
+		if (file_table_ptr->state == DIRECTORY  && file_table_ptr->parent_directory == pb_pos
 				&& (strcmp(file_table_ptr->fname, dir_name) == 0)) {
 			break;
 		} else {
-			pos++;
-			file_table_ptr = file_table_ptr + OSADA_BLOCK_SIZE;
+			file_block_number++;
+			file_table_ptr = file_table_ptr + OSADA_FILE_BLOCK_SIZE;
 		}
 	}
-	if (pos > FILE_TABLE_1)
+	if (file_block_number > FILE_BLOCKS_MOUNT)
 		return -1;
-	return pos;
+	return file_block_number;
 }
 
 int create_dir(const char * dir_name, int pb_pos) {
-	int free_block = BM_FILE_TABLE_0;
-	bool is_free = bitarray_test_bit(bitmap, free_block);
-	while (!is_free && (free_block <= BM_FILE_TABLE_1)) {
-		free_block++;
-		is_free = bitarray_test_bit(bitmap, free_block);
+	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
+	int file_block_number = 1;
+	while (file_block_number <= FILE_BLOCKS_MOUNT) {
+		if (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) {
+			file_block_number++;
+			file_table_ptr = file_table_ptr + OSADA_FILE_BLOCK_SIZE;
+		} else {
+			break;
+		}
 	}
-
-	if (free_block > BM_FILE_TABLE_1)
-		return -1; // TODO full disk
-	bitarray_clean_bit(bitmap, free_block);
-
 	osada_file * o_file = malloc(sizeof(osada_file));
 	o_file->state = DIRECTORY;
 	strcpy(o_file->fname, dir_name);
@@ -326,11 +323,9 @@ int create_dir(const char * dir_name, int pb_pos) {
 	o_file->file_size = 0;
 	o_file->lastmod = time(NULL);
 	o_file->first_block = 0;
-	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * free_block);
-	memcpy(file_table_ptr, o_file, OSADA_BLOCK_SIZE);
+	memcpy(file_table_ptr, o_file, OSADA_FILE_BLOCK_SIZE);
 	free(o_file);
-
-	return free_block;
+	return file_block_number;
 }
 
 int osada_readdir(int * client_socket) {
@@ -358,24 +353,30 @@ int osada_readdir(int * client_socket) {
 
 	t_list * dir_list = list_create();
 	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
-	int pos = FILE_TABLE_0;
 
 	char * dir;
 	int dir_size;
-	while (pos <= FILE_TABLE_1) {
+	int buffer_size = 0;
+	int file_block_number = 1;
+	while (file_block_number <= FILE_BLOCKS_MOUNT) {
 		if (file_table_ptr->state == DIRECTORY && file_table_ptr->parent_directory == pb_pos) {
 			dir_size = strlen(file_table_ptr->fname);
+			buffer_size = buffer_size + dir_size;
 			dir = malloc(sizeof(char) * (dir_size + 1));
 			strcpy(dir, file_table_ptr->fname);
 			list_add(dir_list, dir);
 		}
-		pos++;
-		file_table_ptr = file_table_ptr + OSADA_BLOCK_SIZE;
+		file_block_number++;
+		file_table_ptr = file_table_ptr + OSADA_FILE_BLOCK_SIZE;
 	}
 
 	if (dir_list->elements_count > 0) {
-		char * buffer = malloc(dir_list->elements_count * (1 + OSADA_FILENAME_LENGTH));
+		char * buffer = malloc(buffer_size + dir_list->elements_count + 1);
 		int index = 0;
+		dir = list_get(dir_list, index);
+		strcat(dir,",");
+		strcpy(buffer, dir);
+		index++;
 		dir = list_get(dir_list, index);
 		while(dir != NULL) {
 			strcat(dir,",");
@@ -395,6 +396,7 @@ int osada_readdir(int * client_socket) {
 		memcpy(resp + prot_resp_code_size, &resp_size, prot_resp_size);
 		memcpy(resp + prot_resp_code_size + prot_resp_size, buffer, resp_size);
 		write(* client_socket, resp, prot_resp_code_size + prot_resp_size + resp_size);
+
 		free(resp);
 		free(buffer);
 	} else {

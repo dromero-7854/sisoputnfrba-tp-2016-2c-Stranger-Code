@@ -10,7 +10,10 @@
 #define __OSADA_H__
 
 #define OSADA_BLOCK_SIZE 64
+#define OSADA_FILE_BLOCK_SIZE 32
 #define OSADA_FILENAME_LENGTH 17
+#define FILE_BLOCKS_MOUNT 2048
+#define FILE_TABLE_SIZE 1024
 
 typedef unsigned char osada_block[OSADA_BLOCK_SIZE];
 typedef uint32_t osada_block_pointer;
