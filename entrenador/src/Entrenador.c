@@ -20,6 +20,11 @@
 #define PUERTO "6667"
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
+#define UP 72
+#define RIGHT 77
+#define DOWN 80
+#define LEFT 75
+
 typedef struct {
 	int x;
 	int y;
@@ -107,7 +112,7 @@ int main(int argc, char** argv){
 	int pos = 0;
 	while(list_size(maps_list) > pos){
 		current_map = list_get(maps_list, pos);
-		//conectar_mapa(current_mapa);
+		conectar_mapa(current_map);
 		completar_mapa(current_map);
 		//desconectar_mapa(current_mapa);
 		pos++;
@@ -116,6 +121,15 @@ int main(int argc, char** argv){
 	//liberar memoria
 	destroy_maps_list();
     log_destroy(logger);
+
+	return 0;
+}
+
+int conectar_mapa(t_mapa* current_map){
+	log_info(logger, "Conectando con el mapa: %s", current_map->name);
+	current_coor.x = 0;
+	current_coor.y = 0;
+	log_info(logger, "Conexión establecida con el mapa: %s", current_map->name);
 
 	return 0;
 }
@@ -150,8 +164,8 @@ t_poke *get_current_poke(t_mapa *mapa){
 int completar_mapa(t_mapa *mapa){
 	while( mapa->current_poke < list_size(mapa->poke_list)-1 ){
 		pedir_ubicacion_pokemon(mapa);
-		//moverse_hasta_pokemon( get_current_poke(mapa) );
-		//capturar_pokemon( get_current_poke(mapa) );
+		moverse_hasta_pokemon( get_current_poke(mapa) );
+		capturar_pokemon( get_current_poke(mapa) );
 
 		//log pokemon capturado
 		t_poke *pokemon = get_current_poke(mapa);
@@ -159,6 +173,12 @@ int completar_mapa(t_mapa *mapa){
 	}
 	//log de mapa completo
 	log_info(logger, "Felicitaciones! completaste el mapa: %s.\n", mapa->name);
+
+	return 0;
+}
+
+int capturar_pokemon( t_poke* pokemon ){
+	//log_info(logger, "Se ha capturado al pokemon: %s (%d,%d).\n", pokemon->name, current_coor.x, current_coor.y);
 
 	return 0;
 }
@@ -178,6 +198,61 @@ int ubicar(t_poke *poke){
 	poke->coor.y = 10;
 
 	return 0;
+}
+
+int moverse_hasta_pokemon( t_poke* pokemon ){
+	int movement = RIGHT;
+	while( !coor_equals(current_coor, pokemon->coor) ){
+		movement = calcular_movimiento(movement, pokemon->coor);
+
+		move_to(movement);
+	}
+
+	return 0;
+}
+
+void move_to(int movement){
+	char move[20];
+
+	switch (movement) {
+		case UP:
+			sprintf(move, "ARRIBA");
+			current_coor.y = current_coor.y - 1;
+			break;
+		case DOWN:
+			sprintf(move, "ABAJO");
+			current_coor.y = current_coor.y + 1;
+			break;
+		case RIGHT:
+			sprintf(move, "DERECHA");
+			current_coor.x = current_coor.x + 1;
+			break;
+		case LEFT:
+			sprintf(move, "IZQUIERDA");
+			current_coor.x = current_coor.x - 1;
+			break;
+	}
+
+	log_info(logger, "Movimiento del Entrenador: %s", move);
+}
+
+int coor_equals(t_coor coorOne, t_coor coorTwo){
+	return coorOne.x == coorTwo.x && coorOne.y == coorTwo.y;
+}
+
+int calcular_movimiento(int lastMovement, t_coor coor_pokemon){
+	int mover;
+
+	bool moverHorizontalmente = (lastMovement == UP || lastMovement == DOWN) && current_coor.x != coor_pokemon.x;
+	bool moverVerticalmente = !moverHorizontalmente;
+
+	if(moverHorizontalmente){
+		if(current_coor.x < coor_pokemon.x) mover = RIGHT; else mover = LEFT;
+	}else{
+		if(current_coor.y < coor_pokemon.y) mover = DOWN; else mover = UP;
+	}
+
+	return mover;
 }
 
 int destroy_maps_list(){
