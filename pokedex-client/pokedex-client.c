@@ -17,26 +17,23 @@
 #include <unistd.h>
 #include <commons/config.h>
 
-/**
- * TODO Remove (only for test)
- */
-#define DEFAULT_FILE_CONTENT "Hello World!\n"
-#define DEFAULT_FILE_NAME "hello"
-#define DEFAULT_FILE_PATH "/" DEFAULT_FILE_NAME
-
 #define RES_MKDIR_OK 1
+#define RES_MKNOD_OK 1
 #define RES_READDIR_ISDIR 1
 #define RES_READDIR_ISEMPTYDIR 2
 #define RES_GETATTR_ISDIR 1
-#define RES_GETATTR_ENOTDIR 2
+#define RES_GETATTR_ISREG 2
+#define RES_GETATTR_ENOENT 3
 
 const uint8_t REQ_MKDIR = 1;
 const uint8_t REQ_READ_DIR = 2;
 const uint8_t REQ_GET_ATTR = 3;
+const uint8_t REQ_MKNOD = 4;
+const uint8_t REQ_WRITE = 5;
 
-t_config * conf; 					// properties file
-struct addrinfo hints;				// pokedex-server: socket connection
-struct addrinfo * server_info;		//
+t_config * conf;
+struct addrinfo hints;
+struct addrinfo * server_info;
 
 struct t_runtime_options {
 	char * welcome_msg;
@@ -48,9 +45,10 @@ void open_connection(int *);
 void close_connection(int *);
 void load_properties_file(void);
 
-int pk_mkdir(const char * path, mode_t mode) {
+static int pk_mkdir(const char * path, mode_t mode) {
 	int server_socket;
 	open_connection(&server_socket);
+
 	// << sending message >>
 	uint8_t prot_ope_code_size = 1;
 	uint8_t prot_path_size = 4;
@@ -62,15 +60,18 @@ int pk_mkdir(const char * path, mode_t mode) {
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
 	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
 	free(buffer);
+
 	// << receiving message >>
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
 	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 	}
+
 	if (resp_code == RES_MKDIR_OK) {
 		// TODO
 	}
+
 	close_connection(&server_socket);
 	return 0;
 }
@@ -84,6 +85,7 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 	} else if (strlen(path) > 0) {
 		int server_socket;
 		open_connection(&server_socket);
+
 		// << sending message >>
 		uint8_t req_ope_code = REQ_GET_ATTR;
 		uint32_t req_path_size = strlen(path);
@@ -95,18 +97,24 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 		memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
 		send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
 		free(buffer);
+
 		// << receiving message >>
 		uint8_t prot_resp_code_size = 1;
 		uint8_t resp_code = 0;
 		if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
 		}
+
 		if (resp_code == RES_GETATTR_ISDIR) {
-			stbuf->st_mode = S_IFDIR | 7777;
+			stbuf->st_mode = S_IFDIR | 0755;
+			stbuf->st_nlink = 2;
+		} else if (resp_code == RES_GETATTR_ISREG) {
+			stbuf->st_mode = S_IFREG | 0755;
 			stbuf->st_nlink = 2;
 		} else {
 			res = -ENOENT;
 		}
+
 		close_connection(&server_socket);
 	} else {
 		res = -ENOENT;
@@ -124,6 +132,7 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 
 	int server_socket;
 	open_connection(&server_socket);
+
 	// << sending message >>
 	uint8_t req_ope_code = REQ_READ_DIR;
 	uint32_t req_path_size = strlen(path);
@@ -143,6 +152,7 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return 1;
 	}
+
 	if (resp_code == RES_READDIR_ISDIR) {
 		uint32_t prot_resp_size = 4;
 		uint32_t resp_size;
@@ -156,7 +166,6 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 			printf("pokedex client: server %d disconnected...\n", server_socket);
 			return 1;
 		}
-
 		char * dir = strtok(resp, ",");
 		int dir_len;
 		while (dir != NULL) {
@@ -166,42 +175,121 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 			}
 			dir = strtok (NULL, ",");
 		}
-
 		free(resp);
 	}
+
 	close_connection(&server_socket);
 	return 0;
 }
 
-static int pk_open(const char * path, struct fuse_file_info * fi) {
-	if (strcmp(path, DEFAULT_FILE_PATH) != 0)
-		return -ENOENT;
-	if ((fi->flags & 3) != O_RDONLY)
-		return -EACCES;
+static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
+
+	int server_socket;
+	open_connection(&server_socket);
+
+	// << sending message >>
+	uint8_t req_ope_code = REQ_MKNOD;
+	uint32_t req_path_size = strlen(path);
+	uint8_t prot_ope_code_size = 1;
+	uint8_t prot_path_size = 4;
+	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+	memcpy(buffer, &req_ope_code, prot_ope_code_size);
+	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	free(buffer);
+
+	// << receiving message >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = 0;
+	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+		printf("pokedex client: server %d disconnected...\n", server_socket);
+	}
+
+	if (resp_code == RES_MKNOD_OK) {
+		// TODO
+	}
+
+	close_connection(&server_socket);
 	return 0;
 }
 
-static int pk_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
-	size_t len;
-	(void) fi;
-	if (strcmp(path, DEFAULT_FILE_PATH) != 0)
+static int pk_write(const char * path, const char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
+
+
+	int server_socket;
+	open_connection(&server_socket);
+	// << sending message >>
+	// op. code
+	uint8_t prot_ope_code_size = 1;
+	uint8_t req_ope_code = REQ_WRITE;
+	// path
+	uint8_t prot_path_size = 4;
+	uint8_t req_path_size = strlen(path);
+	// buf
+	uint8_t prot_buf_size = 4;
+	uint32_t req_buf_size = strlen(buf);
+	// size
+	uint8_t prot_size = 4;
+	uint32_t req_size = size;
+	// size
+	uint8_t prot_offset = 4;
+	uint32_t req_offset = offset;
+
+	char * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size + prot_offset);
+	memcpy(buffer, &req_ope_code, prot_ope_code_size);
+	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size, &req_buf_size, prot_buf_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size, buf, req_buf_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size, &req_size, prot_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size, &req_offset, prot_offset);
+	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size + prot_offset, 0);
+	free(buffer);
+
+	int retstat = 0;
+	return retstat;
+}
+
+static int pk_open(const char * path, struct fuse_file_info * fi) {
+	int server_socket;
+	open_connection(&server_socket);
+
+	// << sending message >>
+	uint8_t req_ope_code = REQ_GET_ATTR;
+	uint32_t req_path_size = strlen(path);
+	uint8_t prot_ope_code_size = 1;
+	uint8_t prot_path_size = 4;
+	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+	memcpy(buffer, &req_ope_code, prot_ope_code_size);
+	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	free(buffer);
+
+	// << receiving message >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = 0;
+	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+		printf("pokedex client: server %d disconnected...\n", server_socket);
+	}
+
+	close_connection(&server_socket);
+
+	if (resp_code != RES_GETATTR_ISREG)
 		return -ENOENT;
-	len = strlen(DEFAULT_FILE_CONTENT);
-	if (offset < len) {
-		if (offset + size > len)
-			size = len - offset;
-		memcpy(buf, DEFAULT_FILE_CONTENT + offset, size);
-	} else
-		size = 0;
-	return size;
+//	if ((fi->flags & 3) != O_RDONLY)
+//		return -EACCES;
+	return 0;
 }
 
 static struct fuse_operations pk_oper = {
 	.getattr = pk_getattr,
 	.mkdir = pk_mkdir,
 	.readdir = pk_readdir,
+	.mknod = pk_mknod,
 	.open = pk_open,
-	.read = pk_read
+	.write = pk_write,
 };
 
 enum {
