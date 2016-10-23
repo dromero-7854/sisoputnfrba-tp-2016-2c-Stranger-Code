@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
 	char* rutaMetadata;
 	listaPokenests = list_create();
 	rutaMetadata = getRutaMetadata(argv[2], argv[1]);
-	metadata* conf_metadata = malloc(sizeof(metadata));
+	conf_metadata = malloc(sizeof(metadata));
 	leerConfiguracion(conf_metadata, rutaMetadata);
 
 	char *rutaPokenests;
@@ -203,6 +203,8 @@ void manejar_select(int socket, t_log* log){
 						nuevaConexion = aceptar_conexion(socket, log);
 						FD_SET(nuevaConexion, &master);
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
+						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion);
+						queue_push(colaListos, nuevoEntrenador);
 					}else {
 						recibido = recv(a,  (void*) buf, 512, 0);
 						if(recibido <= 0){
@@ -210,6 +212,7 @@ void manejar_select(int socket, t_log* log){
 								log_error(log, "Error al recibir de %d", a);
 								printf("error");
 								} else {
+								eliminarEntrenador(a);
 								log_error(log, "Se desconecto %d", a);
 								printf("Se desconecto alguien\n");
 								}
@@ -312,4 +315,37 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 	}
 	closedir(dir);
 	return listaPokemons;
+}
+
+t_entrenador* crearEntrenador(int file_descriptor){
+	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
+	entrenador->fd = file_descriptor;
+	entrenador->posx = 1;
+	entrenador->posy = 1;
+	return entrenador;
+}
+
+void eliminarEntrenador(int fd_entrenador){
+	buscar_entrenador_y_borrar(colaListos, fd_entrenador);
+	buscar_entrenador_y_borrar(colaBloqueados, fd_entrenador);
+}
+
+void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor){
+	t_queue* colaAux;
+	t_entrenador* entrenadorAux;
+	while(entrenadorAux = queue_pop(cola)){
+		if(entrenadorAux->fd == file_descriptor){
+			liberarEntrenador(entrenadorAux);
+		} else {
+			queue_push(colaAux, entrenadorAux);
+		}
+
+	}
+	cola = colaAux;
+}
+
+void liberarEntrenador(t_entrenador* entrenador){
+	free(entrenador->objetivos);
+	free(entrenador->proximoMapa);
+	free(entrenador);
 }

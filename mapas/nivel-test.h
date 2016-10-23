@@ -23,6 +23,7 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 char* getRutaMetadata(char* ptoMnt, char* nombreMapa);
 
 
+
 t_queue *colaListos, *colaBloqueados;
 t_list *listaPokenests;
 int quantum;
@@ -71,4 +72,9 @@ typedef struct PokeNest {
 	t_pokemon_type tipo;
 	t_list* listaPokemons;
 } PokeNest;
+
+metadata* conf_metadata;
+
+t_entrenador* crearEntrenador(int file_descriptor);
+void liberarEntrenador();
 #endif /* NIVEL_TEST_H_ */
