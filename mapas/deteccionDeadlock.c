@@ -103,10 +103,33 @@ bool estaBloqueado(t_entrenador * entrenador) {
 
 	return (entrenador ->bloq);
 }
+bool esDeMayorNivel(t_pokemon * pokemon1, t_pokemon * pokemon2) {
+	return pokemon1 ->level > pokemon2->level;
+}
 t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2){
+	list_sort(entrenador1 ->pokemons, (void*)esDeMayorNivel);
+	list_sort(entrenador2 ->pokemons, (void*)esDeMayorNivel);
+
+	t_pokemon * pokemon1 = list_get(entrenador1 ->pokemons, 0);
+	t_pokemon * pokemon2 = list_get(entrenador2 ->pokemons, 0);
+
+	t_pokemon * loser = pkmn_battle(pokemon1, pokemon2);
+
+	if( loser == pokemon1) return entrenador1;
+	else return entrenador2;
 
 }
 void matarEntrenador(t_entrenador * entrenador){
+
+	int i = 0;
+	//Lo tengo que sacar de la lista de entrenadores
+	for(; entrenador != list_get(entrenadores, i); i++);
+
+	list_remove(entrenadores, i);
+
+	//Le tengo que sacar los recursos (no hace falta)
+
+	//TODO:tengo que agregarlos a las pokenests
 
 }
 

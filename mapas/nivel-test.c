@@ -33,12 +33,9 @@ void moverJugador(t_entrenador *personaje, t_list *items,int x,int y);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 
-
 int main(int argc, char* argv[]) {
 
-	t_list* items = list_create();
-	t_list *entrenadores = list_create();
-	t_list * pokenests = list_create();
+
 
 	nivel_gui_inicializar();
 
@@ -52,7 +49,7 @@ int main(int argc, char* argv[]) {
 	pthread_t pth;
 	t_combo comboListas;
 	comboListas.entrenadores = entrenadores;
-	comboListas.pokenests = pokenests;
+	comboListas.pokenests = listaPokenests;
 
 	/*if(pthread_create(&pth, NULL, detectarDeadlock, &comboListas)) {
 
@@ -178,6 +175,9 @@ void darRecurso(t_entrenador * entrenador, PokeNest * poke, t_list * items) {
 	if(poke -> cantidad > 0) {
 		poke -> cantidad--;
 		entrenador ->objetivoActual++;
+
+		list_add_all(entrenador -> pokemons, list_take_and_remove(poke ->listaPokemons));
+
 		restarRecurso(items, poke->id);
 	}
 	else if(poke ->cantidad == 0) {
