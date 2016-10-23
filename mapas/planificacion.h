@@ -18,7 +18,10 @@ typedef struct pcb{
 
 void handshake(int socketCliente, t_log* logger);
 void planificar(void);
-void atenderSolicitud();
 void verificarBloqueados();
 t_entrenador* atender(t_queue* cola);
+void ejecutarRafagaRR();
+void ejecutarRafagaSRDF();
+void atenderEntrenadoresSinDistanciaDefinida();
+t_entrenador* buscarEntrenadorConMenorDistancia();
 #endif /* PLANIFICACION_H_ */

@@ -16,4 +16,5 @@ extern t_list* listaPokenests;
 
 PokeNest* buscarPokenest(t_list* lista, char id);
 t_infoPokemon* buscarPrimerPokemon(t_list* listaPokemons);
+int atenderSolicitud(t_entrenador* entrenador);
 #endif /* SOLICITUDES_H_ */

@@ -51,20 +51,12 @@ void planificar(){
 	colaBloqueados = queue_create();
 
 	//int q, quantum;
-	t_entrenador* entrenador;
 
 	while(1){
-		quantum = 0;
-		if(!queue_is_empty(colaListos)){
-			entrenador = atender(colaListos);
+		if(strcmp(conf_metadata->algoritmo, "RR")){
+			ejecutarRafagaRR();
 		} else {
-			entrenador = atender(colaBloqueados);
-		}
-
-		if (quantum == QUANTUM){
-			queue_push(colaListos, entrenador);
-		} else {
-			queue_push(colaBloqueados, entrenador);
+			ejecutarRafagaSRDF();
 		}
 	}
 }
@@ -76,9 +68,69 @@ t_entrenador* atender(t_queue* cola){
 	for(q = 0; q < QUANTUM; q++){ // QUANTUM lo va a leer de config
 
 		entrenador = queue_pop(colaListos);
-		atenderSolicitud(entrenador, &capturo_pokemon);
+		capturo_pokemon = atenderSolicitud(entrenador);
 		quantum ++;
 		if(capturo_pokemon) break;
 	}
+	return entrenador;
+}
+
+void ejecutarRafagaSRDF(){
+	t_entrenador* entrenador;
+	atenderEntrenadoresSinDistanciaDefinida();
+
+	entrenador = buscarEntrenadorConMenorDistancia();
+	atenderSolicitud(entrenador);
+	queue_push(colaListos, entrenador);
+
+}
+
+void ejecutarRafagaRR(){
+	quantum = 0;
+	t_entrenador* entrenador;
+	if(!queue_is_empty(colaListos)){
+		entrenador = atender(colaListos);
+	} else {
+		entrenador = atender(colaBloqueados);
+	}
+	if (quantum == QUANTUM){
+		queue_push(colaListos, entrenador);
+	} else {
+		queue_push(colaBloqueados, entrenador);
+	}
+}
+
+void atenderEntrenadoresSinDistanciaDefinida(){
+	t_entrenador* entrenador;
+	t_queue* colaAux;
+	while(entrenador = queue_pop(colaListos)){
+		if(entrenador->objetivoActual == NULL){
+			atenderSolicitud(entrenador);
+			queue_push(colaAux, entrenador);
+		} else {
+			queue_push(colaAux, entrenador);
+		}
+	}
+	colaListos = colaAux;
+}
+
+t_entrenador* buscarEntrenadorConMenorDistancia(){
+	t_entrenador* entrenador;
+	t_list* listaAux;
+	while(entrenador = queue_pop(colaListos)){
+		list_add(listaAux, entrenador);
+	}
+	int _menor_distancia_a_pokenest(t_entrenador* entrenador1, t_entrenador* entrenador2){
+		int dist1, dist2;
+		PokeNest *pokenest1, *pokenest2;
+		pokenest1 = buscarPokenest(listaPokenests, entrenador1->objetivoActual);
+		pokenest2 = buscarPokenest(listaPokenests, entrenador2->objetivoActual);
+		dist1 = abs(pokenest1->posx - entrenador1->posx) + abs(pokenest1->posy - entrenador1->posy);
+		dist2 = abs(pokenest2->posx - entrenador2->posx) + abs(pokenest2->posy - entrenador2->posy);
+		return dist1 < dist2;
+	}
+	list_sort(listaAux, (void*) _menor_distancia_a_pokenest);
+	entrenador = list_get(listaAux, 0);
+	list_remove(listaAux, 0);
 	return entrenador;
 }
