@@ -27,7 +27,9 @@
 int rows, cols;
 
 PokeNest* crearPokenest(char* rutaPokenest);
-void crearJugadores(t_list *entrenadores, t_list *items);
+
+//void crearJugadores(t_list *entrenadores, t_list *items);
+
 void moverJugadores(t_list *entrenadores, t_list *items);
 void moverJugador(t_entrenador *personaje, t_list *items,int x,int y);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
@@ -36,7 +38,11 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta);
 int main(int argc, char* argv[]) {
 	nivel_gui_inicializar();
     nivel_gui_get_area_nivel(&rows, &cols);
-    crearJugadores(entrenadores, items);
+
+
+    //crearJugadores(entrenadores, items);
+
+
 	nivel_gui_dibujar(items, "Stranger Code");
 
 	pthread_t pth;
@@ -80,7 +86,7 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-void crearJugadores(t_list * entrenadores, t_list *items) {
+/*void crearJugadores(t_list * entrenadores, t_list *items) {
 
 	int i;
 
@@ -89,7 +95,7 @@ void crearJugadores(t_list * entrenadores, t_list *items) {
 		t_entrenador *personaje = list_get(entrenadores, i);
 		CrearPersonaje(items, personaje -> id, personaje -> posx, personaje -> posy);
 	}
-}
+}*/
 void moverJugadores(t_list * entrenadores, t_list *items)
 {
 	int i = 0;
@@ -179,6 +185,10 @@ void manejar_select(int socket, t_log* log){
 						FD_SET(nuevaConexion, &master);
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion);
+
+						//TODO: crear el entrenador en la GUI aca y sacar la funcion crearJugadores
+						CrearPersonaje(items, nuevoEntrenador -> id, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
+
 						queue_push(colaListos, nuevoEntrenador);
 					}else {
 						recibido = recv(a,  (void*) buf, 512, 0);
