@@ -24,6 +24,7 @@
 #define RES_GETATTR_ISDIR 1
 #define RES_GETATTR_ISREG 2
 #define RES_GETATTR_ENOENT 3
+#define RES_WRITE_OK 1
 
 const uint8_t REQ_MKDIR = 1;
 const uint8_t REQ_READ_DIR = 2;
@@ -215,8 +216,7 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 }
 
 static int pk_write(const char * path, const char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
-
-
+	int retstat;
 	int server_socket;
 	open_connection(&server_socket);
 	// << sending message >>
@@ -247,7 +247,20 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size + prot_offset, 0);
 	free(buffer);
 
-	int retstat = 0;
+	// << receiving message >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = 0;
+	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+		printf("pokedex client: server %d disconnected...\n", server_socket);
+	}
+	close_connection(&server_socket);
+
+	if (resp_code == RES_WRITE_OK) {
+		// TODO
+		retstat = size;
+	} else {
+		retstat = 0;
+	}
 	return retstat;
 }
 
