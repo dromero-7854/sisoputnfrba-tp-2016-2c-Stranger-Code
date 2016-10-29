@@ -45,14 +45,14 @@ int main(int argc, char* argv[]) {
 
 	listaPokenests = malloc(sizeof(t_list));
 	listaPokenests = list_create();
-	//nivel_gui_inicializar();
-    //nivel_gui_get_area_nivel(&rows, &cols);
+	nivel_gui_inicializar();
+    nivel_gui_get_area_nivel(&rows, &cols);
 
 
-    //crearJugadores(entrenadores, items);
+    crearJugadores(entrenadores, items);
 
 
-	//nivel_gui_dibujar(items, "Stranger Code");
+	nivel_gui_dibujar(items, "Stranger Code");
 
 	pthread_t pth;
 	t_combo comboListas;
