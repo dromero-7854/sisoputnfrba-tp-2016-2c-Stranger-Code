@@ -43,26 +43,29 @@ int main(int argc, char* argv[]) {
 	entrenadores = malloc(sizeof(t_list));
 	entrenadores = list_create();
 
-	nivel_gui_inicializar();
-    nivel_gui_get_area_nivel(&rows, &cols);
+	listaPokenests = malloc(sizeof(t_list));
+	listaPokenests = list_create();
+	//nivel_gui_inicializar();
+    //nivel_gui_get_area_nivel(&rows, &cols);
 
 
     //crearJugadores(entrenadores, items);
 
 
-	nivel_gui_dibujar(items, "Stranger Code");
+	//nivel_gui_dibujar(items, "Stranger Code");
 
 	pthread_t pth;
 	t_combo comboListas;
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = listaPokenests;
 
-	if(pthread_create(&pth, NULL, detectarDeadlock, &comboListas)) {
+	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		fprintf(stderr, "Error creating thread\n");
 		return 1;
 
 	}
+	getchar();
 
 	moverJugadores(entrenadores, items);
 
@@ -107,7 +110,7 @@ void moverJugadores(t_list * entrenadores, t_list *items)
 {
 	int i = 0;
 
-	while(1)
+	while(!list_is_empty(entrenadores))
 	{
 		t_entrenador *personaje = list_get(entrenadores, i);
 

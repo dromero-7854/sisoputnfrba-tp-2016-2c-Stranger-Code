@@ -16,6 +16,7 @@ void detectarDeadlock(t_combo * comboLista) {
 
 	t_list * bloqueados = list_filter(entrenadores, (void*) estaBloqueado);
 
+
 	int i, j;
 	int count1 = 0, count2 = 0;
 	int tamEntr = list_size(entrenadores);
