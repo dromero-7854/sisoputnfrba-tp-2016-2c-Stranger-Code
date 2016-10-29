@@ -386,7 +386,7 @@ void osada_readdir(int * client_socket) {
 	int buffer_size = 0;
 	int file_block_number = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
-		if (file_table_ptr->state != DELETED && file_table_ptr->parent_directory == pb_pos) {
+		if ((file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) && file_table_ptr->parent_directory == pb_pos) {
 			node_size = strlen(file_table_ptr->fname);
 			buffer_size = buffer_size + node_size;
 			node = malloc(sizeof(char) * (node_size + 1));
