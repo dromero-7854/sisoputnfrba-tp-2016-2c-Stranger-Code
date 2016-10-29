@@ -77,6 +77,7 @@ typedef struct PokeNest {
 	t_queue * colaBloqueados;
 	t_pokemon_type tipo;
 	t_list* listaPokemons;
+	t_list * pokemonsEntregados;
 } PokeNest;
 
 metadata* conf_metadata;

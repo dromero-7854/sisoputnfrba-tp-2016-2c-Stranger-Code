@@ -27,21 +27,20 @@
 int rows, cols;
 
 PokeNest* crearPokenest(char* rutaPokenest);
-void crearJugadores(t_list *entrenadores, t_list *items);
+
+//void crearJugadores(t_list *entrenadores, t_list *items);
+
 void moverJugadores(t_list *entrenadores, t_list *items);
 void moverJugador(t_entrenador *personaje, t_list *items,int x,int y);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 
 int main(int argc, char* argv[]) {
-
-
-
 	nivel_gui_inicializar();
-
     nivel_gui_get_area_nivel(&rows, &cols);
 
-    crearJugadores(entrenadores, items);
+
+    //crearJugadores(entrenadores, items);
 
 
 	nivel_gui_dibujar(items, "Stranger Code");
@@ -87,32 +86,7 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-void crearJugadores(t_list * entrenadores, t_list *items) {
-
-	int q, p;
-	p = cols;
-	q = rows;
-
-	t_entrenador ash;
-	ash.id = 35;
-	ash.posx = 1;
-	ash.posy = 1;
-	ash.movVert = 0;
-	ash.quantum = 0;
-	char obj1[] = {'P', 'C'};
-	ash.objetivos = &obj1;
-	ash.objetivoActual = 0;
-	ash.bloq = false;
-
-	t_entrenador misty;
-	misty.id = '@';
-	misty.posx = p;
-	misty.posy = q;
-	misty.movVert = 0;
-	misty.quantum = 0;
-
-	list_add(entrenadores, &ash);
-	list_add(entrenadores, &misty);
+/*void crearJugadores(t_list * entrenadores, t_list *items) {
 
 	int i;
 
@@ -121,7 +95,7 @@ void crearJugadores(t_list * entrenadores, t_list *items) {
 		t_entrenador *personaje = list_get(entrenadores, i);
 		CrearPersonaje(items, personaje -> id, personaje -> posx, personaje -> posy);
 	}
-}
+}*/
 void moverJugadores(t_list * entrenadores, t_list *items)
 {
 	int i = 0;
@@ -169,21 +143,28 @@ void moverJugador(t_entrenador *personaje, t_list *items, int x, int y) {
 
 }
 
-void darRecurso(t_entrenador * entrenador, PokeNest * poke, t_list * items) {
+void darRecurso(PokeNest * pokenest, t_list * items) {
 
+	if(pokenest ->cantidad >0 && !queue_is_empty(pokenest->colaBloqueados)) {
+		t_entrenador * entrenador = queue_pop(pokenest->colaBloqueados);
 
-	if(poke -> cantidad > 0) {
-		poke -> cantidad--;
+		t_pokemon * pokemon = list_get(pokenest->listaPokemons, 1);
+		list_add(entrenador ->pokemons, pokemon);
+		list_add(pokenest->pokemonsEntregados, pokemon);
+		list_remove(pokenest->listaPokemons, 1);
+		restarRecurso(items, pokenest->id);
 		entrenador ->objetivoActual++;
+		pokenest->cantidad--;
 
-		list_add_all(entrenador -> pokemons, list_take_and_remove(poke ->listaPokemons));
+	}
+}
+void solicitarRecurso(t_entrenador * entrenador, PokeNest * pokenest, t_list * items) {
 
-		restarRecurso(items, poke->id);
-	}
-	else if(poke ->cantidad == 0) {
-		queue_push(poke -> colaBloqueados, (t_entrenador *)entrenador);
-		entrenador->bloq= true;
-	}
+	queue_push(pokenest -> colaBloqueados, (t_entrenador *)entrenador);
+	entrenador->bloq= true;
+
+	darRecurso(pokenest, items);
+
 }
 
 void manejar_select(int socket, t_log* log){
@@ -204,6 +185,10 @@ void manejar_select(int socket, t_log* log){
 						FD_SET(nuevaConexion, &master);
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion);
+
+						//TODO: crear el entrenador en la GUI aca y sacar la funcion crearJugadores
+						CrearPersonaje(items, nuevoEntrenador -> id, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
+
 						queue_push(colaListos, nuevoEntrenador);
 					}else {
 						recibido = recv(a,  (void*) buf, 512, 0);

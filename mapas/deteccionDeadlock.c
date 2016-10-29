@@ -92,8 +92,11 @@ void detectarDeadlock(t_combo * comboLista) {
 				t_entrenador * loser = mandarAPelear(entrenador1, entrenador2);
 				entrenador1 = loser;
 
+				free(loser);
+
 			}
 			matarEntrenador(entrenador1);
+			free(entrenador1);
 			break;
 		}
 	}
@@ -121,15 +124,31 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 }
 void matarEntrenador(t_entrenador * entrenador){
 
-	int i = 0;
+	int i, j, k;
 	//Lo tengo que sacar de la lista de entrenadores
-	for(; entrenador != list_get(entrenadores, i); i++);
+	for(i=0; entrenador != list_get(entrenadores, i); i++);
 
 	list_remove(entrenadores, i);
 
-	//Le tengo que sacar los recursos (no hace falta)
+	//Tengo que agregarlos a las pokenests
+	for(i = 0; i < list_size(entrenador ->pokemons); i++) {
+		t_pokemon * pokemon = list_get(entrenador ->pokemons, i);
 
-	//TODO:tengo que agregarlos a las pokenests
+		for(j=0; j < list_size(listaPokenests); j++) {
+			PokeNest * pokenest = list_get(listaPokenests, j);
 
+			for(k=0; k < list_size(pokenest->pokemonsEntregados); k++) {
+				t_pokemon * pokemonEntregado = list_get(pokenest->pokemonsEntregados, k);
+
+				if(pokemonEntregado == pokemon){
+					list_add(pokenest->listaPokemons, pokemon);
+					list_remove(pokenest->pokemonsEntregados, k);
+					pokenest->cantidad++;
+					darRecurso(pokenest, items);
+					break;
+				}
+			}
+		}
+	}
 }
 
