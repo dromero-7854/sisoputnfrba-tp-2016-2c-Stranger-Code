@@ -26,8 +26,8 @@ char* getRutaMetadata(char* ptoMnt, char* nombreMapa);
 
 t_queue *colaListos, *colaBloqueados;
 t_list *listaPokenests;
-t_list* items = list_create();
-t_list *entrenadores = list_create();
+t_list *items;
+t_list *entrenadores;
 int quantum;
 
 typedef struct {

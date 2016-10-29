@@ -36,6 +36,13 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 
 int main(int argc, char* argv[]) {
+
+	items = malloc(sizeof(t_list));
+	items  = list_create();
+
+	entrenadores = malloc(sizeof(t_list));
+	entrenadores = list_create();
+
 	nivel_gui_inicializar();
     nivel_gui_get_area_nivel(&rows, &cols);
 
@@ -50,12 +57,12 @@ int main(int argc, char* argv[]) {
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = listaPokenests;
 
-	/*if(pthread_create(&pth, NULL, detectarDeadlock, &comboListas)) {
+	if(pthread_create(&pth, NULL, detectarDeadlock, &comboListas)) {
 
 		fprintf(stderr, "Error creating thread\n");
 		return 1;
 
-	}*/
+	}
 
 	moverJugadores(entrenadores, items);
 
@@ -188,6 +195,7 @@ void manejar_select(int socket, t_log* log){
 
 						//TODO: crear el entrenador en la GUI aca y sacar la funcion crearJugadores
 						CrearPersonaje(items, nuevoEntrenador -> id, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
+						list_add(entrenadores, nuevoEntrenador);
 
 						queue_push(colaListos, nuevoEntrenador);
 					}else {

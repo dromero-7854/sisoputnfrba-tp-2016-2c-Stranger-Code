@@ -144,7 +144,7 @@ void matarEntrenador(t_entrenador * entrenador){
 					list_add(pokenest->listaPokemons, pokemon);
 					list_remove(pokenest->pokemonsEntregados, k);
 					pokenest->cantidad++;
-					darRecurso(pokenest, items);
+					//darRecurso(pokenest, items);
 					break;
 				}
 			}
