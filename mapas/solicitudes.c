@@ -15,37 +15,39 @@ int atenderSolicitud(t_entrenador* entrenador){
 	int recibidos;
 	uint32_t header, eje;
 	int capturo_pokemon;
-	recibidos = recv(entrenador->fd, &header, sizeof(uint32_t), 0);
+	recibidos = recv(entrenador->id, &header, sizeof(uint32_t), 0);
 
 	switch(header){
 	case SOLICITA_UBICACION_POKENEST:
 	{
-		recv(entrenador->fd, &header, sizeof(uint32_t), 0);
+		recv(entrenador->id, &header, sizeof(uint32_t), 0);
 		void *buffer = malloc(header);
-		recibidos = recv(entrenador->fd, buffer, header, 0);
+		recibidos = recv(entrenador->id, buffer, header, 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, header);
 
 		void *msg_coordenadas = malloc(sizeof(uint32_t) * 2);
 		memcpy(msg_coordenadas, pokenest->posx, sizeof(uint32_t));
 		memcpy(msg_coordenadas + sizeof(uint32_t), pokenest->posy, sizeof(uint32_t));
 
-		send(entrenador->fd, msg_coordenadas, sizeof(uint32_t) * 2, 0);
+		send(entrenador->id, msg_coordenadas, sizeof(uint32_t) * 2, 0);
 		capturo_pokemon = 0;
+		break;
 	}
 	case NOTIFICA_MOVIMIENTO:
 	{
-		recv(entrenador->fd, &eje, sizeof(uint32_t), 0);
+		recv(entrenador->id, &eje, sizeof(uint32_t), 0);
 		if (eje == 0){
 			entrenador->posx++;
 		} else {
 			entrenador->posy++;
 		}
 		capturo_pokemon = 0;
+		break;
 	}
 		// volver a dibujar ??????
 	case CAPTURA_POKEMON:
 	{
-		recv(entrenador->fd, &header, sizeof(uint32_t), 0);
+		recv(entrenador->id, &header, sizeof(uint32_t), 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, header);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
 		int len = strlen(infopokemon->pokemon->species);
@@ -58,7 +60,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		memcpy(buffer + offset, &(infopokemon->pokemon->second_type), sizeof(t_pokemon_type));
 		offset += sizeof(t_pokemon_type);
 		memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
-		send(entrenador->fd, buffer, bytes_a_mandar, 0);
+		send(entrenador->id, buffer, bytes_a_mandar, 0);
 		capturo_pokemon = 1;
 	}
 	}

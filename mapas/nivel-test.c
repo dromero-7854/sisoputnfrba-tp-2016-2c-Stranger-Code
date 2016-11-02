@@ -28,8 +28,6 @@ int rows, cols;
 
 PokeNest* crearPokenest(char* rutaPokenest);
 
-//void crearJugadores(t_list *entrenadores, t_list *items);
-
 void moverJugadores(t_list *entrenadores, t_list *items);
 void moverJugador(t_entrenador *personaje, t_list *items,int x,int y);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
@@ -47,9 +45,6 @@ int main(int argc, char* argv[]) {
 	listaPokenests = list_create();
 	nivel_gui_inicializar();
     nivel_gui_get_area_nivel(&rows, &cols);
-
-
-    crearJugadores(entrenadores, items);
 
 
 	nivel_gui_dibujar(items, "Stranger Code");
@@ -96,16 +91,6 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-/*void crearJugadores(t_list * entrenadores, t_list *items) {
-
-	int i;
-
-	for(i = 0; i < list_size(entrenadores); i++) {
-
-		t_entrenador *personaje = list_get(entrenadores, i);
-		CrearPersonaje(items, personaje -> id, personaje -> posx, personaje -> posy);
-	}
-}*/
 void moverJugadores(t_list * entrenadores, t_list *items)
 {
 	int i = 0;
@@ -119,9 +104,6 @@ void moverJugadores(t_list * entrenadores, t_list *items)
 			sleep(1);
 			moverJugador(personaje, items, 25, 5);
 			personaje -> quantum++;
-
-			char o[2];
-			o[0] = personaje -> id;
 
 			nivel_gui_dibujar(items, 0);
 		}
@@ -160,7 +142,6 @@ void darRecurso(PokeNest * pokenest, t_list * items) {
 
 		t_pokemon * pokemon = list_get(pokenest->listaPokemons, 1);
 		list_add(entrenador ->pokemons, pokemon);
-		list_add(pokenest->pokemonsEntregados, pokemon);
 		list_remove(pokenest->listaPokemons, 1);
 		restarRecurso(items, pokenest->id);
 		entrenador ->objetivoActual++;
@@ -315,7 +296,7 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 
 t_entrenador* crearEntrenador(int file_descriptor){
 	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
-	entrenador->fd = file_descriptor;
+	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
 	return entrenador;
@@ -329,8 +310,8 @@ void eliminarEntrenador(int fd_entrenador){
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor){
 	t_queue* colaAux;
 	t_entrenador* entrenadorAux;
-	while(entrenadorAux = queue_pop(cola)){
-		if(entrenadorAux->fd == file_descriptor){
+	while(entrenadorAux == queue_pop(cola)){
+		if(entrenadorAux->id == file_descriptor){
 			liberarEntrenador(entrenadorAux);
 		} else {
 			queue_push(colaAux, entrenadorAux);
