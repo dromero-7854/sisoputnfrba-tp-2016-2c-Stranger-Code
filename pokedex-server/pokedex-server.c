@@ -104,6 +104,7 @@ int open_socket_connection(void) {
 	listenning_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	bind(listenning_socket,server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
+
 	return EXIT_SUCCESS;
 }
 
@@ -171,7 +172,7 @@ int read_and_set(void) {
 	BM_DATA_0 = BM_MAPPING_TABLE_1 + 1;
 	BM_DATA_1 = BM_DATA_0 + (DATA_SIZE - 1);
 
-	void * bitmap_ptr = (void *) osada_fs_ptr + (OSADA_BLOCK_SIZE * BITMAP_0);
+	void * bitmap_ptr = (void *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * BITMAP_0));
 	bitmap = bitarray_create_with_mode(bitmap_ptr, (BITMAP_SIZE * OSADA_BLOCK_SIZE), MSB_FIRST);
 
 	printf("----------------OSADA filesystem...\n"
@@ -216,8 +217,8 @@ void closure (char * dir) {
 int search_dir(const char * dir_name, int pb_pos) {
 	int node_pos = search_node(dir_name, pb_pos);
 	if (node_pos < 0) return node_pos;
-	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
-	file_table_ptr = file_table_ptr + (node_pos * OSADA_FILE_BLOCK_SIZE);
+	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+	file_table_ptr = file_table_ptr + node_pos;
 	if (file_table_ptr->state == DIRECTORY) {
 		return node_pos;
 	} else {
@@ -226,65 +227,72 @@ int search_dir(const char * dir_name, int pb_pos) {
 }
 
 int search_node(const char * node_name, int pb_pos) {
-	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
+	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	int file_block_number = 0;
-	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
-		if ((strcmp(file_table_ptr->fname, node_name) == 0) && file_table_ptr->parent_directory == pb_pos) {
-			break;
-		} else {
-			file_block_number++;
-			file_table_ptr = file_table_ptr + OSADA_FILE_BLOCK_SIZE;
+	int node_size, i;
+	char * fname = malloc(sizeof(char) * (OSADA_FILENAME_LENGTH + 1));
+	while ((file_block_number <= (FILE_BLOCKS_MOUNT - 1)) && (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY)) {
+		for (node_size = 0, i = 0; i < OSADA_FILENAME_LENGTH; i++) {
+			if ((file_table_ptr->fname)[i] == '\0')
+				break;
+			node_size++;
 		}
+		memcpy(fname, (file_table_ptr->fname), node_size);
+		fname[node_size] = '\0';
+		if ((strcmp(fname, node_name) == 0) && file_table_ptr->parent_directory == pb_pos)
+			break;
+		file_block_number++;
+		file_table_ptr++;
 	}
+	free(fname);
 	if (file_block_number > (FILE_BLOCKS_MOUNT - 1))
 		return -1;
 	return file_block_number;
 }
 
 int create_dir(const char * dir_name, int pb_pos) {
-	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
+	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	int file_block_number = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
-		if (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) {
-			file_block_number++;
-			file_table_ptr = file_table_ptr + OSADA_FILE_BLOCK_SIZE;
-		} else {
+		if (file_table_ptr->state == DELETED)
 			break;
-		}
+		file_block_number++;
+		file_table_ptr++;
 	}
+
 	osada_file * o_file = malloc(sizeof(osada_file));
 	o_file->state = DIRECTORY;
-	strcpy(o_file->fname, dir_name);
+	strcpy((char *)(o_file->fname), dir_name);
 	o_file->parent_directory = pb_pos;
 	o_file->file_size = 0;
 	o_file->lastmod = time(NULL);
 	o_file->first_block = 0;
-	memcpy(file_table_ptr, o_file, OSADA_FILE_BLOCK_SIZE);
+	memcpy(&file_table_ptr, &o_file, OSADA_FILE_BLOCK_SIZE);
 	free(o_file);
+
 	return file_block_number;
 }
 
 int create_node(const char * node_name, int pb_pos) {
-	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
+	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	int file_block_number = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
-		if (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) {
-			file_block_number++;
-			file_table_ptr = file_table_ptr + OSADA_FILE_BLOCK_SIZE;
-		} else {
+		if (file_table_ptr->state == DELETED)
 			break;
-		}
+		file_block_number++;
+		file_table_ptr++;
 	}
 
 	osada_file * o_file = malloc(sizeof(osada_file));
 	o_file->state = REGULAR;
-	strcpy(o_file->fname, node_name);
+	strcpy((char *)(o_file->fname), node_name);
 	o_file->parent_directory = pb_pos;
 	o_file->file_size = 0;
 	o_file->lastmod = time(NULL);
 	o_file->first_block = END_OF_FILE;
-	memcpy(file_table_ptr, o_file, OSADA_FILE_BLOCK_SIZE);
+	memcpy(&file_table_ptr, &o_file, OSADA_FILE_BLOCK_SIZE);
 	free(o_file);
+
 	return file_block_number;
 }
 
@@ -316,7 +324,6 @@ void process_request(int * client_socket) {
 		close(* client_socket);
 	}
 }
-
 
 void osada_mkdir(int * client_socket) {
 	uint8_t prot_path_size = 4;
@@ -379,23 +386,25 @@ void osada_readdir(int * client_socket) {
 	free(path);
 
 	t_list * node_list = list_create();
-	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
+	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 
 	char * node;
-	int node_size;
-	int buffer_size = 0;
-	int file_block_number = 0;
+	int node_size, i;
+	int file_block_number = 0, buffer_size = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
 		if ((file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) && file_table_ptr->parent_directory == pb_pos) {
-			node_size = strlen(file_table_ptr->fname);
-			buffer_size = buffer_size + node_size;
+			for (i = 0, node_size = 0; i < OSADA_FILENAME_LENGTH; i++) {
+				if ((file_table_ptr->fname)[i] == '\0') break;
+				node_size++;
+			}
 			node = malloc(sizeof(char) * (node_size + 1));
-			memcpy(node, file_table_ptr->fname, node_size);
+			memcpy(node, (file_table_ptr->fname), node_size);
 			node[node_size] = '\0';
+			buffer_size = buffer_size + node_size;
 			list_add(node_list, node);
 		}
 		file_block_number++;
-		file_table_ptr = file_table_ptr + OSADA_FILE_BLOCK_SIZE;
+		file_table_ptr++;
 	}
 
 	if (node_list->elements_count > 0) {
@@ -480,8 +489,8 @@ void osada_getattr(int * client_socket) {
 	// << sending response >>
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code;
-	osada_file * file_table_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0);
-	file_table_ptr = file_table_ptr + (node_pos * OSADA_FILE_BLOCK_SIZE);
+	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+	file_table_ptr = file_table_ptr + node_pos;
 	if (file_table_ptr->state == DIRECTORY) {
 		resp_code = RES_GETATTR_ISDIR;
 	} else if (file_table_ptr->state == REGULAR){
