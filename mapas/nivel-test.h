@@ -31,12 +31,12 @@ t_list *entrenadores;
 int quantum;
 
 typedef struct {
-	int fd;
+	//int fd;
 	int posx;
 	int posy;
 
 	bool movVert;
-	char id;
+	int id;
 	char estado;
 
 	char *proximoMapa;
@@ -71,13 +71,13 @@ typedef struct {
 
 typedef struct PokeNest {
 	char id;
+	char *nombrePokemon;
 	char posx;
 	char posy;
 	char cantidad;
 	t_queue * colaBloqueados;
 	t_pokemon_type tipo;
 	t_list* listaPokemons;
-	t_list * pokemonsEntregados;
 } PokeNest;
 
 metadata* conf_metadata;

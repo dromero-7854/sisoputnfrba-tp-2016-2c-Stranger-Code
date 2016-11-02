@@ -125,7 +125,7 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 }
 void matarEntrenador(t_entrenador * entrenador){
 
-	int i, j, k;
+	int i, j;
 	//Lo tengo que sacar de la lista de entrenadores
 	for(i=0; entrenador != list_get(entrenadores, i); i++);
 
@@ -136,18 +136,14 @@ void matarEntrenador(t_entrenador * entrenador){
 		t_pokemon * pokemon = list_get(entrenador ->pokemons, i);
 
 		for(j=0; j < list_size(listaPokenests); j++) {
+
 			PokeNest * pokenest = list_get(listaPokenests, j);
 
-			for(k=0; k < list_size(pokenest->pokemonsEntregados); k++) {
-				t_pokemon * pokemonEntregado = list_get(pokenest->pokemonsEntregados, k);
+			if(strcmp(pokenest->nombrePokemon, pokemon->species) == 0) {
 
-				if(pokemonEntregado == pokemon){
-					list_add(pokenest->listaPokemons, pokemon);
-					list_remove(pokenest->pokemonsEntregados, k);
-					pokenest->cantidad++;
-					//darRecurso(pokenest, items);
-					break;
-				}
+				list_add(pokenest->listaPokemons, pokemon);
+				pokenest->cantidad++;
+				break;
 			}
 		}
 	}
