@@ -231,16 +231,18 @@ int search_node(const char * node_name, int pb_pos) {
 	int file_block_number = 0;
 	int node_size, i;
 	char * fname = malloc(sizeof(char) * (OSADA_FILENAME_LENGTH + 1));
-	while ((file_block_number <= (FILE_BLOCKS_MOUNT - 1)) && (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY)) {
-		for (node_size = 0, i = 0; i < OSADA_FILENAME_LENGTH; i++) {
-			if ((file_table_ptr->fname)[i] == '\0')
+	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
+		if (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) {
+			for (node_size = 0, i = 0; i < OSADA_FILENAME_LENGTH; i++) {
+				if ((file_table_ptr->fname)[i] == '\0')
+					break;
+				node_size++;
+			}
+			memcpy(fname, (file_table_ptr->fname), node_size);
+			fname[node_size] = '\0';
+			if ((strcmp(fname, node_name) == 0) && file_table_ptr->parent_directory == pb_pos)
 				break;
-			node_size++;
 		}
-		memcpy(fname, (file_table_ptr->fname), node_size);
-		fname[node_size] = '\0';
-		if ((strcmp(fname, node_name) == 0) && file_table_ptr->parent_directory == pb_pos)
-			break;
 		file_block_number++;
 		file_table_ptr++;
 	}
@@ -261,13 +263,15 @@ int create_dir(const char * dir_name, int pb_pos) {
 	}
 
 	osada_file * o_file = malloc(sizeof(osada_file));
+	int dir_name_size = strlen(dir_name);
+	memcpy((char *)(o_file->fname), dir_name, dir_name_size);
+	if (dir_name_size < OSADA_FILENAME_LENGTH) o_file->fname[dir_name_size] = '\0';
 	o_file->state = DIRECTORY;
-	strcpy((char *)(o_file->fname), dir_name);
 	o_file->parent_directory = pb_pos;
 	o_file->file_size = 0;
 	o_file->lastmod = time(NULL);
 	o_file->first_block = 0;
-	memcpy(&file_table_ptr, &o_file, OSADA_FILE_BLOCK_SIZE);
+	memcpy(file_table_ptr, o_file, sizeof(osada_file));
 	free(o_file);
 
 	return file_block_number;
@@ -290,7 +294,7 @@ int create_node(const char * node_name, int pb_pos) {
 	o_file->file_size = 0;
 	o_file->lastmod = time(NULL);
 	o_file->first_block = END_OF_FILE;
-	memcpy(&file_table_ptr, &o_file, OSADA_FILE_BLOCK_SIZE);
+	memcpy(file_table_ptr, o_file, sizeof(osada_file));
 	free(o_file);
 
 	return file_block_number;
@@ -331,7 +335,7 @@ void osada_mkdir(int * client_socket) {
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
-	char * path = malloc(req_path_size + 1);
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
@@ -368,7 +372,7 @@ void osada_readdir(int * client_socket) {
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
-	char * path = malloc(req_path_size + 1);
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
@@ -408,7 +412,7 @@ void osada_readdir(int * client_socket) {
 	}
 
 	if (node_list->elements_count > 0) {
-		char * buffer = malloc(buffer_size + node_list->elements_count + 1);
+		char * buffer = malloc(sizeof(char) * (buffer_size + node_list->elements_count + 1));
 		int index = 0;
 		node = list_get(node_list, index);
 		node_size = strlen(node);
@@ -460,7 +464,7 @@ void osada_getattr(int * client_socket) {
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
-	char * path = malloc(req_path_size + 1);
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
@@ -509,7 +513,7 @@ void osada_mknod(int * client_socket) {
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
-	char * path = malloc(req_path_size + 1);
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
@@ -547,7 +551,7 @@ void osada_write(int * client_socket) {
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
-	char * path = malloc(req_path_size + 1);
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
@@ -557,7 +561,7 @@ void osada_write(int * client_socket) {
 	if (recv(* client_socket, &req_buf_size, prot_buf_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
-	char * buf = malloc(req_buf_size);
+	char * buf = malloc(sizeof(char) * (req_buf_size));
 	if (recv(* client_socket, buf, req_buf_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
