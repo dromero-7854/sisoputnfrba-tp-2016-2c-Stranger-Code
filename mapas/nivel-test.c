@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     nivel_gui_get_area_nivel(&rows, &cols);
 
 
-    crearJugadores(entrenadores, items);
+    //crearJugadores(entrenadores, items);
 
 
 	nivel_gui_dibujar(items, "Stranger Code");
@@ -80,18 +80,8 @@ int main(int argc, char* argv[]) {
 	char *rutaPokenests;
 	rutaPokenests = getRutaPokenests(argv[2], argv[1]);
 	t_pkmn_factory* fabrica = create_pkmn_factory();
-	DIR* d;
-	struct dirent *directorio;
-	d = opendir(rutaPokenests);
-	while((directorio = readdir(d)) != NULL){
-		if((!strcmp(directorio->d_name, ".")) || (!strcmp(directorio->d_name, ".."))) continue;
-		char* rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
-		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
-		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
-		list_add(listaPokenests, pokenest);
-	}
-	closedir(d);
+	cargarPokenests(rutaPokenests, fabrica);
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
 }
@@ -344,4 +334,19 @@ void liberarEntrenador(t_entrenador* entrenador){
 	free(entrenador->objetivos);
 	free(entrenador->proximoMapa);
 	free(entrenador);
+}
+
+void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
+	DIR* d;
+	struct dirent *directorio;
+	d = opendir(rutaPokenests);
+	while((directorio = readdir(d)) != NULL){
+		if((!strcmp(directorio->d_name, ".")) || (!strcmp(directorio->d_name, ".."))) continue;
+		char* rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
+		PokeNest* pokenest = crearPokenest(rutaPokemon);
+
+		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
+		list_add(listaPokenests, pokenest);
+	}
+	closedir(d);
 }

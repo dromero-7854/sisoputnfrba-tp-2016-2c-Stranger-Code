@@ -84,4 +84,8 @@ metadata* conf_metadata;
 
 t_entrenador* crearEntrenador(int file_descriptor);
 void liberarEntrenador();
+void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica);
+void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor);
+void eliminarEntrenador(int fd_entrenador);
+
 #endif /* NIVEL_TEST_H_ */

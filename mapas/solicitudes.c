@@ -13,7 +13,7 @@
 
 int atenderSolicitud(t_entrenador* entrenador){
 	int recibidos;
-	uint32_t header, eje;
+	uint32_t header, direccion;
 	int capturo_pokemon;
 	recibidos = recv(entrenador->fd, &header, sizeof(uint32_t), 0);
 
@@ -34,11 +34,19 @@ int atenderSolicitud(t_entrenador* entrenador){
 	}
 	case NOTIFICA_MOVIMIENTO:
 	{
-		recv(entrenador->fd, &eje, sizeof(uint32_t), 0);
-		if (eje == 0){
-			entrenador->posx++;
-		} else {
+		recv(entrenador->fd, &direccion, sizeof(uint32_t), 0);
+		switch(direccion){
+		case UP:
+			entrenador->posy--;
+		case DOWN:
 			entrenador->posy++;
+		case RIGHT:
+			entrenador->posx++;
+		case LEFT:
+			entrenador->posx--;
+		default:
+			fprintf(stderr, "no se recibio una direccion adecuada");
+			//log_error
 		}
 		capturo_pokemon = 0;
 	}
