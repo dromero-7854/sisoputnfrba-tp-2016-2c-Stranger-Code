@@ -43,10 +43,13 @@ int main(int argc, char** argv){
 	t_map* mapa = coach_next_map(entrenador);
 	while(mapa != NULL){
 		log_info(logger, "Conectando con el mapa: %s", mapa->name);
-		conectar_entrenador_a_mapa(entrenador, mapa);
+		conectar_entrenador_mapa(entrenador, mapa);
 		log_info(logger, "Conexión establecida con el mapa: %s", mapa->name);
 		completar_mapa(logger, mapa, entrenador);
-		//desconectar_mapa(current_mapa);
+		log_info(logger, "Desconectando al entrenador del mapa: %s", mapa->name);
+		desconectar_entrenador_mapa(entrenador, mapa);
+		log_info(logger, "Desconexión éxitosa del mapa: %s", mapa->name);
+
 		mapa = coach_next_map(entrenador);
 	}
 

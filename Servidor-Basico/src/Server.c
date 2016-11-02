@@ -10,11 +10,12 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
-
+#include "Conexion/conexion.h"
 
 #define PUERTO "6667"
 #define BACKLOG 5			// Define cuantas conexiones vamos a mantener pendientes al mismo tiempo
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
+
 
 int main(){
 
@@ -102,11 +103,34 @@ int main(){
 
 	printf("Cliente conectado. Esperando mensajes:\n");
 
-	while (status != 0){
+	/*while (status != 0){
 		status = recv(socketCliente, (void*) package, PACKAGESIZE, 0);
 		if (status != 0) printf("%s", package);
 
+	}*/
+	t_connection* conn;
+	uint8_t operation_code;
+	char* message;
+
+	conn = connection_create("127.0.0.1", PUERTO);
+	conn->socket =  socketCliente;
+
+	while (status != 0){
+		status = connection_recv(conn, &operation_code, &message);
+		if (status != 0){
+			printf("Operacion: %d - Mensaje: %s\n", operation_code, message);
+			t_coor* coor = (t_coor*) malloc(sizeof(t_coor));
+			coor->x = 1;
+			coor->y = 1;
+
+			printf("Enviando... -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_POKENEST, coor->x, coor->y);
+			connection_send(conn, OC_UBICACION_POKENEST, coor);
+			printf("Enviado OK! -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_POKENEST, coor->x, coor->y);
+			free(coor);
+		}
+
 	}
+
 
 	/*
 	 * 	Terminado el intercambio de paquetes, cerramos todas las conexiones y nos vamos a mirar Game of Thrones, que seguro nos vamos a divertir mas...

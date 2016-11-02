@@ -60,3 +60,14 @@ t_pokemon* map_next_pokemon(t_map* self){
 		return NULL;
 	}
 }
+
+int map_locate_pokemon(t_map *mapa, t_pokemon* pokemon){
+	//t_pokemon pokemon = map_get_current_pokemon(mapa);
+	//ubicar(  );
+
+	//setear las coordenadas de dicho pokemon, recibidas del mapa
+	pokemon->coor.x += 10;
+	pokemon->coor.y += 10;
+
+	return 0;
+}

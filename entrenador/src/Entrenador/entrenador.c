@@ -14,6 +14,7 @@ t_coach *coach_create(char *name, int life){
 	new->pokemons = list_create();
 	new->travel_sheet = list_create();
 	new->index_current_map = -1;
+
 	return new;
 }
 
@@ -36,4 +37,26 @@ t_map* coach_next_map(t_coach* self){
 	}else{
 		return NULL;
 	}
+}
+
+int coach_move_to_pokemon(t_coach* entrenador, t_pokemon* pokemon){
+	int last_movement = MOVE_RIGHT;
+	while( !coor_equals(entrenador->coor, pokemon->coor) ){
+		last_movement = calcular_movimiento(last_movement, entrenador->coor, pokemon->coor);
+
+		move_to(last_movement, entrenador);
+	}
+
+	return 0;
+}
+
+int coach_capture_pokemon(t_pokemon* pokemon){
+
+
+	return 0;
+}
+
+void coach_connect_to_map(t_coach* entrenador, t_map* mapa){
+	entrenador->conn = connection_create(mapa->ip, mapa->port);
+	connection_open(entrenador->conn);
 }

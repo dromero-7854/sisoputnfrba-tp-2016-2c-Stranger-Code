@@ -23,16 +23,17 @@ t_log* crear_log(char* nombreEntrenador, char* pathConfig) {
 
 int cargar_metadata(char* path, t_list* travel_sheet){
 	char* ip = "127.0.0.1";
-	char* port = "6700";
+	char* port = "6667";
 	t_map* map;
 	t_list* poke_list;
 
 	//travel_sheet = list_create();
 	list_add(travel_sheet, map_create("pueblo paleta", ip, port));
-    list_add(travel_sheet, map_create("algun otro pueblo", ip, port));
+	port = "7000";
+    /*list_add(travel_sheet, map_create("algun otro pueblo", ip, port));
     list_add(travel_sheet, map_create("el mejor pueblo", ip, port));
     list_add(travel_sheet, map_create("pueblo capital", ip, port));
-    list_add(travel_sheet, map_create("pueblo olvidado", ip, port));
+    list_add(travel_sheet, map_create("pueblo olvidado", ip, port));*/
 
 	map = find_map_by_name(travel_sheet, "pueblo paleta");
 	poke_list = map->pokemon_list;
@@ -43,10 +44,24 @@ int cargar_metadata(char* path, t_list* travel_sheet){
 	return 0;
 }
 
-int conectar_entrenador_a_mapa(t_coach* entrenador, t_map* mapa){
-	entrenador->coor.x = 0;
-	entrenador->coor.y = 0;
+int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
+	/*TODO decidir si la conexion debe colgar del entrenador o del mapa*/
+	/*t_connection* conn = connection_create(mapa->ip, mapa->port);
+	connection_open(conn);*/
+	coach_connect_to_map(entrenador, mapa);
+	uint8_t operation_code;
+	t_coor* coor;
+	connection_send(entrenador->conn, 4, "hola!");
+	connection_recv(entrenador->conn, &operation_code, &coor);
 
+	entrenador->coor.x = coor->x;
+	entrenador->coor.y = coor->y;
+
+	return 0;
+}
+
+int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
+	connection_destroy(entrenador->conn);
 	return 0;
 }
 
@@ -56,7 +71,7 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 	while(pokemon != NULL){
 		map_locate_pokemon(mapa, pokemon);
 		coach_move_to_pokemon(entrenador, pokemon);
-		//capturar_pokemon( pokemon );
+		coach_capture_pokemon(pokemon);
 		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d", pokemon->name, pokemon->coor.x, pokemon->coor.y);
 
 		pokemon = map_next_pokemon(mapa);
@@ -66,33 +81,11 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 	return 0;
 }
 
-int map_locate_pokemon(t_map *mapa, t_pokemon* pokemon){
-	//t_pokemon pokemon = map_get_current_pokemon(mapa);
-	//ubicar(  );
-
-	//setear las coordenadas de dicho pokemon, recibidas del mapa
-	pokemon->coor.x += 10;
-	pokemon->coor.y += 10;
-
-	return 0;
-}
-
 /*int ubicar(){
 	//realizar pedido al mapa de la ubicacion del pokemon
 
 	return 0;
 }*/
-
-int coach_move_to_pokemon(t_coach* entrenador, t_pokemon* pokemon){
-	int last_movement = MOVE_RIGHT;
-	while( !coor_equals(entrenador->coor, pokemon->coor) ){
-		last_movement = calcular_movimiento(last_movement, entrenador->coor, pokemon->coor);
-
-		move_to(last_movement, entrenador);
-	}
-
-	return 0;
-}
 
 int move_to(int movement, t_coach* entrenador){
 	char move[20];

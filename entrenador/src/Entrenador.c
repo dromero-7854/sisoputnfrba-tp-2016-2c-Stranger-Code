@@ -4,7 +4,7 @@
  * Esta la estructura básica que debe cumplir para recorrer los mapas y capturar los pokemones.
  * Se está desarrollando la parte de la conexion al mapa (servidor)
  */
-
+/*
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -32,17 +32,17 @@ typedef struct {
 
 typedef struct {
 	char *name;
-	char *simbol;
-	t_coor coor;
-} t_poke;
-
-typedef struct {
-	char *name;
 	char *ip;
 	char *port;
 	t_list *poke_list;
 	int current_poke;
 } t_mapa;
+
+typedef struct {
+	char *name;
+	char *simbol;
+	t_coor coor;
+} t_poke;
 
 static t_poke *poke_create(char *name, char *simbol){
 	t_poke *new = malloc( sizeof(t_poke) );
@@ -87,7 +87,7 @@ t_list* maps_list;
 t_coor current_coor;
 t_log* logger;
 
-int main(int argc, char** argv){
+int chau(int argc, char** argv){
 	if(argc!=3) {
 		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./Entrenador <nombre_entrenador> <ruta_archivo_metadata>\n");
 		exit(1);
@@ -284,6 +284,7 @@ int destroy_poke_list(t_list *poke_list){
 
 	return 0;
 }
+*/
 
 
 
@@ -301,62 +302,3 @@ int destroy_poke_list(t_list *poke_list){
 
 
 
-//TODO: este es un ejemplo de una conexion basica a un servidor. Se debe adaptar.
-int conexion(){
-	/*
-	 *  ¿Quien soy? ¿Donde estoy? ¿Existo?
-	 *  Estas y otras preguntas existenciales son resueltas getaddrinfo();
-	 *  Obtiene los datos de la direccion de red y lo guarda en serverInfo.
-	 */
-	struct addrinfo hints;
-	struct addrinfo *serverInfo;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;		// Permite que la maquina se encargue de verificar si usamos IPv4 o IPv6
-	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
-
-	getaddrinfo(IP, PUERTO, &hints, &serverInfo);	// Carga en serverInfo los datos de la conexion
-
-
-	/*
-	 * 	Obtiene un socket (un file descriptor -todo en linux es un archivo-), utilizando la estructura serverInfo que generamos antes.
-	 */
-	int serverSocket;
-	serverSocket = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
-
-	/*
-	 * 	Perfecto, ya tengo el medio para conectarme (el archivo), y ya se lo pedi al sistema.
-	 * 	Ahora me conecto!
-	 */
-	connect(serverSocket, serverInfo->ai_addr, serverInfo->ai_addrlen);
-	freeaddrinfo(serverInfo);	// No lo necesitamos mas
-
-	/*
-	 *	Estoy conectado! Ya solo me queda una cosa:
-	 *	Enviar datos!
-	 *
-	 *	Vamos a crear un paquete (en este caso solo un conjunto de caracteres) de size PACKAGESIZE, que le enviare al servidor.
-	 *	Aprovechando el standard input/output, guardamos en el paquete las cosas que ingrese el usuario en la consola.
-	 *	Ademas, contamos con la verificacion de que el usuario escriba "exit" para dejar de transmitir.
-	 */
-	int enviar = 1;
-	char message[PACKAGESIZE];
-
-	//llamanos a una función de commons
-	char* tiempo = temporal_get_string_time();
-	log_info(logger, "Conectado al servidor a las %s. Bienvenido al sistema, ya puede enviar mensajes. Escriba 'exit' para salir\n", tiempo);
-	free(tiempo);
-
-	while(enviar){
-		fgets(message, PACKAGESIZE, stdin);			// Lee una linea en el stdin (lo que escribimos en la consola) hasta encontrar un \n (y lo incluye) o llegar a PACKAGESIZE.
-		if (!strcmp(message,"exit\n")) enviar = 0;			// Chequeo que el usuario no quiera salir
-		if (enviar) send(serverSocket, message, strlen(message) + 1, 0); 	// Solo envio si el usuario no quiere salir.
-	}
-
-	/*
-	 *	Ahora solo me queda cerrar la conexion con un close();
-	 */
-	close(serverSocket);
-
-	return 0;
-}

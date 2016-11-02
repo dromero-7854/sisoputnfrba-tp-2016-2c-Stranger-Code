@@ -12,13 +12,19 @@
 #include <stdint.h>
 #include <netdb.h>
 #include <stddef.h>
-#include "../Coordenadas/coordenadas.h"
 
 #define OC_UBICACION_POKENEST 0
 #define OC_UBICAR_POKENEST 1
 #define OC_AVANZAR_POSICION 2
 #define OC_ATRAPAR_POKEMON 3
 #define OC_MENSAJE 4
+
+/** provisorio **/
+typedef struct {
+	int x;
+	int y;
+} t_coor;
+/****************/
 
 typedef struct {
 	char* ip;

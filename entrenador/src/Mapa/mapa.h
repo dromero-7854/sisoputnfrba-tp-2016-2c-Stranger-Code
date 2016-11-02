@@ -25,5 +25,6 @@ void map_destroy(t_map *self);
 void destroy_maps_list(t_list* maps_list);
 t_map* find_map_by_name(t_list *maps_list, char *name);
 t_pokemon* map_next_pokemon(t_map* self);
+int map_locate_pokemon(t_map *mapa, t_pokemon* pokemon);
 
 #endif /* SRC_MAPA_MAPA_H_ */
