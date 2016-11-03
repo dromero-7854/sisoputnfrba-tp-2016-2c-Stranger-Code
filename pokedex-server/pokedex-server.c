@@ -32,12 +32,14 @@
 #define RES_GETATTR_ISREG 2
 #define RES_GETATTR_ENOENT 3
 #define RES_WRITE_OK 1
+#define RES_READ_OK 1
+#define RES_TRUNCATE_OK 1
 
 int HEADER_SIZE, BITMAP_SIZE, MAPPING_TABLE_SIZE, DATA_SIZE;
 int HEADER_0, HEADER_1, BITMAP_0, BITMAP_1, FILE_TABLE_0, FILE_TABLE_1, MAPPING_TABLE_0, MAPPING_TABLE_1, DATA_0, DATA_1;
 int BM_HEADER_0, BM_HEADER_1, BM_BITMAP_0, BM_BITMAP_1, BM_FILE_TABLE_0, BM_FILE_TABLE_1, BM_MAPPING_TABLE_0, BM_MAPPING_TABLE_1, BM_DATA_0, BM_DATA_1;
-uint16_t ROOT = 0xFFFF;
-uint32_t END_OF_FILE = 0xFFFF;
+uint16_t ROOT = 0xffff;
+uint32_t END_OF_FILE = 0xffffffff;
 
 t_config * conf;
 int listenning_socket;
@@ -65,6 +67,8 @@ void osada_readdir(int *);
 void osada_getattr(int *);
 void osada_mknod(int *);
 void osada_write(int *);
+void osada_read(int *);
+void osada_truncate(int *);
 
 int main(int argc , char * argv[]) {
 	load_properties_file();
@@ -322,6 +326,12 @@ void process_request(int * client_socket) {
 		case 5:
 			osada_write(client_socket);
 			break;
+		case 6:
+			osada_read(client_socket);
+			break;
+		case 7:
+			osada_truncate(client_socket);
+			break;
 		default:
 			break;
 		}
@@ -343,7 +353,7 @@ void osada_mkdir(int * client_socket) {
 	printf("pokedex server: mkdir %s...\n", path);
 
 	int ft_pos;
-	int pb_pos = ROOT; // root
+	int pb_pos = ROOT;
 	char * dir = strtok(path,"/");
 	while (dir != NULL) {
 		ft_pos = search_dir(dir, pb_pos);
@@ -434,8 +444,8 @@ void osada_readdir(int * client_socket) {
 
 		// << sending response >>
 		uint8_t prot_resp_code_size = 1;
-		uint32_t prot_resp_size = 4;
 		uint8_t resp_code = RES_READDIR_ISDIR;
+		uint32_t prot_resp_size = 4;
 		uint32_t resp_size = (strlen(buffer) + 1);
 		void * resp = malloc(prot_resp_code_size + prot_resp_size + resp_size);
 		memcpy(resp, &resp_code, prot_resp_code_size);
@@ -472,7 +482,7 @@ void osada_getattr(int * client_socket) {
 	printf("pokedex server: getattr %s\n", path);
 
 	int node_pos;
-	int pb_pos = ROOT; // root
+	int pb_pos = ROOT;
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		node_pos = search_node(node, pb_pos);
@@ -491,18 +501,24 @@ void osada_getattr(int * client_socket) {
 	free(path);
 
 	// << sending response >>
+	// cod resp
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code;
+	// file size
+	uint8_t prot_file_size = 4;
+	uint32_t file_size = 0;
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	file_table_ptr = file_table_ptr + node_pos;
 	if (file_table_ptr->state == DIRECTORY) {
 		resp_code = RES_GETATTR_ISDIR;
 	} else if (file_table_ptr->state == REGULAR){
 		resp_code = RES_GETATTR_ISREG;
+		file_size = file_table_ptr->file_size;
 	}
-	void * resp = malloc(prot_resp_code_size);
+	void * resp = malloc(prot_resp_code_size + prot_file_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
-	write(* client_socket, resp, prot_resp_code_size);
+	memcpy(resp + prot_resp_code_size, &file_size, prot_file_size);
+	write(* client_socket, resp, prot_resp_code_size + prot_file_size);
 	free(resp);
 
 }
@@ -521,7 +537,7 @@ void osada_mknod(int * client_socket) {
 	printf("pokedex server: mknod %s...\n", path);
 
 	int ft_pos;
-	int pb_pos = ROOT; // root
+	int pb_pos = ROOT;
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		ft_pos = search_dir(node, pb_pos);
@@ -547,7 +563,7 @@ void osada_mknod(int * client_socket) {
 
 void osada_write(int * client_socket) {
 	uint8_t prot_path_size = 4;
-	uint8_t req_path_size;
+	uint32_t req_path_size;
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
@@ -578,7 +594,7 @@ void osada_write(int * client_socket) {
 	printf("pokedex server: write %s\n", path);
 
 	int node_pos;
-	int pb_pos = ROOT; // root
+	int pb_pos = ROOT;
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		node_pos = search_node(node, pb_pos);
@@ -637,3 +653,219 @@ void osada_write(int * client_socket) {
 	free(buf);
 	free(resp);
 }
+
+void osada_truncate(int * client_socket) {
+	uint8_t prot_path_size = 4;
+	uint32_t req_path_size;
+	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
+	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	path[req_path_size] = '\0';
+	uint8_t prot_size = 4;
+	uint32_t new_size;
+	if (recv(* client_socket, &new_size, prot_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	printf("pokedex server: truncate %s, size %d\n", path, new_size);
+
+	int node_pos;
+	int pb_pos = ROOT;
+	char * node = strtok(path,"/");
+	while (node != NULL) {
+		node_pos = search_node(node, pb_pos);
+		pb_pos = node_pos;
+		node = strtok(NULL, "/");
+	}
+
+	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
+	int old_size = node_ptr->file_size;
+
+	if (new_size > old_size) {
+		//
+		// adding file blocks
+		//
+		// getting the number of blocks that are necessary
+		int n_blocks = new_size / OSADA_BLOCK_SIZE;
+		if (n_blocks == 0 || (old_size % OSADA_BLOCK_SIZE) > 1) n_blocks++;
+		int mapping[n_blocks];
+		// pointing to the first block
+		osada_block_pointer * ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
+		osada_block_pointer * aux_ptr = ob_mapp_ptr + (node_ptr->first_block);
+		// mapping old blocks
+		int index = 0;
+		mapping[index] = (node_ptr->first_block);
+		index++;
+		while ((*aux_ptr) != END_OF_FILE) {
+			mapping[index] = (*aux_ptr);
+			index++;
+			aux_ptr = ob_mapp_ptr + (*aux_ptr);
+		}
+		// adding new blocks
+		int free_db = BM_DATA_0;
+		bool its_busy;
+		while ((index <= n_blocks - 1) && (free_db <= BM_DATA_1)) {
+			its_busy = bitarray_test_bit(bitmap, free_db);
+			if (!its_busy) {
+				mapping[index] = free_db - BM_DATA_0;
+				index++;
+			}
+			free_db++;
+		}
+		if (free_db > BM_MAPPING_TABLE_1) {
+			//
+			// TODO full disk
+			//
+		} else {
+			int i;
+			for (i = 0; i <= (n_blocks - 1); i++) {
+				bitarray_set_bit(bitmap, (BM_DATA_0 + mapping[i]));
+			}
+		}
+	} else if (new_size < old_size) {
+		//
+		// removing file blocks
+		//
+		// getting the old number of blocks that were necessary
+		int n_blocks = old_size / OSADA_BLOCK_SIZE;
+		if (n_blocks == 0 || (old_size % OSADA_BLOCK_SIZE) > 1) n_blocks++;
+		int mapping[n_blocks];
+		// mapping old file
+		osada_block_pointer * ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
+		osada_block_pointer * aux_ptr = ob_mapp_ptr + (node_ptr->first_block);
+		// mapping old blocks
+		int index = 0;
+		mapping[index] = (node_ptr->first_block);
+		index++;
+		while ((*aux_ptr) != END_OF_FILE) {
+			mapping[index] = (*aux_ptr);
+			index++;
+			aux_ptr = ob_mapp_ptr + (*aux_ptr);
+		}
+		// releasing remaining blocks
+		// getting the number of blocks that are necessary
+		n_blocks = new_size / OSADA_BLOCK_SIZE;
+		if ((new_size % OSADA_BLOCK_SIZE) > 1) n_blocks++;
+		while(index > (n_blocks - 1)) {
+			bitarray_clean_bit(bitmap, (BM_DATA_0 + mapping[index]));
+			index--;
+		}
+		aux_ptr = ob_mapp_ptr + mapping[index];
+		* aux_ptr = END_OF_FILE;
+	}
+
+	// << sending response >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = RES_TRUNCATE_OK;
+	void * resp = malloc(prot_resp_code_size);
+	memcpy(resp, &resp_code, prot_resp_code_size);
+	write(* client_socket, resp, prot_resp_code_size);
+	free(path);
+	free(resp);
+
+}
+
+void osada_read(int * client_socket) {
+	uint8_t prot_path_size = 4;
+	uint32_t req_path_size;
+	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
+	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	path[req_path_size] = '\0';
+	uint8_t prot_size = 4;
+	uint32_t size;
+	if (recv(* client_socket, &size, prot_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	uint8_t prot_offset = 4;
+	uint32_t offset;
+	if (recv(* client_socket, &offset, prot_offset, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	printf("pokedex server: read %s, size %d, offset %d\n", path, size, offset);
+
+	int node_pos;
+	int pb_pos = ROOT;
+	char * node = strtok(path,"/");
+	while (node != NULL) {
+		node_pos = search_node(node, pb_pos);
+		pb_pos = node_pos;
+		node = strtok(NULL, "/");
+	}
+
+	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
+	int file_size = (node_ptr->file_size);
+
+	int bytes_transferred = 0;
+	// TODO change to void *
+	char * buff;
+
+	if (offset < file_size) {
+		if (offset + size > file_size)
+			size = file_size - offset;
+
+		// getting the number of blocks that are necessary
+		int n_blocks = file_size / OSADA_BLOCK_SIZE;
+		if (n_blocks == 0 || (file_size % OSADA_BLOCK_SIZE) > 1) n_blocks++;
+		int mapping[n_blocks];
+		// mapping file
+		osada_block_pointer * ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
+		osada_block_pointer * aux_ptr = ob_mapp_ptr + (node_ptr->first_block);
+		// mapping blocks
+		int index = 0;
+		mapping[index] = (node_ptr->first_block);
+		index++;
+		while ((*aux_ptr) != END_OF_FILE) {
+			mapping[index] = (*aux_ptr);
+			index++;
+			aux_ptr = ob_mapp_ptr + (*aux_ptr);
+		}
+
+		// getting bytes
+		buff = malloc(size);
+		osada_block * data_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * DATA_0));
+
+		osada_block * aux_data_ptr;
+		int buff_index = 0;
+		int pending = size;
+		int to_transfer;
+		index = offset / OSADA_BLOCK_SIZE;
+		do {
+			aux_data_ptr = data_ptr + mapping[index];
+			if (pending >= OSADA_BLOCK_SIZE) {
+				to_transfer = OSADA_BLOCK_SIZE;
+				pending = pending - OSADA_BLOCK_SIZE;
+			} else {
+				to_transfer = pending;
+				pending = 0;
+			}
+			memcpy(buff + buff_index, aux_data_ptr, to_transfer);
+			buff_index = buff_index + to_transfer;
+			bytes_transferred = bytes_transferred + to_transfer;
+			index++;
+		} while (bytes_transferred < size);
+
+	}
+
+	// << sending response >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = RES_READ_OK;
+	uint8_t prot_bytes_transferred_size = 4;
+	void * resp = malloc(prot_resp_code_size + prot_bytes_transferred_size + bytes_transferred);
+	memcpy(resp, &resp_code, prot_resp_code_size);
+	memcpy(resp + prot_resp_code_size, &bytes_transferred, prot_bytes_transferred_size);
+	if (bytes_transferred > 0) {
+		memcpy(resp + prot_resp_code_size + prot_bytes_transferred_size, buff, bytes_transferred);
+		free(buff);
+	}
+	write(* client_socket, resp, prot_resp_code_size + prot_bytes_transferred_size + bytes_transferred);
+	free(resp);
+}
+
