@@ -75,12 +75,12 @@ static int pk_mkdir(const char * path, mode_t mode) {
 	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 	}
+	close_connection(&server_socket);
 
 	if (resp_code == RES_MKDIR_OK) {
 		// TODO
 	}
 
-	close_connection(&server_socket);
 	return 0;
 }
 
@@ -116,12 +116,13 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
 		}
 		// file size
-		uint32_t prot_file_size = 4;
+		uint32_t prot_resp_file_size = 4;
 		uint32_t file_size;
-		if (recv(server_socket, &file_size, prot_file_size, 0) <= 0) {
+		if (recv(server_socket, &file_size, prot_resp_file_size, 0) <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
 			return 1;
 		}
+		close_connection(&server_socket);
 
 		if (resp_code == RES_GETATTR_ISDIR) {
 			stbuf->st_mode = S_IFDIR | 0755;
@@ -134,21 +135,17 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 			res = -ENOENT;
 		}
 
-		close_connection(&server_socket);
 	} else {
 		res = -ENOENT;
 	}
 	return res;
 }
 
-
 static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info * fi) {
 	(void) offset;
 	(void) fi;
-
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
-
 	int server_socket;
 	open_connection(&server_socket);
 
@@ -188,6 +185,8 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 			printf("pokedex client: server %d disconnected...\n", server_socket);
 			return 1;
 		}
+		close_connection(&server_socket);
+
 		char * dir = strtok(resp, ",");
 		int dir_len;
 		while (dir != NULL) {
@@ -198,14 +197,14 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 			dir = strtok (NULL, ",");
 		}
 		free(resp);
+	} else {
+		close_connection(&server_socket);
 	}
 
-	close_connection(&server_socket);
 	return 0;
 }
 
 static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
-
 	int server_socket;
 	open_connection(&server_socket);
 
@@ -230,18 +229,19 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 	}
+	close_connection(&server_socket);
 
 	if (resp_code == RES_MKNOD_OK) {
 		// TODO
 	}
 
-	close_connection(&server_socket);
 	return 0;
 }
 
 static int pk_truncate(const char * path, off_t offset) {
 	int server_socket;
 	open_connection(&server_socket);
+
 	// << sending message >>
 	// operation code
 	uint8_t prot_ope_code_size = 1;
@@ -268,6 +268,7 @@ static int pk_truncate(const char * path, off_t offset) {
 	if (resp_code == RES_TRUNCATE_OK) {
 			// TODO
 	}
+
 	return 0;
 }
 
@@ -288,7 +289,6 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 	// offset
 	uint8_t prot_offset = 4;
 	uint32_t req_offset = offset;
-
 	char * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size + prot_size + prot_offset);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
@@ -323,8 +323,8 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 		memcpy(buf, file_content, bytes_transferred);
 		free(file_content);
 	}
-	close_connection(&server_socket);
 
+	close_connection(&server_socket);
 	return bytes_transferred;
 }
 
@@ -332,6 +332,7 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 	int retstat;
 	int server_socket;
 	open_connection(&server_socket);
+
 	// << sending message >>
 	// operation code
 	uint8_t prot_ope_code_size = 1;
@@ -375,6 +376,7 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 	} else {
 		retstat = 0;
 	}
+
 	return retstat;
 }
 
@@ -403,7 +405,6 @@ static int pk_open(const char * path, struct fuse_file_info * fi) {
 	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 	}
-
 	close_connection(&server_socket);
 
 	if (resp_code != RES_GETATTR_ISREG)

@@ -188,13 +188,13 @@ int read_and_set(void) {
 			"---------------------file table size: %d\n"
 			"---------------------mapping table size: %d\n"
 			"---------------------data table size: %d\n"
-			"----------------[tables 0(ini) 1(end)]\n"
+			"----------------[tables 0(start) 1(end)]\n"
 			"---------------------header 0: %d, 1: %d\n"
 			"---------------------bitmap 0: %d, 1: %d\n"
 			"---------------------file table 0: %d, 1: %d\n"
 			"---------------------mapping table 0: %d, 1: %d\n"
 			"---------------------data table 0: %d, 1: %d\n"
-			"----------------[bitmap 0 (ini) 1 (end)]\n"
+			"----------------[bitmap 0 (start) 1 (end)]\n"
 			"---------------------header 0: %d, 1: %d\n"
 			"---------------------bitmap 0: %d, 1: %d\n"
 			"---------------------file table 0: %d, 1: %d\n"
@@ -242,7 +242,7 @@ int search_node(const char * node_name, int pb_pos) {
 					break;
 				node_size++;
 			}
-			memcpy(fname, (file_table_ptr->fname), node_size);
+			memcpy(fname, (char *)(file_table_ptr->fname), node_size);
 			fname[node_size] = '\0';
 			if ((strcmp(fname, node_name) == 0) && file_table_ptr->parent_directory == pb_pos)
 				break;
@@ -290,10 +290,11 @@ int create_node(const char * node_name, int pb_pos) {
 		file_block_number++;
 		file_table_ptr++;
 	}
-
 	osada_file * o_file = malloc(sizeof(osada_file));
+	int node_name_size = strlen(node_name);
+	memcpy((char *)(o_file->fname), node_name, node_name_size);
+	if (node_name_size < OSADA_FILENAME_LENGTH) o_file->fname[node_name_size] = '\0';
 	o_file->state = REGULAR;
-	strcpy((char *)(o_file->fname), node_name);
 	o_file->parent_directory = pb_pos;
 	o_file->file_size = 0;
 	o_file->lastmod = time(NULL);
@@ -340,11 +341,14 @@ void process_request(int * client_socket) {
 }
 
 void osada_mkdir(int * client_socket) {
+	// << receiving message >>
+	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
@@ -368,6 +372,7 @@ void osada_mkdir(int * client_socket) {
 	free(path);
 
 	// << sending response >>
+	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = RES_MKDIR_OK;
 	void * resp = malloc(prot_resp_code_size);
@@ -377,11 +382,14 @@ void osada_mkdir(int * client_socket) {
 }
 
 void osada_readdir(int * client_socket) {
+	// << receiving message >>
+	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
@@ -443,8 +451,10 @@ void osada_readdir(int * client_socket) {
 		list_destroy_and_destroy_elements(node_list, &closure);
 
 		// << sending response >>
+		// response code
 		uint8_t prot_resp_code_size = 1;
 		uint8_t resp_code = RES_READDIR_ISDIR;
+		// response size
 		uint32_t prot_resp_size = 4;
 		uint32_t resp_size = (strlen(buffer) + 1);
 		void * resp = malloc(prot_resp_code_size + prot_resp_size + resp_size);
@@ -453,12 +463,12 @@ void osada_readdir(int * client_socket) {
 		memcpy(resp + prot_resp_code_size + prot_resp_size, buffer, resp_size);
 		write(* client_socket, resp, prot_resp_code_size + prot_resp_size + resp_size);
 		free(resp);
-
 		free(buffer);
 	} else {
 		list_destroy(node_list);
 
 		// << sending response >>
+		// response code
 		uint8_t prot_resp_code_size = 1;
 		uint8_t resp_code = RES_READDIR_ISEMPTYDIR;
 		void * resp = malloc(prot_resp_code_size);
@@ -469,11 +479,14 @@ void osada_readdir(int * client_socket) {
 }
 
 void osada_getattr(int * client_socket) {
+	// << receiving message >>
+	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
@@ -488,6 +501,7 @@ void osada_getattr(int * client_socket) {
 		node_pos = search_node(node, pb_pos);
 		if (node_pos < 0) {
 			// << sending response >>
+			// response code
 			uint8_t prot_resp_code_size = 1;
 			uint8_t resp_code = RES_GETATTR_ENOENT;
 			void * resp = malloc(prot_resp_code_size);
@@ -501,11 +515,11 @@ void osada_getattr(int * client_socket) {
 	free(path);
 
 	// << sending response >>
-	// cod resp
+	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code;
 	// file size
-	uint8_t prot_file_size = 4;
+	uint8_t prot_resp_file_size = 4;
 	uint32_t file_size = 0;
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	file_table_ptr = file_table_ptr + node_pos;
@@ -515,20 +529,23 @@ void osada_getattr(int * client_socket) {
 		resp_code = RES_GETATTR_ISREG;
 		file_size = file_table_ptr->file_size;
 	}
-	void * resp = malloc(prot_resp_code_size + prot_file_size);
+	void * resp = malloc(prot_resp_code_size + prot_resp_file_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
-	memcpy(resp + prot_resp_code_size, &file_size, prot_file_size);
-	write(* client_socket, resp, prot_resp_code_size + prot_file_size);
+	memcpy(resp + prot_resp_code_size, &file_size, prot_resp_file_size);
+	write(* client_socket, resp, prot_resp_code_size + prot_resp_file_size);
 	free(resp);
 
 }
 
 void osada_mknod(int * client_socket) {
+	// << receiving message >>
+	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
@@ -552,6 +569,7 @@ void osada_mknod(int * client_socket) {
 	free(path);
 
 	// << sending response >>
+	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = RES_MKNOD_OK;
 	void * resp = malloc(prot_resp_code_size);
