@@ -799,6 +799,7 @@ void osada_read(int * client_socket) {
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
+	free(path);
 
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
 	int file_size = (node_ptr->file_size);
@@ -863,9 +864,9 @@ void osada_read(int * client_socket) {
 	memcpy(resp + prot_resp_code_size, &bytes_transferred, prot_bytes_transferred_size);
 	if (bytes_transferred > 0) {
 		memcpy(resp + prot_resp_code_size + prot_bytes_transferred_size, buff, bytes_transferred);
-		free(buff);
 	}
 	write(* client_socket, resp, prot_resp_code_size + prot_bytes_transferred_size + bytes_transferred);
 	free(resp);
+	free(buff);
 }
 

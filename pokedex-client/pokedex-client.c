@@ -313,13 +313,13 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 	}
 	if (bytes_transferred > 0) {
 		char * file_content = malloc(bytes_transferred);
-		if (recv(server_socket, file_content, bytes_transferred, 0)) {
+		if (recv(server_socket, file_content, bytes_transferred, 0) <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
 			return 1;
 		}
 		memcpy(buf, file_content, bytes_transferred);
 	}
-
+	close_connection(&server_socket);
 	return bytes_transferred;
 }
 
