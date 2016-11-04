@@ -769,21 +769,26 @@ void osada_truncate(int * client_socket) {
 }
 
 void osada_read(int * client_socket) {
+	// << receiving message >>
+	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
 	path[req_path_size] = '\0';
+	// size (amount of bytes to read)
 	uint8_t prot_size = 4;
 	uint32_t size;
 	if (recv(* client_socket, &size, prot_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// offset
 	uint8_t prot_offset = 4;
 	uint32_t offset;
 	if (recv(* client_socket, &offset, prot_offset, 0) <= 0) {
@@ -791,6 +796,7 @@ void osada_read(int * client_socket) {
 	}
 	printf("pokedex server: read %s, size %d, offset %d\n", path, size, offset);
 
+	// search file location
 	int node_pos;
 	int pb_pos = ROOT;
 	char * node = strtok(path,"/");
@@ -801,45 +807,29 @@ void osada_read(int * client_socket) {
 	}
 	free(path);
 
+	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
+
 	int file_size = (node_ptr->file_size);
-
 	int bytes_transferred = 0;
-	// TODO change to void *
-	char * buff;
-
+	void * buff;
 	if (offset < file_size) {
 		if (offset + size > file_size)
 			size = file_size - offset;
 
-		// getting the number of blocks that are necessary
-		int n_blocks = file_size / OSADA_BLOCK_SIZE;
-		if (n_blocks == 0 || (file_size % OSADA_BLOCK_SIZE) > 1) n_blocks++;
-		int mapping[n_blocks];
 		// mapping file
-		osada_block_pointer * ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
-		osada_block_pointer * aux_ptr = ob_mapp_ptr + (node_ptr->first_block);
-		// mapping blocks
-		int index = 0;
-		mapping[index] = (node_ptr->first_block);
-		index++;
-		while ((*aux_ptr) != END_OF_FILE) {
-			mapping[index] = (*aux_ptr);
-			index++;
-			aux_ptr = ob_mapp_ptr + (*aux_ptr);
-		}
+		osada_block_pointer * map_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
+		osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
+		osada_block * data_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * DATA_0));
+		osada_block * aux_data_ptr;
 
 		// getting bytes
 		buff = malloc(size);
-		osada_block * data_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * DATA_0));
-
-		osada_block * aux_data_ptr;
-		int buff_index = 0;
+		int buff_pos = 0;
 		int pending = size;
 		int to_transfer;
-		index = offset / OSADA_BLOCK_SIZE;
 		do {
-			aux_data_ptr = data_ptr + mapping[index];
+			aux_data_ptr = data_ptr + (* aux_map_ptr);
 			if (pending >= OSADA_BLOCK_SIZE) {
 				to_transfer = OSADA_BLOCK_SIZE;
 				pending = pending - OSADA_BLOCK_SIZE;
@@ -847,21 +837,26 @@ void osada_read(int * client_socket) {
 				to_transfer = pending;
 				pending = 0;
 			}
-			memcpy(buff + buff_index, aux_data_ptr, to_transfer);
-			buff_index = buff_index + to_transfer;
+			memcpy(buff + buff_pos, aux_data_ptr, to_transfer);
+
+			buff_pos = buff_pos + to_transfer;
 			bytes_transferred = bytes_transferred + to_transfer;
-			index++;
-		} while (bytes_transferred < size);
+			aux_map_ptr = map_ptr + (* aux_map_ptr);
+
+		} while ((*aux_map_ptr) != END_OF_FILE && bytes_transferred < size);
 
 	}
 
 	// << sending response >>
+	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = RES_READ_OK;
+	// bytes transferred
 	uint8_t prot_bytes_transferred_size = 4;
 	void * resp = malloc(prot_resp_code_size + prot_bytes_transferred_size + bytes_transferred);
 	memcpy(resp, &resp_code, prot_resp_code_size);
 	memcpy(resp + prot_resp_code_size, &bytes_transferred, prot_bytes_transferred_size);
+	// content
 	if (bytes_transferred > 0) {
 		memcpy(resp + prot_resp_code_size + prot_bytes_transferred_size, buff, bytes_transferred);
 	}

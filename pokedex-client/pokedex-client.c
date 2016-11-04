@@ -274,6 +274,7 @@ static int pk_truncate(const char * path, off_t offset) {
 static int pk_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
 	int server_socket;
 	open_connection(&server_socket);
+
 	// << sending message >>
 	// operation code
 	uint8_t prot_ope_code_size = 1;
@@ -305,21 +306,25 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return 1;
 	}
-	uint8_t prot_bytes_transferred_size = 4;
+	// bytes transferred
+	uint8_t prot_resp_bytes_transferred_size = 4;
 	uint32_t bytes_transferred;
-	if (recv(server_socket, &bytes_transferred, prot_bytes_transferred_size, 0) <= 0) {
+	if (recv(server_socket, &bytes_transferred, prot_resp_bytes_transferred_size, 0) <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return 1;
 	}
 	if (bytes_transferred > 0) {
+		// content
 		char * file_content = malloc(bytes_transferred);
 		if (recv(server_socket, file_content, bytes_transferred, 0) <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
 			return 1;
 		}
 		memcpy(buf, file_content, bytes_transferred);
+		free(file_content);
 	}
 	close_connection(&server_socket);
+
 	return bytes_transferred;
 }
 
