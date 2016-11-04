@@ -580,37 +580,45 @@ void osada_mknod(int * client_socket) {
 }
 
 void osada_write(int * client_socket) {
+	// << receiving message >>
+	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
 	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
 	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
 	path[req_path_size] = '\0';
+	// buffer size
 	uint8_t prot_buf_size = 4;
 	uint32_t req_buf_size;
 	if (recv(* client_socket, &req_buf_size, prot_buf_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// buffer
 	char * buf = malloc(sizeof(char) * (req_buf_size));
 	if (recv(* client_socket, buf, req_buf_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// size (amount of bytes to write)
 	uint8_t prot_size = 4;
 	uint32_t size;
 	if (recv(* client_socket, &size, prot_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
+	// offset
 	uint8_t prot_offset = 4;
 	uint32_t offset;
 	if (recv(* client_socket, &offset, prot_offset, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
-	printf("pokedex server: write %s\n", path);
+	printf("pokedex server: write %s, size %d, offset %d\n", path, size, offset);
 
+	// search file location
 	int node_pos;
 	int pb_pos = ROOT;
 	char * node = strtok(path,"/");
@@ -831,6 +839,7 @@ void osada_read(int * client_socket) {
 	int file_size = (node_ptr->file_size);
 	int bytes_transferred = 0;
 	void * buff;
+
 	if (offset < file_size) {
 		if (offset + size > file_size)
 			size = file_size - offset;
@@ -839,15 +848,31 @@ void osada_read(int * client_socket) {
 		osada_block_pointer * map_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
 		osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
 		osada_block * data_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * DATA_0));
-		osada_block * aux_data_ptr;
+		char * aux_data_ptr;
+
+		// positioning the map pointer to the first block (considering the offset)
+		int movs = offset / OSADA_BLOCK_SIZE;
+		int i = movs;
+		while (i > 0) {
+			aux_map_ptr = map_ptr + (* aux_map_ptr);
+			i--;
+		}
 
 		// getting bytes
 		buff = malloc(size);
 		int buff_pos = 0;
-		int pending = size;
-		int to_transfer;
-		do {
-			aux_data_ptr = data_ptr + (* aux_map_ptr);
+		offset = offset - (OSADA_BLOCK_SIZE * movs);
+		int to_transfer = ((OSADA_BLOCK_SIZE - offset) >= size) ? size : OSADA_BLOCK_SIZE - offset;
+		int pending = size - to_transfer;
+
+		aux_data_ptr = (char *)(data_ptr + (* aux_map_ptr));
+		memcpy(buff, aux_data_ptr + offset, to_transfer);
+		buff_pos = buff_pos + to_transfer;
+		bytes_transferred = bytes_transferred + to_transfer;
+		aux_map_ptr = map_ptr + (* aux_map_ptr);
+
+		while ((*aux_map_ptr) != END_OF_FILE && bytes_transferred < size) {
+			aux_data_ptr = (char *)(data_ptr + (* aux_map_ptr));
 			if (pending >= OSADA_BLOCK_SIZE) {
 				to_transfer = OSADA_BLOCK_SIZE;
 				pending = pending - OSADA_BLOCK_SIZE;
@@ -856,13 +881,10 @@ void osada_read(int * client_socket) {
 				pending = 0;
 			}
 			memcpy(buff + buff_pos, aux_data_ptr, to_transfer);
-
 			buff_pos = buff_pos + to_transfer;
 			bytes_transferred = bytes_transferred + to_transfer;
 			aux_map_ptr = map_ptr + (* aux_map_ptr);
-
-		} while ((*aux_map_ptr) != END_OF_FILE && bytes_transferred < size);
-
+		}
 	}
 
 	// << sending response >>
