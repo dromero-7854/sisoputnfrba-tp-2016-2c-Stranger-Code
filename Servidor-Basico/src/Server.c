@@ -16,8 +16,12 @@
 #define BACKLOG 5			// Define cuantas conexiones vamos a mantener pendientes al mismo tiempo
 #define PACKAGESIZE 1024	// Define cual va a ser el size maximo del paquete a enviar
 
+t_coor* coorEntrenador;
+t_coor* coorPokemon;
 
 int main(){
+	coorEntrenador = (t_coor*) malloc(sizeof(t_coor));
+	coorPokemon = (t_coor*) malloc(sizeof(t_coor));
 
 	/*
 	 *  ¿Quien soy? ¿Donde estoy? ¿Existo?
@@ -110,25 +114,84 @@ int main(){
 	}*/
 	t_connection* conn;
 	uint8_t operation_code;
-	char* message;
+	void* message;
 
 	conn = connection_create("127.0.0.1", PUERTO);
 	conn->socket =  socketCliente;
 
 	while (status != 0){
+		// recibe una peticion, segun el codigo de operacion casteamos el mensaje y respondemos la peticion
 		status = connection_recv(conn, &operation_code, &message);
 		if (status != 0){
-			printf("Operacion: %d - Mensaje: %s\n", operation_code, message);
-			t_coor* coor = (t_coor*) malloc(sizeof(t_coor));
-			coor->x = 1;
-			coor->y = 1;
+			printf("Operacion: %d\n - Mensaje: %s\n", operation_code, (char*)message);
 
-			printf("Enviando... -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_POKENEST, coor->x, coor->y);
-			connection_send(conn, OC_UBICACION_POKENEST, coor);
-			printf("Enviado OK! -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_POKENEST, coor->x, coor->y);
-			free(coor);
+			switch (operation_code) {
+			// peticion para ubucar a un nuevo entrenador y devolver su posicion.
+				case OC_UBICAR_ENTRENADOR:
+					coorEntrenador->x = 1;
+					coorEntrenador->y = 1;
+
+					printf("Enviando... -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_ENTRENADOR, coorEntrenador->x, coorEntrenador->y);
+					connection_send(conn, OC_UBICACION_ENTRENADOR, coorEntrenador);
+					printf("Enviado OK! -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_ENTRENADOR, coorEntrenador->x, coorEntrenador->y);
+					break;
+			// peticion para ubicar a un pokemon/pokenest y devuelve su posicion
+				case OC_UBICAR_POKENEST:
+					if(*(char*)message == 'P'){
+						coorPokemon->x = 15;
+						coorPokemon->y = 15;
+					} else if(*(char*)message == 'R'){
+						coorPokemon->x = 16;
+						coorPokemon->y = 20;
+					} else if(*(char*)message == 'B'){
+						coorPokemon->x = 29;
+						coorPokemon->y = 29;
+					}
+
+					printf("Enviando... -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_POKENEST, coorPokemon->x, coorPokemon->y);
+					connection_send(conn, OC_UBICACION_POKENEST, coorPokemon);
+					printf("Enviado OK! -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_POKENEST, coorPokemon->x, coorPokemon->y);
+					break;
+			// peticion para mover a un entrenador y devuelve su nueva posicion
+				case OC_AVANZAR_POSICION:
+					//int* movement = (int*) message;
+
+					switch (*(int*)message) {
+						case MOVE_UP:
+							//sprintf(move, "ARRIBA");
+							coorEntrenador->y--;
+							break;
+						case MOVE_DOWN:
+							//sprintf(move, "ABAJO");
+							coorEntrenador->y++;
+							break;
+						case MOVE_RIGHT:
+							//sprintf(move, "DERECHA");
+							coorEntrenador->x++;
+							break;
+						case MOVE_LEFT:
+							//sprintf(move, "IZQUIERDA");
+							coorEntrenador->x--;
+							break;
+					}
+
+					printf("Enviando... -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_ENTRENADOR, coorEntrenador->x, coorEntrenador->y);
+					connection_send(conn, OC_UBICACION_ENTRENADOR, coorEntrenador);
+					printf("Enviado OK! -> Operacion: %d - Mensaje: Coor X=%d Coor Y=%d\n", OC_UBICACION_ENTRENADOR, coorEntrenador->x, coorEntrenador->y);
+					break;
+			// peticion para atrapar un pokemon
+				case OC_ATRAPAR_POKEMON:
+					//char* mensaje = malloc(20);
+					//mensaje = "pokemon atrapado";
+					printf("Enviando... -> Operacion: %d - Mensaje: pokemon atrapado\n", OC_MENSAJE);
+					connection_send(conn, OC_MENSAJE, "pokemon atrapado");
+					printf("Enviado OK! -> Operacion: %d - Mensaje: pokemon atrapado\n", OC_MENSAJE);
+					//free(mensaje);
+					break;
+				default:
+					break;
+			}
 		}
-
 	}
 
 
@@ -139,6 +202,8 @@ int main(){
 	 * 																					~ Divertido es Disney ~
 	 *
 	 */
+	free(coorEntrenador);
+	free(coorPokemon);
 	close(socketCliente);
 	close(listenningSocket);
 

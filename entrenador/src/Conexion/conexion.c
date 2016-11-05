@@ -50,13 +50,15 @@ int connection_send(t_connection* connection, uint8_t operation_code, void* mess
 
 	switch ((int)operation_code) {
 		case OC_UBICACION_POKENEST:
+		case OC_UBICACION_ENTRENADOR:
 			message_size_value = sizeof(t_coor);
 			break;
 		case OC_UBICAR_POKENEST:
+		case OC_UBICAR_ENTRENADOR:
 		case OC_AVANZAR_POSICION:
 		case OC_ATRAPAR_POKEMON:
 		case OC_MENSAJE:
-			message_size_value = sizeof(message);
+			message_size_value = sizeof(*message);
 			break;
 		default:
 			printf("ERROR: Socket %d, Invalid operation code...\n", connection->socket);
@@ -97,18 +99,20 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 		if (status <= 0) {
 			printf("ERROR: Socket %d, no message size...\n", connection->socket);
 		} else {
-			ret = ret + status;int x = &operation_code_value;
+			ret = ret + status;
 			//message = (void*) malloc(message_size);
 			switch ((int)*operation_code_value) {
 				case OC_UBICACION_POKENEST:
+				case OC_UBICACION_ENTRENADOR:
 					coor = malloc(message_size);
 					status = recv(connection->socket, coor, message_size, 0);
 					if(status > 0){
 						*message = coor;
 					}
-					free(coor);
+					//free(coor);
 					break;
 				case OC_UBICAR_POKENEST:
+				case OC_UBICAR_ENTRENADOR:
 				case OC_AVANZAR_POSICION:
 				case OC_ATRAPAR_POKEMON:
 				case OC_MENSAJE:
@@ -118,7 +122,7 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 						buffer[message_size] = '\0';
 						*message = buffer;
 					}
-					free(buffer);
+					//free(buffer);
 					break;
 				default:
 					printf("ERROR: Socket %d, Invalid operation code...\n", connection->socket);

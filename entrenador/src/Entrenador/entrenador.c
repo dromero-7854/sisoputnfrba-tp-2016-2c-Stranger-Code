@@ -10,7 +10,7 @@ t_coach *coach_create(char *name, int life){
 	t_coach *new = malloc( sizeof(t_coach) );
 	new->name = strdup(name);
 	new->life = life;
-	//new->coor;
+	//new->coor; = coor_create(0, 0);
 	new->pokemons = list_create();
 	new->travel_sheet = list_create();
 	new->index_current_map = -1;
@@ -22,6 +22,7 @@ void coach_destroy(t_coach *self){
 	free(self->name);
 	if(!list_is_empty(self->pokemons)) list_clean(self->pokemons);
 	free(self->pokemons);
+	free(self->coor);
 	destroy_maps_list(self->travel_sheet);
 	/*if(!list_is_empty(self->travel_sheet)) list_clean(self->travel_sheet);
 	free(self->travel_sheet);*/
@@ -40,7 +41,7 @@ t_map* coach_next_map(t_coach* self){
 }
 
 int coach_move_to_pokemon(t_coach* entrenador, t_pokemon* pokemon){
-	int last_movement = MOVE_RIGHT;
+	uint8_t last_movement = MOVE_RIGHT;
 	while( !coor_equals(entrenador->coor, pokemon->coor) ){
 		last_movement = calcular_movimiento(last_movement, entrenador->coor, pokemon->coor);
 

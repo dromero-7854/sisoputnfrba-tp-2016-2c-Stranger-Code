@@ -11,12 +11,14 @@ t_pokemon *pokemon_create(char *name, char *simbol){
 	t_pokemon *new = malloc( sizeof(t_pokemon) );
 	new->name = strdup(name);
 	new->simbol = strdup(simbol);
+	new->coor = coor_create(0, 0);
 	return new;
 }
 
 void pokemon_destroy(t_pokemon *self){
 	free(self->name);
 	free(self->simbol);
+	free(self->coor);
 	free(self);
 }
 

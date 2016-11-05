@@ -61,13 +61,16 @@ t_pokemon* map_next_pokemon(t_map* self){
 	}
 }
 
-int map_locate_pokemon(t_map *mapa, t_pokemon* pokemon){
+int map_locate_pokemon(t_map *mapa, t_pokemon* pokemon, t_connection* conn){
 	//t_pokemon pokemon = map_get_current_pokemon(mapa);
 	//ubicar(  );
-
+	t_coor* coor;
+	uint8_t operation_code;
+	connection_send(conn, OC_UBICAR_POKENEST, pokemon->simbol);
+	connection_recv(conn, &operation_code, &coor);
 	//setear las coordenadas de dicho pokemon, recibidas del mapa
-	pokemon->coor.x += 10;
-	pokemon->coor.y += 10;
+	pokemon->coor->x = coor->x;
+	pokemon->coor->y = coor->y;
 
 	return 0;
 }

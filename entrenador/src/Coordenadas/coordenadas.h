@@ -8,16 +8,15 @@
 #ifndef SRC_COORDENADAS_COORDENADAS_H_
 #define SRC_COORDENADAS_COORDENADAS_H_
 
-#define MOVE_UP 72
-#define MOVE_RIGHT 77
-#define MOVE_DOWN 80
-#define MOVE_LEFT 75
+#include <stdint.h>
 
 typedef struct {
-	int x;
-	int y;
+	uint8_t x;
+	uint8_t y;
 } t_coor;
 
-int coor_equals(t_coor coorOne, t_coor coorTwo);
+t_coor *coor_create(uint8_t* coorX, uint8_t* coorY);
+void coor_destroy(t_coor *self);
+int coor_equals(t_coor* coorOne, t_coor* coorTwo);
 
 #endif /* SRC_COORDENADAS_COORDENADAS_H_ */

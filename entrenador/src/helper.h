@@ -9,6 +9,7 @@
 #define SRC_HELPER_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <commons/log.h>
 #include <commons/collections/list.h>
 #include "Pokemon/pokemon.h"
@@ -22,7 +23,7 @@ int cargar_metadata(char* path, t_list* travel_sheet);
 int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa);
 int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa);
 int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador);
-int move_to(int movement, t_coach* entrenador);
-int calcular_movimiento(int lastMovement, t_coor coor_entrenador, t_coor coor_pokemon);
+uint8_t move_to(uint8_t movement, t_coach* entrenador);
+uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coor* coor_pokemon);
 
 #endif /* SRC_HELPER_H_ */

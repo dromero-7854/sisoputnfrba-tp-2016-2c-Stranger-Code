@@ -14,11 +14,25 @@
 #include <stddef.h>
 #include "../Coordenadas/coordenadas.h"
 
-#define OC_UBICACION_POKENEST 0
+#define OC_MENSAJE 0
 #define OC_UBICAR_POKENEST 1
-#define OC_AVANZAR_POSICION 2
-#define OC_ATRAPAR_POKEMON 3
-#define OC_MENSAJE 4
+#define OC_UBICAR_ENTRENADOR 2
+#define OC_AVANZAR_POSICION 3
+#define OC_ATRAPAR_POKEMON 4
+#define OC_UBICACION_POKENEST 5
+#define OC_UBICACION_ENTRENADOR 6
+
+#define MOVE_UP 72
+#define MOVE_RIGHT 77
+#define MOVE_DOWN 80
+#define MOVE_LEFT 75
+
+/** provisorio **/
+/*typedef struct {
+	int x;
+	int y;
+} t_coor;*/
+/****************/
 
 typedef struct {
 	char* ip;

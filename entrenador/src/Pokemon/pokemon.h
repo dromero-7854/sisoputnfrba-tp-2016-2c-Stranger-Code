@@ -14,7 +14,7 @@
 typedef struct {
 	char *name;
 	char *simbol;
-	t_coor coor;
+	t_coor *coor;
 } t_pokemon;
 
 t_pokemon *pokemon_create(char *name, char *simbol);

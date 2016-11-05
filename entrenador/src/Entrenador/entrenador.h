@@ -21,7 +21,7 @@
 typedef struct {
 	char* name ;
 	int life;
-	t_coor coor;
+	t_coor* coor;
 	t_list* pokemons;
 	t_list* travel_sheet;
 	int index_current_map;

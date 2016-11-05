@@ -51,11 +51,12 @@ int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	coach_connect_to_map(entrenador, mapa);
 	uint8_t operation_code;
 	t_coor* coor;
-	connection_send(entrenador->conn, 4, "hola!");
+	connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->name);
 	connection_recv(entrenador->conn, &operation_code, &coor);
 
-	entrenador->coor.x = coor->x;
-	entrenador->coor.y = coor->y;
+	entrenador->coor = coor;
+	//entrenador->coor->x = coor->x;
+	//entrenador->coor->y = coor->y;
 
 	return 0;
 }
@@ -69,10 +70,10 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 	log_info(logger, "Comenzando a jugar en el mapa: %s.\n", mapa->name);
 	t_pokemon* pokemon = map_next_pokemon(mapa);
 	while(pokemon != NULL){
-		map_locate_pokemon(mapa, pokemon);
+		map_locate_pokemon(mapa, pokemon, entrenador->conn);
 		coach_move_to_pokemon(entrenador, pokemon);
 		coach_capture_pokemon(pokemon);
-		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d", pokemon->name, pokemon->coor.x, pokemon->coor.y);
+		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d", pokemon->name, pokemon->coor->x, pokemon->coor->y);
 
 		pokemon = map_next_pokemon(mapa);
 	}
@@ -87,45 +88,53 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 	return 0;
 }*/
 
-int move_to(int movement, t_coach* entrenador){
-	char move[20];
-
-	/*esto se debe borrar, porque el server ya tiene la pos del entrenador.*/
-
+uint8_t move_to(uint8_t movement, t_coach* entrenador){
+	char move[10];
+	t_coor* coorEntrenador;
+	uint8_t operation_code;
+	uint8_t* mov = malloc( sizeof(uint8_t) );
+	*mov = movement;
 
 	switch (movement) {
 		case MOVE_UP:
 			sprintf(move, "ARRIBA");
-			entrenador->coor.y--;
+			//entrenador->coor.y--;
 			break;
 		case MOVE_DOWN:
 			sprintf(move, "ABAJO");
-			entrenador->coor.y++;
+			//entrenador->coor.y++;
 			break;
 		case MOVE_RIGHT:
 			sprintf(move, "DERECHA");
-			entrenador->coor.x++;
+			//entrenador->coor.x++;
 			break;
 		case MOVE_LEFT:
 			sprintf(move, "IZQUIERDA");
-			entrenador->coor.x--;
+			//entrenador->coor.x--;
 			break;
 	}
+
+	connection_send(entrenador->conn, OC_AVANZAR_POSICION, mov);
+	connection_recv(entrenador->conn, &operation_code, &coorEntrenador);
+	free(mov);
+
+	entrenador->coor->x = coorEntrenador->x;
+	entrenador->coor->y = coorEntrenador->y;
 
 	return 0;
 	//log_info(logger, "Movimiento del Entrenador: %s", move);
 }
 
-int calcular_movimiento(int lastMovement, t_coor coor_entrenador, t_coor coor_pokemon){
-	int mover;
+uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coor* coor_pokemon){
+	uint8_t mover;
 
-	bool moverHorizontalmente = (lastMovement == MOVE_UP || lastMovement == MOVE_DOWN) && coor_entrenador.x != coor_pokemon.x;
+	bool moverHorizontalmente = (lastMovement == MOVE_UP || lastMovement == MOVE_DOWN) && coor_entrenador->x != coor_pokemon->x;
 	//bool moverVerticalmente = !moverHorizontalmente;
 
 	if(moverHorizontalmente){
-		if(coor_entrenador.x < coor_pokemon.x) mover = MOVE_RIGHT; else mover = MOVE_LEFT;
+		if(coor_entrenador->x < coor_pokemon->x) mover = MOVE_RIGHT; else mover = MOVE_LEFT;
 	}else{
-		if(coor_entrenador.y < coor_pokemon.y) mover = MOVE_DOWN; else mover = MOVE_UP;
+		if(coor_entrenador->y < coor_pokemon->y) mover = MOVE_DOWN; else mover = MOVE_UP;
 	}
 
 	return mover;
