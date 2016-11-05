@@ -16,7 +16,7 @@ t_log* crear_log(char* nombreEntrenador, char* pathConfig) {
 	logger = log_create(temp_file, "TEST", true, LOG_LEVEL_INFO);
 	log_info(logger, "Nombre del Entrenador: %s", nombreEntrenador);
 	log_info(logger, "Metadata del Entrenador: %s", pathConfig);
-	log_info(logger, "Log del Entrenador: %s\n", temp_file);
+	log_info(logger, "Log del Entrenador: %s", temp_file);
 
 	return logger;
 }
@@ -45,9 +45,6 @@ int cargar_metadata(char* path, t_list* travel_sheet){
 }
 
 int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
-	/*TODO decidir si la conexion debe colgar del entrenador o del mapa*/
-	/*t_connection* conn = connection_create(mapa->ip, mapa->port);
-	connection_open(conn);*/
 	coach_connect_to_map(entrenador, mapa);
 	uint8_t operation_code;
 	t_coor* coor;
@@ -55,8 +52,6 @@ int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	connection_recv(entrenador->conn, &operation_code, &coor);
 
 	entrenador->coor = coor;
-	//entrenador->coor->x = coor->x;
-	//entrenador->coor->y = coor->y;
 
 	return 0;
 }
@@ -67,13 +62,17 @@ int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 }
 
 int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
-	log_info(logger, "Comenzando a jugar en el mapa: %s.\n", mapa->name);
+	log_info(logger, "Comenzando a jugar en el mapa: %s\n", mapa->name);
 	t_pokemon* pokemon = map_next_pokemon(mapa);
 	while(pokemon != NULL){
+		log_info(logger, "Pidiendo ubicacion de PokeNest: %s", pokemon->simbol);
 		map_locate_pokemon(mapa, pokemon, entrenador->conn);
+		log_info(logger, "Ubicacion de PokeNest '%s'. En la posición: X->%d, Y->%d", pokemon->simbol, pokemon->coor->x, pokemon->coor->y);
+		log_info(logger, "Moviendo a %s hasta PokeNest '%s'", entrenador->name, pokemon->simbol);
 		coach_move_to_pokemon(entrenador, pokemon);
-		coach_capture_pokemon(pokemon);
-		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d", pokemon->name, pokemon->coor->x, pokemon->coor->y);
+		log_info(logger, "Capturando a %s...", pokemon->name);
+		coach_capture_pokemon(entrenador, pokemon);
+		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->name, pokemon->coor->x, pokemon->coor->y);
 
 		pokemon = map_next_pokemon(mapa);
 	}

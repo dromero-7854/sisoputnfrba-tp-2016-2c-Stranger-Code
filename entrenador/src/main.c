@@ -33,12 +33,11 @@ int main(int argc, char** argv){
 
 	t_coach* entrenador = coach_create(nombreEntrenador, life);
 	logger = crear_log(nombreEntrenador, pathConfig);
-
-	log_info(logger, "Datos Entrenador: \n%s \n%d \n", entrenador->name, entrenador->life);
+	log_info(logger, "Vidas del Entrenador: %d\n", entrenador->life);
 
 	log_info(logger, "Cargando archivo de metadata: %s", pathConfig);
 	cargar_metadata(pathConfig, entrenador->travel_sheet);
-	log_info(logger, "Archivo de metadata cargado correctamente.");
+	log_info(logger, "Archivo de metadata cargado correctamente\n");
 
 	t_map* mapa = coach_next_map(entrenador);
 	while(mapa != NULL){
@@ -48,56 +47,14 @@ int main(int argc, char** argv){
 		completar_mapa(logger, mapa, entrenador);
 		log_info(logger, "Desconectando al entrenador del mapa: %s", mapa->name);
 		desconectar_entrenador_mapa(entrenador, mapa);
-		log_info(logger, "Desconexión éxitosa del mapa: %s", mapa->name);
+		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
 
 		mapa = coach_next_map(entrenador);
 	}
 
-	//list_iterate(entrenador->travel_sheet,(void*) for_each_map);
+	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.", entrenador->name);
 
 	coach_destroy(entrenador);
 	log_destroy(logger);
 	return 0;
 }
-/*
-int hola(int argc, char** argv){
-	if(argc!=3) {
-		printf("Hola! Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./Entrenador <nombre_entrenador> <ruta_archivo_metadata>\n");
-		exit(1);
-	}
-
-	int life = 3;
-	char* nombreEntrenador = argv[1];
-	char* pathConfig = argv[2];
-
-	t_coach entrenador = new_coach(nombreEntrenador, life);
-
-	t_mapa *current_map;
-	char temp_file[255];
-
-	strcpy(temp_file, "entrenador_");
-	strcat(temp_file, nombreEntrenador);
-	strcat(temp_file, ".log");
-
-	logger = log_create(temp_file, "TEST", true, LOG_LEVEL_INFO);
-	log_info(logger, "Nombre del Entrenador: %s", nombreEntrenador);
-	log_info(logger, "Metadata del Entrenador: %s", pathConfig);
-	log_info(logger, "Log del Entrenador: %s\n", temp_file);
-
-	leer_metadata(pathConfig);
-
-	int pos = 0;
-	while(list_size(maps_list) > pos){
-		current_map = list_get(maps_list, pos);
-		conectar_mapa(current_map);
-		completar_mapa(current_map);
-		//desconectar_mapa(current_mapa);
-		pos++;
-	}
-
-	//liberar memoria
-	destroy_maps_list();
-    log_destroy(logger);
-
-	return 0;
-}*/
