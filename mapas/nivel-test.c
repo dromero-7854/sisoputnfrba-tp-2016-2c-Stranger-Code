@@ -15,11 +15,11 @@
 #include <stdio.h>
 #include <commons/collections/list.h>
 #include <commons/collections/queue.h>
-#include <bibliotecaCharMander.c>
 #include "nivel-test.h"
 #include "planificacion.h"
 #include "deteccionDeadlock.h"
 #include <pthread.h>
+#include <bibliotecaCharMander.h>
 
 
 #define QUANTUM 5

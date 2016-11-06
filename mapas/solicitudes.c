@@ -5,7 +5,6 @@
  *      Author: utnso
  */
 
-#include "nivel-test.h"
 #include "solicitudes.h"
 #include <stdint.h>
 
@@ -13,37 +12,44 @@
 
 int atenderSolicitud(t_entrenador* entrenador){
 	int recibidos;
-	uint32_t header, direccion;
+	uint32_t operation_code, direccion;
 	int capturo_pokemon;
-	recibidos = recv(entrenador->id, &header, sizeof(uint32_t), 0);
+	recibidos = recv(entrenador->id, &operation_code, sizeof(uint32_t), 0);
 
-	switch(header){
-	case SOLICITA_UBICACION_POKENEST:
+	switch(operation_code){
+	case OC_UBICAR_POKENEST:
 	{
-		recv(entrenador->id, &header, sizeof(uint32_t), 0);
-		void *buffer = malloc(header);
-		recibidos = recv(entrenador->id, buffer, header, 0);
-		PokeNest* pokenest = buscarPokenest(listaPokenests, header);
+		char pokenest_id;
+		recv(entrenador->id, &pokenest_id, sizeof(char), 0);
+		void *buffer;
+		//recibidos = recv(entrenador->id, buffer, 1, 0);
+		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 
-		void *msg_coordenadas = malloc(sizeof(uint32_t) * 2);
-		memcpy(msg_coordenadas, pokenest->posx, sizeof(uint32_t));
-		memcpy(msg_coordenadas + sizeof(uint32_t), pokenest->posy, sizeof(uint32_t));
+		t_coor* coordenadas_pokenest = malloc(sizeof(t_coor));
+		coordenadas_pokenest->x = pokenest->posx;
+		coordenadas_pokenest->y = pokenest->posy;
 
-		send(entrenador->id, msg_coordenadas, sizeof(uint32_t) * 2, 0);
+		uint8_t oc_send = OC_UBICACION_POKENEST;
+		buffer = malloc(sizeof(uint8_t) + sizeof(t_coor));
+		memcpy(buffer, &oc_send, sizeof(uint8_t));
+		memcpy(buffer + sizeof(uint8_t), coordenadas_pokenest, sizeof(t_coor));
+		send(entrenador->id, buffer, sizeof(t_coor), 0);
+		free(coordenadas_pokenest);
+		free(buffer);
 		capturo_pokemon = 0;
 		break;
 	}
-	case NOTIFICA_MOVIMIENTO:
+	case OC_AVANZAR_POSICION:
 	{
 		recv(entrenador->id, &direccion, sizeof(uint32_t), 0);
 		switch(direccion){
-		case UP:
+		case MOVE_UP:
 			entrenador->posy--;
-		case DOWN:
+		case MOVE_DOWN:
 			entrenador->posy++;
-		case RIGHT:
+		case MOVE_RIGHT:
 			entrenador->posx++;
-		case LEFT:
+		case MOVE_LEFT:
 			entrenador->posx--;
 		default:
 			fprintf(stderr, "no se recibio una direccion adecuada");
@@ -53,13 +59,16 @@ int atenderSolicitud(t_entrenador* entrenador){
 		break;
 	}
 		// volver a dibujar ??????
-	case CAPTURA_POKEMON:
+	case OC_ATRAPAR_POKEMON:
 	{
-		recv(entrenador->id, &header, sizeof(uint32_t), 0);
-		PokeNest* pokenest = buscarPokenest(listaPokenests, header);
+		char pokenest_id;
+		recv(entrenador->id, &pokenest_id, sizeof(char), 0);
+		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
+
 		int len = strlen(infopokemon->pokemon->species);
 		int bytes_a_mandar = len + sizeof(t_level) + sizeof(t_pokemon_type) * 2;
+
 		void* buffer = malloc(bytes_a_mandar);
 		memcpy(buffer, infopokemon->pokemon->species, len);
 		int offset = len;
