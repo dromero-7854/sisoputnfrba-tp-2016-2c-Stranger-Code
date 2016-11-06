@@ -649,22 +649,36 @@ void osada_write(int * client_socket) {
 		// TODO full disk
 	}
 
-	osada_file * node_ptr = (osada_file *) osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos);
+	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
 	node_ptr->file_size = size;
 	node_ptr->lastmod = time(NULL);
 	node_ptr->first_block = mapping[0];
 
-	osada_block_pointer * ob_mapp_ptr;
+	//osada_block_pointer * ob_mapp_ptr;
 	osada_block * ob_ptr;
+
+	uint32_t (*map_table)[2048] = (uint32_t (*)[2048]) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0)); //Puntero al comienzo de la tabla de asignaciones;
+
+	//ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0)); //Puntero al comienzo de la tabla de asignaciones
+
+	//map_table = ob_mapp_ptr;
+
 	index = 0;
 	while (index <= (n_blocks - 1)) {
-		ob_mapp_ptr = (osada_block_pointer *) osada_fs_ptr + (OSADA_BLOCK_SIZE * (MAPPING_TABLE_0 + mapping[index]));
+/*		ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * (MAPPING_TABLE_0 + mapping[index])));
 		if (index == n_blocks-1) {
-			memcpy(ob_mapp_ptr, &END_OF_FILE, OSADA_MAPP_SIZE);
+			memcpy(ob_mapp_ptr, &END_OF_FILE, sizeof(osada_block_pointer));
 		} else {
-			memcpy(ob_mapp_ptr, &mapping[index+1], OSADA_MAPP_SIZE);
+			memcpy(ob_mapp_ptr, &mapping[index+1], sizeof(osada_block_pointer));
+		}*/
+		if (index == n_blocks-1) {
+			(*map_table)[mapping[index]]= &END_OF_FILE;
+		} else {
+			(*map_table)[mapping[index]]= mapping[index+1];
 		}
-		ob_ptr = (osada_block *) osada_fs_ptr + (OSADA_BLOCK_SIZE * (DATA_0 + mapping[index]));
+
+
+		ob_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * (DATA_0 + mapping[index])));
 		memcpy(ob_ptr, buf + (index * OSADA_BLOCK_SIZE), OSADA_BLOCK_SIZE);
 		index++;
 	}
