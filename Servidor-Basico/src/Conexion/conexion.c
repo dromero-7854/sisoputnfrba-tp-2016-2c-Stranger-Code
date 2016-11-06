@@ -17,7 +17,7 @@ t_connection* connection_create(char* ip, char* port){
 void connection_destroy(t_connection* self){
 	free(self->ip);
 	free(self->port);
-	connection_close(self->socket);
+	connection_close(self);
 
 	free(self);
 }

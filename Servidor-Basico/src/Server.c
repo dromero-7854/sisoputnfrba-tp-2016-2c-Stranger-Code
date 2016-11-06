@@ -115,6 +115,7 @@ int main(){
 	t_connection* conn;
 	uint8_t operation_code;
 	void* message;
+	char* mensaje;// = malloc(20);
 
 	conn = connection_create("127.0.0.1", PUERTO);
 	conn->socket =  socketCliente;
@@ -181,12 +182,10 @@ int main(){
 					break;
 			// peticion para atrapar un pokemon
 				case OC_ATRAPAR_POKEMON:
-					//char* mensaje = malloc(20);
-					//mensaje = "pokemon atrapado";
-					printf("Enviando... -> Operacion: %d - Mensaje: pokemon atrapado\n", OC_MENSAJE);
-					connection_send(conn, OC_MENSAJE, "pokemon atrapado");
-					printf("Enviado OK! -> Operacion: %d - Mensaje: pokemon atrapado\n", OC_MENSAJE);
-					//free(mensaje);
+					mensaje = strdup("pokemon atrapado");
+					printf("Enviando... -> Operacion: %d - Mensaje: %s\n", OC_ATRAPAR_POKEMON, mensaje);
+					connection_send(conn, OC_MENSAJE, mensaje);
+					printf("Enviado OK! -> Operacion: %d - Mensaje: %s\n", OC_ATRAPAR_POKEMON, mensaje);
 					break;
 				default:
 					break;
@@ -202,6 +201,7 @@ int main(){
 	 * 																					~ Divertido es Disney ~
 	 *
 	 */
+	free(mensaje);
 	free(coorEntrenador);
 	free(coorPokemon);
 	close(socketCliente);
