@@ -31,8 +31,8 @@ void coach_destroy(t_coach *self){
 }
 
 t_map* coach_next_map(t_coach* self){
+	self->index_current_map++;
 	if(list_size(self->travel_sheet) > self->index_current_map){
-		self->index_current_map++;
 		t_map* current_map = list_get(self->travel_sheet, self->index_current_map);
 		return current_map;
 	}else{
@@ -51,9 +51,14 @@ int coach_move_to_pokemon(t_coach* entrenador, t_pokemon* pokemon){
 	return 0;
 }
 
-int coach_capture_pokemon(t_pokemon* pokemon){
+int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon){
+	uint8_t operation_code;
+	void* message;
 
+	connection_send(entrenador->conn, OC_ATRAPAR_POKEMON, pokemon->simbol);
+	connection_recv(entrenador->conn, &operation_code, &message);
 
+	//printf("Pedido para capturar Pokemon: %s", (char*)message);
 	return 0;
 }
 

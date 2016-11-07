@@ -17,30 +17,27 @@
 void handshake(int socketCliente, t_log* logger){
 
 	uint32_t cantLetras;
+	uint8_t operation_code;
+	void *buffer;
 
-
-
-	cantLetras = strlen(MENSAJE_BIENVENIDA);
-	char* msg_bienvenida = malloc(cantLetras + 1);
-	strcpy(msg_bienvenida, MENSAJE_BIENVENIDA);
-
-
-	void *buffer= malloc(cantLetras + 1 + sizeof(uint32_t));
-
-	memcpy(buffer, &cantLetras, sizeof(uint32_t));
-	memcpy(buffer + sizeof(uint32_t), msg_bienvenida, cantLetras + 1);
-	free(msg_bienvenida);
-
-	send(socketCliente, buffer, cantLetras + 1 + sizeof(uint32_t), 0);
-
-
-	recv(socketCliente, buffer, 3, 0);
-	if(strcmp(buffer, "OK")){
-		log_error(logger, "Error en el handshake");
+	recv(socketCliente, &operation_code, sizeof(operation_code), 0);
+	if(operation_code != OC_UBICAR_ENTRENADOR){
+		log_error(logger, "codigo de operacion incorrecto en handshake");
 		exit(1);
 	}
+
+
+	t_coor* coordenadas;
+	coordenadas->x = 1;
+	coordenadas->y = 1;
+	operation_code = OC_UBICACION_ENTRENADOR;
+	memcpy(buffer, &operation_code, sizeof(uint32_t));
+	memcpy(buffer + sizeof(uint32_t), coordenadas, sizeof(t_coor));
+	send(socketCliente, buffer, sizeof(t_coor), 0);
+
+
 	printf("FUNCIONOO\n");
-	printf("%s", buffer);
+	//printf("%s", buffer);
 	free(buffer);
 }
 

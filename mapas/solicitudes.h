@@ -8,13 +8,13 @@
 #ifndef SOLICITUDES_H_
 #define SOLICITUDES_H_
 
+#include "nivel-test.h"
+#include <bibliotecaCharMander.h>
+
 #define SOLICITA_UBICACION_POKENEST 0
 #define NOTIFICA_MOVIMIENTO 1
 #define CAPTURA_POKEMON 2
-#define UP 72
-#define RIGHT 77
-#define DOWN 80
-#define LEFT 75
+
 
 extern t_list* listaPokenests;
 
