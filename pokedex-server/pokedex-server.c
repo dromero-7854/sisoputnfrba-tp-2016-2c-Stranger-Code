@@ -33,6 +33,7 @@
 #define RES_GETATTR_ENOENT 3
 #define RES_WRITE_OK 1
 #define RES_READ_OK 1
+#define RES_TRUNCATE_OK 1
 
 int HEADER_SIZE, BITMAP_SIZE, MAPPING_TABLE_SIZE, DATA_SIZE;
 int HEADER_0, HEADER_1, BITMAP_0, BITMAP_1, FILE_TABLE_0, FILE_TABLE_1, MAPPING_TABLE_0, MAPPING_TABLE_1, DATA_0, DATA_1;
@@ -67,6 +68,7 @@ void osada_getattr(int *);
 void osada_mknod(int *);
 void osada_write(int *);
 void osada_read(int *);
+void osada_truncate(int *);
 
 int main(int argc , char * argv[]) {
 	load_properties_file();
@@ -328,6 +330,9 @@ void process_request(int * client_socket) {
 		case 6:
 			osada_read(client_socket);
 			break;
+		case 7:
+			osada_truncate(client_socket);
+			break;
 		default:
 			break;
 		}
@@ -370,9 +375,11 @@ void osada_mkdir(int * client_socket) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = RES_MKDIR_OK;
-	void * resp = malloc(prot_resp_code_size);
+
+	int response_size = sizeof(char) * (prot_resp_code_size);
+	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
-	write(* client_socket, resp, prot_resp_code_size);
+	write(* client_socket, resp, response_size);
 	free(resp);
 }
 
@@ -452,13 +459,16 @@ void osada_readdir(int * client_socket) {
 		// response size
 		uint32_t prot_resp_size = 4;
 		uint32_t resp_size = (strlen(buffer) + 1);
-		void * resp = malloc(prot_resp_code_size + prot_resp_size + resp_size);
+
+		int response_size = sizeof(char) * (prot_resp_code_size + prot_resp_size + resp_size);
+		void * resp = malloc(response_size);
 		memcpy(resp, &resp_code, prot_resp_code_size);
 		memcpy(resp + prot_resp_code_size, &resp_size, prot_resp_size);
 		memcpy(resp + prot_resp_code_size + prot_resp_size, buffer, resp_size);
-		write(* client_socket, resp, prot_resp_code_size + prot_resp_size + resp_size);
+		write(* client_socket, resp, response_size);
 		free(resp);
 		free(buffer);
+
 	} else {
 		list_destroy(node_list);
 
@@ -466,9 +476,11 @@ void osada_readdir(int * client_socket) {
 		// response code
 		uint8_t prot_resp_code_size = 1;
 		uint8_t resp_code = RES_READDIR_ISEMPTYDIR;
-		void * resp = malloc(prot_resp_code_size);
+
+		int response_size = sizeof(char) * (prot_resp_code_size);
+		void * resp = malloc(response_size);
 		memcpy(resp, &resp_code, prot_resp_code_size);
-		write(* client_socket, resp, prot_resp_code_size);
+		write(* client_socket, resp, response_size);
 		free(resp);
 	}
 }
@@ -499,9 +511,11 @@ void osada_getattr(int * client_socket) {
 			// response code
 			uint8_t prot_resp_code_size = 1;
 			uint8_t resp_code = RES_GETATTR_ENOENT;
-			void * resp = malloc(prot_resp_code_size);
+
+			int response_size = sizeof(char) * (prot_resp_code_size);
+			void * resp = malloc(response_size);
 			memcpy(resp, &resp_code, prot_resp_code_size);
-			write(* client_socket, resp, prot_resp_code_size);
+			write(* client_socket, resp, response_size);
 			free(resp);
 		}
 		pb_pos = node_pos;
@@ -524,10 +538,12 @@ void osada_getattr(int * client_socket) {
 		resp_code = RES_GETATTR_ISREG;
 		file_size = file_table_ptr->file_size;
 	}
-	void * resp = malloc(prot_resp_code_size + prot_resp_file_size);
+
+	int response_size = sizeof(char) * (prot_resp_code_size + prot_resp_file_size);
+	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
 	memcpy(resp + prot_resp_code_size, &file_size, prot_resp_file_size);
-	write(* client_socket, resp, prot_resp_code_size + prot_resp_file_size);
+	write(* client_socket, resp, response_size);
 	free(resp);
 
 }
@@ -567,9 +583,11 @@ void osada_mknod(int * client_socket) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = RES_MKNOD_OK;
-	void * resp = malloc(prot_resp_code_size);
+
+	int response_size = sizeof(char) * (prot_resp_code_size);
+	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
-	write(* client_socket, resp, prot_resp_code_size);
+	write(* client_socket, resp, response_size);
 	free(resp);
 
 }
@@ -725,9 +743,11 @@ void osada_write(int * client_socket) {
 	// << sending response >>
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = RES_WRITE_OK;
-	void * resp = malloc(prot_resp_code_size);
+
+	int response_size = sizeof(char) * (prot_resp_code_size);
+	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
-	write(* client_socket, resp, prot_resp_code_size);
+	write(* client_socket, resp, response_size);
 	free(buffer);
 	free(resp);
 
@@ -824,14 +844,123 @@ void osada_read(int * client_socket) {
 	uint8_t resp_code = RES_READ_OK;
 	// bytes transferred
 	uint8_t prot_bytes_transferred_size = 4;
-	void * resp = malloc(prot_resp_code_size + prot_bytes_transferred_size + size);
+
+	int response_size = sizeof(char) * (prot_resp_code_size + prot_bytes_transferred_size + size);
+	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
 	memcpy(resp + prot_resp_code_size, &size, prot_bytes_transferred_size);
 	// content
 	if (size > 0) {
 		memcpy(resp + prot_resp_code_size + prot_bytes_transferred_size, buff, size);
 	}
-	write(* client_socket, resp, prot_resp_code_size + prot_bytes_transferred_size + size);
+	write(* client_socket, resp, response_size);
 	free(resp);
 	free(buff);
+}
+
+void osada_truncate(int * client_socket) {
+	// << receiving message >>
+	// path size
+	uint8_t prot_path_size = 4;
+	uint32_t req_path_size;
+	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	// path
+	char * path = malloc(sizeof(char) * (req_path_size + 1));
+	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	path[req_path_size] = '\0';
+	// new size
+	uint8_t prot_size = 4;
+	uint32_t new_size;
+	if (recv(* client_socket, &new_size, prot_size, 0) <= 0) {
+		printf("pokedex server: client %d disconnected...\n", * client_socket);
+	}
+	printf("pokedex server: truncate %s, size %d\n", path, new_size);
+
+	int node_pos;
+	int pb_pos = ROOT;
+	char * node = strtok(path,"/");
+	while (node != NULL) {
+		node_pos = search_node(node, pb_pos);
+		pb_pos = node_pos;
+		node = strtok(NULL, "/");
+	}
+
+	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
+	int old_size = node_ptr->file_size;
+	node_ptr->file_size = new_size;
+
+	if (new_size != old_size) {
+		// mapping file
+		osada_block_pointer * map_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
+		osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
+		// gettingg current blocks
+		int current_blocks = 0;
+		while ((* aux_map_ptr) != END_OF_FILE) {
+			current_blocks++;
+			aux_map_ptr = map_ptr + (* aux_map_ptr);
+		}
+		// getting necessary blocks
+		int necessary_blocks = new_size / OSADA_BLOCK_SIZE;
+		if ((necessary_blocks == 0) || ((new_size % OSADA_BLOCK_SIZE) >= 1)) necessary_blocks++;
+		if (new_size > old_size && necessary_blocks > current_blocks) {
+			//
+			// adding blocks
+			//
+			necessary_blocks = necessary_blocks - current_blocks;
+			int free_db = BM_DATA_0;
+			bool its_busy;
+			while (necessary_blocks > 0 && (free_db <= BM_DATA_1)) {
+				its_busy = bitarray_test_bit(bitmap, free_db);
+				if (!its_busy) {
+					bitarray_set_bit(bitmap, free_db);
+					* aux_map_ptr = free_db - BM_DATA_0;
+					aux_map_ptr = map_ptr + (* aux_map_ptr);
+					* aux_map_ptr = END_OF_FILE;
+					necessary_blocks--;
+				}
+				free_db++;
+			}
+			if (free_db > BM_MAPPING_TABLE_1) {
+				//
+				// TODO full disk
+				//
+			}
+		} else if (new_size < old_size) {
+			// getting necessary blocks
+			int blocks_to_remove = current_blocks - necessary_blocks;
+			if (blocks_to_remove > 0) {
+				//
+				// removing blocks
+				//
+				osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
+				while (necessary_blocks > 0) {
+					necessary_blocks--;
+					aux_map_ptr = map_ptr + (* aux_map_ptr);
+				}
+				uint32_t aux;
+				while (blocks_to_remove > 0) {
+					aux = (* aux_map_ptr);
+					* aux_map_ptr = END_OF_FILE;
+					aux_map_ptr = map_ptr + aux;
+					blocks_to_remove--;
+				}
+			}
+		}
+	}
+
+	// << sending response >>
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = RES_TRUNCATE_OK;
+
+	int response_size = sizeof(char) * (prot_resp_code_size);
+	void * resp = malloc(response_size);
+	memcpy(resp, &resp_code, prot_resp_code_size);
+	write(* client_socket, resp, response_size);
+	free(path);
+	free(resp);
+
 }

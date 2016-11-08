@@ -61,11 +61,13 @@ static int pk_mkdir(const char * path, mode_t mode) {
 	// path
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size = strlen(path);
-	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size);
+	void * buffer = malloc(buffer_size);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
-	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
 	// << receiving message >>
@@ -101,11 +103,13 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 		// path
 		uint8_t prot_path_size = 4;
 		uint32_t req_path_size = strlen(path);
-		void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+
+		int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size);
+		void * buffer = malloc(buffer_size);
 		memcpy(buffer, &req_ope_code, prot_ope_code_size);
 		memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 		memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
-		send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+		send(server_socket, buffer, buffer_size, 0);
 		free(buffer);
 
 		// << receiving message >>
@@ -156,11 +160,13 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 	// path
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size = strlen(path);
-	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size);
+	void * buffer = malloc(buffer_size);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
-	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
 	// << receiving message >>
@@ -215,11 +221,13 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 	// path
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size = strlen(path);
-	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size);
+	void * buffer = malloc(buffer_size);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
-	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
 	// << receiving message >>
@@ -239,6 +247,43 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 }
 
 static int pk_truncate(const char * path, off_t offset) {
+	if (offset > 0) {
+		int server_socket;
+		open_connection(&server_socket);
+
+		// << sending message >>
+		// operation code
+		uint8_t prot_ope_code_size = 1;
+		uint8_t req_ope_code = REQ_TRUNCATE;
+		// path
+		uint8_t prot_path_size = 4;
+		uint32_t req_path_size = strlen(path);
+		// offset
+		uint8_t prot_offset = 4;
+		uint32_t req_offset = offset;
+
+		int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size + prot_offset);
+		void * buffer = malloc(buffer_size);
+		memcpy(buffer, &req_ope_code, prot_ope_code_size);
+		memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+		memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+		memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size, &req_offset, prot_offset);
+		send(server_socket, buffer, buffer_size, 0);
+		free(buffer);
+
+		// << receiving message >>
+		// response code
+		uint8_t prot_resp_code_size = 1;
+		uint8_t resp_code = 0;
+		if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+			printf("pokedex client: server %d disconnected...\n", server_socket);
+		}
+		close_connection(&server_socket);
+
+		if (resp_code == RES_TRUNCATE_OK) {
+			// TODO
+		}
+	}
 	return 0;
 }
 
@@ -259,13 +304,15 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 	// offset
 	uint8_t prot_offset = 4;
 	uint32_t req_offset = offset;
-	char * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size + prot_size + prot_offset);
+
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size + prot_size + prot_offset);
+	void * buffer = malloc(buffer_size);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size, &req_size, prot_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_size, &req_offset, prot_offset);
-	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size + prot_size + prot_offset, 0);
+	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
 	// << receiving message >>
@@ -320,7 +367,8 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 	uint8_t prot_offset = 4;
 	uint32_t req_offset = offset;
 
-	char * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size + prot_offset);
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size + prot_offset);
+	void * buffer = malloc(buffer_size);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
@@ -328,7 +376,7 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size, buf, req_buf_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size, &req_size, prot_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size, &req_offset, prot_offset);
-	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size + prot_offset, 0);
+	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
 	// << receiving message >>
@@ -361,11 +409,13 @@ static int pk_open(const char * path, struct fuse_file_info * fi) {
 	// path
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size = strlen(path);
-	void * buffer = malloc(prot_ope_code_size + prot_path_size + req_path_size);
+
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size);
+	void * buffer = malloc(buffer_size);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
-	send(server_socket, buffer, prot_ope_code_size + prot_path_size + req_path_size, 0);
+	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
 	// << receiving message >>
