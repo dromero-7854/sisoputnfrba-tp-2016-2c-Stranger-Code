@@ -600,8 +600,8 @@ void osada_write(int * client_socket) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
 	// buffer
-	char * buf = malloc(sizeof(char) * (req_buf_size));
-	if (recv(* client_socket, buf, req_buf_size, 0) <= 0) {
+	char * buffer = malloc(sizeof(char) * (req_buf_size));
+	if (recv(* client_socket, buffer, req_buf_size, 0) <= 0) {
 		printf("pokedex server: client %d disconnected...\n", * client_socket);
 	}
 	// size (amount of bytes to write)
@@ -627,60 +627,105 @@ void osada_write(int * client_socket) {
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
+	free(path);
 
-	int n_blocks = size / OSADA_BLOCK_SIZE;
-	if (n_blocks == 0 || (size % OSADA_BLOCK_SIZE) > 1) n_blocks++;
-	int mapping[n_blocks];
-
-	int index = 0;
-	int free_db = BM_DATA_0;
-	bool its_busy;
-	while ((index <= n_blocks - 1) && (free_db <= BM_DATA_1)) {
-		its_busy = bitarray_test_bit(bitmap, free_db);
-		if (!its_busy) {
-			mapping[index] = free_db - BM_DATA_0;
-			bitarray_set_bit(bitmap, free_db);
-			index++;
-		}
-		free_db++;
-	}
-
-	if (free_db > BM_MAPPING_TABLE_1) {
-		// TODO full disk
-	}
-
+	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
-	node_ptr->file_size = size;
-	node_ptr->lastmod = time(NULL);
-	node_ptr->first_block = mapping[0];
 
-	//osada_block_pointer * ob_mapp_ptr;
-	osada_block * ob_ptr;
+	// variables
+	int fsize = node_ptr->file_size;
+	osada_block_pointer * map_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
+	osada_block_pointer * aux_map_ptr;
+	int bytes_availables_in_block;
+	int last_free_byte_pos;
+	int movs;
 
-	uint32_t (*map_table)[2048] = (uint32_t (*)[2048]) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0)); //Puntero al comienzo de la tabla de asignaciones;
-
-	//ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0)); //Puntero al comienzo de la tabla de asignaciones
-
-	//map_table = ob_mapp_ptr;
-
-	index = 0;
-	while (index <= (n_blocks - 1)) {
-/*		ob_mapp_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * (MAPPING_TABLE_0 + mapping[index])));
-		if (index == n_blocks-1) {
-			memcpy(ob_mapp_ptr, &END_OF_FILE, sizeof(osada_block_pointer));
-		} else {
-			memcpy(ob_mapp_ptr, &mapping[index+1], sizeof(osada_block_pointer));
-		}*/
-		if (index == n_blocks-1) {
-			(*map_table)[mapping[index]]= &END_OF_FILE;
-		} else {
-			(*map_table)[mapping[index]]= mapping[index+1];
+	if ((offset + size) > fsize) {
+		//
+		// expand file
+		//
+		int bytes_to_expand = (offset + size) - fsize;
+		node_ptr->file_size = fsize + bytes_to_expand;
+		// mapping file
+		int free_db = BM_DATA_0;
+		bool its_busy;
+		if (node_ptr->first_block == END_OF_FILE) {
+			//
+			// empty file
+			//
+			// assign first block
+			while (free_db <= BM_DATA_1) {
+				its_busy = bitarray_test_bit(bitmap, free_db);
+				if (!its_busy) {
+					bitarray_set_bit(bitmap, free_db);
+					node_ptr->first_block = free_db - BM_DATA_0;
+					aux_map_ptr = map_ptr + (node_ptr->first_block);
+					* aux_map_ptr = END_OF_FILE;
+					break;
+				}
+				free_db++;
+			}
+			if (free_db > BM_DATA_1) {
+				// TODO full disk
+			}
 		}
+		aux_map_ptr = &(node_ptr->first_block);
+		aux_map_ptr = map_ptr + (* aux_map_ptr);
+		movs = 0;
+		while ((*aux_map_ptr) != END_OF_FILE) {
+			aux_map_ptr = map_ptr + (* aux_map_ptr);
+			movs++;
+		}
+		last_free_byte_pos = fsize - (movs * OSADA_BLOCK_SIZE);
+		bytes_availables_in_block = OSADA_BLOCK_SIZE - last_free_byte_pos;
+		bytes_to_expand = bytes_to_expand - bytes_availables_in_block;
+		free_db = BM_DATA_0;
+		while (bytes_to_expand > 0 && free_db <= BM_DATA_1) {
+			//
+			// adding block
+			//
+			its_busy = bitarray_test_bit(bitmap, free_db);
+			if (!its_busy) {
+				bitarray_set_bit(bitmap, free_db);
+				* aux_map_ptr = BM_DATA_0 - free_db;
+				aux_map_ptr = map_ptr + (* aux_map_ptr);
+				* aux_map_ptr = END_OF_FILE;
+				bytes_to_expand = bytes_to_expand - OSADA_BLOCK_SIZE;
+			}
+			free_db++;
+		}
+		if (free_db > BM_DATA_1) {
+			// TODO full disk
+		}
+	}
 
+	// positioning the map pointer to the first block (considering the offset)
+	aux_map_ptr = &(node_ptr->first_block);
+	movs = offset / OSADA_BLOCK_SIZE;
+	int i = movs;
+	while (i > 0) {
+		aux_map_ptr = map_ptr + (* aux_map_ptr);
+		i--;
+	}
 
-		ob_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * (DATA_0 + mapping[index])));
-		memcpy(ob_ptr, buf + (index * OSADA_BLOCK_SIZE), OSADA_BLOCK_SIZE);
-		index++;
+	// writing bytes
+	offset = offset - (OSADA_BLOCK_SIZE * movs);
+	osada_block * data_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * DATA_0));
+	char * aux_data_ptr = (char *)(data_ptr + (* aux_map_ptr) + offset);
+	bytes_availables_in_block = OSADA_BLOCK_SIZE - offset;
+	int bytes_to_write = size;
+	int buff_pos = 0;
+	int bytes_writing;
+
+	while (bytes_to_write > 0) {
+		bytes_writing = (bytes_to_write >= bytes_availables_in_block) ? bytes_availables_in_block : bytes_to_write;
+		memcpy(aux_data_ptr, buffer + buff_pos, bytes_writing);
+		bytes_to_write = bytes_to_write - bytes_writing;
+		aux_map_ptr = map_ptr + (* aux_map_ptr);
+		if ((* aux_map_ptr) == END_OF_FILE) break;
+		aux_data_ptr  = (char *)(data_ptr + (* aux_map_ptr));
+		buff_pos = buff_pos + bytes_writing;
+		bytes_availables_in_block = OSADA_BLOCK_SIZE;
 	}
 
 	// << sending response >>
@@ -689,9 +734,9 @@ void osada_write(int * client_socket) {
 	void * resp = malloc(prot_resp_code_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
 	write(* client_socket, resp, prot_resp_code_size);
-	free(path);
-	free(buf);
+	free(buffer);
 	free(resp);
+
 }
 
 void osada_truncate(int * client_socket) {

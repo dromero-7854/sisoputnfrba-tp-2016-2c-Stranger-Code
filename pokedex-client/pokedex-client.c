@@ -239,36 +239,6 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 }
 
 static int pk_truncate(const char * path, off_t offset) {
-	int server_socket;
-	open_connection(&server_socket);
-
-	// << sending message >>
-	// operation code
-	uint8_t prot_ope_code_size = 1;
-	uint8_t req_ope_code = REQ_TRUNCATE;
-	// offset
-	uint8_t prot_offset = 4;
-	uint32_t req_offset = offset;
-
-	char * buffer = malloc(prot_ope_code_size + prot_offset);
-	memcpy(buffer, &req_ope_code, prot_ope_code_size);
-	memcpy(buffer + prot_ope_code_size, &req_offset, prot_offset);
-	send(server_socket, buffer, prot_ope_code_size + prot_offset, 0);
-	free(buffer);
-
-	// << receiving message >>
-	// response code
-	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
-		printf("pokedex client: server %d disconnected...\n", server_socket);
-	}
-	close_connection(&server_socket);
-
-	if (resp_code == RES_TRUNCATE_OK) {
-			// TODO
-	}
-
 	return 0;
 }
 
