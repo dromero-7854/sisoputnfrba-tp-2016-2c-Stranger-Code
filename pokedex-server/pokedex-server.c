@@ -694,7 +694,7 @@ void osada_write(int * client_socket) {
 	}
 
 	// positioning the map pointer to the first block (considering the offset)
-	aux_map_ptr = map_ptr + (node_ptr->first_block);
+	aux_map_ptr = &(node_ptr->first_block);
 	movs = offset / OSADA_BLOCK_SIZE;
 	int i = movs;
 	while (i > 0) {
