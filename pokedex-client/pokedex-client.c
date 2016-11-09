@@ -251,42 +251,40 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 }
 
 static int pk_truncate(const char * path, off_t offset) {
-	if (offset > 0) {
-		int server_socket;
-		open_connection(&server_socket);
+	int server_socket;
+	open_connection(&server_socket);
 
-		// << sending message >>
-		// operation code
-		uint8_t prot_ope_code_size = 1;
-		uint8_t req_ope_code = REQ_TRUNCATE;
-		// path
-		uint8_t prot_path_size = 4;
-		uint32_t req_path_size = strlen(path);
-		// offset
-		uint8_t prot_offset = 4;
-		uint32_t req_offset = offset;
+	// << sending message >>
+	// operation code
+	uint8_t prot_ope_code_size = 1;
+	uint8_t req_ope_code = REQ_TRUNCATE;
+	// path
+	uint8_t prot_path_size = 4;
+	uint32_t req_path_size = strlen(path);
+	// offset
+	uint8_t prot_offset = 4;
+	uint32_t req_offset = offset;
 
-		int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size + prot_offset);
-		void * buffer = malloc(buffer_size);
-		memcpy(buffer, &req_ope_code, prot_ope_code_size);
-		memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
-		memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
-		memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size, &req_offset, prot_offset);
-		send(server_socket, buffer, buffer_size, 0);
-		free(buffer);
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size + prot_offset);
+	void * buffer = malloc(buffer_size);
+	memcpy(buffer, &req_ope_code, prot_ope_code_size);
+	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size, &req_offset, prot_offset);
+	send(server_socket, buffer, buffer_size, 0);
+	free(buffer);
 
-		// << receiving message >>
-		// response code
-		uint8_t prot_resp_code_size = 1;
-		uint8_t resp_code = 0;
-		if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
-			printf("pokedex client: server %d disconnected...\n", server_socket);
-		}
-		close_connection(&server_socket);
+	// << receiving message >>
+	// response code
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = 0;
+	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+		printf("pokedex client: server %d disconnected...\n", server_socket);
+	}
+	close_connection(&server_socket);
 
-		if (resp_code == RES_TRUNCATE_OK) {
-			// TODO
-		}
+	if (resp_code == RES_TRUNCATE_OK) {
+		// TODO
 	}
 	return 0;
 }

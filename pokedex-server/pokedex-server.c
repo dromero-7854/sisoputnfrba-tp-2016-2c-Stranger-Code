@@ -671,6 +671,7 @@ void osada_write(int * client_socket) {
 		node_ptr->file_size = fsize + bytes_to_expand;
 		// mapping file
 		int free_db = BM_DATA_0;
+		int pos;
 		bool its_busy;
 		if (node_ptr->first_block == END_OF_FILE) {
 			//
@@ -678,10 +679,11 @@ void osada_write(int * client_socket) {
 			//
 			// assign first block
 			while (free_db <= BM_DATA_1) {
-				its_busy = bitarray_test_bit(bitmap, free_db);
+				pos = free_db - BM_DATA_0;
+				its_busy = bitarray_test_bit(bitmap, pos);
 				if (!its_busy) {
-					bitarray_set_bit(bitmap, free_db);
-					node_ptr->first_block = free_db - BM_DATA_0;
+					bitarray_set_bit(bitmap, pos);
+					node_ptr->first_block = pos;
 					aux_map_ptr = map_ptr + (node_ptr->first_block);
 					* aux_map_ptr = END_OF_FILE;
 					break;
@@ -706,10 +708,11 @@ void osada_write(int * client_socket) {
 			//
 			// adding block
 			//
-			its_busy = bitarray_test_bit(bitmap, free_db);
+			pos = free_db - BM_DATA_0;
+			its_busy = bitarray_test_bit(bitmap, pos);
 			if (!its_busy) {
-				bitarray_set_bit(bitmap, free_db);
-				* aux_map_ptr = free_db - BM_DATA_0;
+				bitarray_set_bit(bitmap, pos);
+				* aux_map_ptr = pos;
 				aux_map_ptr = map_ptr + (* aux_map_ptr);
 				* aux_map_ptr = END_OF_FILE;
 				bytes_to_expand = bytes_to_expand - OSADA_BLOCK_SIZE;
@@ -918,19 +921,22 @@ void osada_truncate(int * client_socket) {
 		}
 		// getting necessary blocks
 		int necessary_blocks = new_size / OSADA_BLOCK_SIZE;
-		if ((necessary_blocks == 0) || ((new_size % OSADA_BLOCK_SIZE) >= 1)) necessary_blocks++;
+		// considering a new size = 0 (empty file)
+		if ((new_size != 0) && ((necessary_blocks == 0) || ((new_size % OSADA_BLOCK_SIZE) >= 1))) necessary_blocks++;
 		if (new_size > old_size && necessary_blocks > current_blocks) {
 			//
 			// adding blocks
 			//
 			necessary_blocks = necessary_blocks - current_blocks;
 			int free_db = BM_DATA_0;
+			int pos;
 			bool its_busy;
 			while (necessary_blocks > 0 && (free_db <= BM_DATA_1)) {
-				its_busy = bitarray_test_bit(bitmap, free_db);
+				pos = free_db - BM_DATA_0;
+				its_busy = bitarray_test_bit(bitmap, pos);
 				if (!its_busy) {
-					bitarray_set_bit(bitmap, free_db);
-					* aux_map_ptr = free_db - BM_DATA_0;
+					bitarray_set_bit(bitmap, pos);
+					* aux_map_ptr = pos;
 					aux_map_ptr = map_ptr + (* aux_map_ptr);
 					* aux_map_ptr = END_OF_FILE;
 					necessary_blocks--;
@@ -942,26 +948,22 @@ void osada_truncate(int * client_socket) {
 				// TODO full disk
 				//
 			}
-		} else if (new_size < old_size) {
-			// getting necessary blocks
-			int blocks_to_remove = current_blocks - necessary_blocks;
-			if (blocks_to_remove > 0) {
-				//
-				// removing blocks
-				//
-				osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
-				while (necessary_blocks > 0) {
-					necessary_blocks--;
-					aux_map_ptr = map_ptr + (* aux_map_ptr);
-				}
-				uint32_t aux;
-				while (blocks_to_remove > 0) {
-					aux = (* aux_map_ptr);
-					bitarray_clean_bit(bitmap, aux);
-					* aux_map_ptr = END_OF_FILE;
-					aux_map_ptr = map_ptr + aux;
-					blocks_to_remove--;
-				}
+		} else if (new_size < old_size && necessary_blocks < current_blocks) {
+			//
+			// releasing blocks
+			//
+			osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
+			while (necessary_blocks > 0) {
+				necessary_blocks--;
+				aux_map_ptr = map_ptr + (* aux_map_ptr);
+			}
+
+			uint32_t aux;
+			while ((* aux_map_ptr) != END_OF_FILE) {
+				aux = (* aux_map_ptr);
+				bitarray_clean_bit(bitmap, (* aux_map_ptr));
+				* aux_map_ptr = END_OF_FILE;
+				aux_map_ptr = map_ptr + aux;
 			}
 		}
 	}
@@ -1016,7 +1018,7 @@ void osada_unlink(int * client_socket) {
 	uint32_t aux;
 	while ((* aux_map_ptr) != END_OF_FILE) {
 		aux = (* aux_map_ptr);
-		bitarray_clean_bit(bitmap, aux);
+		bitarray_clean_bit(bitmap, (* aux_map_ptr));
 		* aux_map_ptr = END_OF_FILE;
 		aux_map_ptr = map_ptr + aux;
 	}
