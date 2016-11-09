@@ -27,25 +27,25 @@ void handshake(int socketCliente, t_log* logger){
 	}
 
 
-	t_coor* coordenadas;
+	t_coor* coordenadas = malloc(sizeof(t_coor));
 	coordenadas->x = 1;
 	coordenadas->y = 1;
 	operation_code = OC_UBICACION_ENTRENADOR;
-	memcpy(buffer, &operation_code, sizeof(uint32_t));
-	memcpy(buffer + sizeof(uint32_t), coordenadas, sizeof(t_coor));
+	memcpy(buffer, &operation_code, sizeof(uint8_t));
+	memcpy(buffer + sizeof(uint8_t), coordenadas, sizeof(t_coor));
 	send(socketCliente, buffer, sizeof(t_coor), 0);
 
 
 	printf("FUNCIONOO\n");
 	//printf("%s", buffer);
 	free(buffer);
+	free(coordenadas);
 }
 
 void planificar(){
 
 
-	colaListos = queue_create();
-	colaBloqueados = queue_create();
+
 
 	//int q, quantum;
 
