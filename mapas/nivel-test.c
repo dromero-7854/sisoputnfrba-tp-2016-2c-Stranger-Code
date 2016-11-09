@@ -56,6 +56,8 @@ int main(int argc, char* argv[]) {
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = listaPokenests;
 
+	getchar();
+
 	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		fprintf(stderr, "Error creating thread\n");
@@ -63,10 +65,7 @@ int main(int argc, char* argv[]) {
 
 	}
 	getchar();
-
-	moverJugadores(entrenadores, items);
-
-	nivel_gui_terminar();
+	//moverJugadores(entrenadores, items);
 
 
 	colaListos = queue_create();
@@ -84,9 +83,18 @@ int main(int argc, char* argv[]) {
 
 	cargarPokenests(rutaPokenests, fabrica);
 
+
 	int listener;
 	listener = socket_servidor("33000", log_mapa);
 	manejar_select(listener, log_mapa);
+
+	/*if(pthread_join(pth, NULL)) {
+
+	fprintf(stderr, "Error joining thread\n");
+	return 2;
+
+	}*/
+	nivel_gui_terminar();
 
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
