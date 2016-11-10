@@ -811,8 +811,9 @@ void osada_read(int * client_socket) {
 
 	int file_size = (node_ptr->file_size);
 	void * buff;
+	int bytes_transferred = 0;
 
-	if (offset < file_size) {
+	if (offset < (file_size - 1)) {
 		if (offset + size > file_size)
 			size = file_size - offset;
 
@@ -850,6 +851,8 @@ void osada_read(int * client_socket) {
 			bytes_to_read = bytes_to_read - bytes_reading;
 			aux_map_ptr = map_ptr + (* aux_map_ptr);
 		}
+
+		bytes_transferred = size;
 	}
 
 	// << sending response >>
@@ -859,13 +862,13 @@ void osada_read(int * client_socket) {
 	// bytes transferred
 	uint8_t prot_bytes_transferred_size = 4;
 
-	int response_size = sizeof(char) * (prot_resp_code_size + prot_bytes_transferred_size + size);
+	int response_size = sizeof(char) * (prot_resp_code_size + prot_bytes_transferred_size + bytes_transferred);
 	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
-	memcpy(resp + prot_resp_code_size, &size, prot_bytes_transferred_size);
+	memcpy(resp + prot_resp_code_size, &bytes_transferred, prot_bytes_transferred_size);
 	// content
-	if (size > 0) {
-		memcpy(resp + prot_resp_code_size + prot_bytes_transferred_size, buff, size);
+	if (bytes_transferred > 0) {
+		memcpy(resp + prot_resp_code_size + prot_bytes_transferred_size, buff, bytes_transferred);
 	}
 	write(* client_socket, resp, response_size);
 	free(resp);
