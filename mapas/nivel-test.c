@@ -35,6 +35,8 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 int main(int argc, char* argv[]) {
 
+	t_log* log_mapa = crear_log(argv[1]);
+
 	items  = list_create();
 	entrenadores = list_create();
 	listaPokenests = list_create();
@@ -61,6 +63,10 @@ int main(int argc, char* argv[]) {
 	getchar();
 	//moverJugadores(entrenadores, items);
 
+
+	colaListos = queue_create();
+	colaBloqueados = queue_create();
+
 	char* rutaMetadata;
 	listaPokenests = list_create();
 	rutaMetadata = getRutaMetadata(argv[2], argv[1]);
@@ -73,6 +79,11 @@ int main(int argc, char* argv[]) {
 
 	cargarPokenests(rutaPokenests, fabrica);
 
+
+	int listener;
+	listener = socket_servidor("33000", log_mapa);
+	manejar_select(listener, log_mapa);
+
 	/*if(pthread_join(pth, NULL)) {
 
 	fprintf(stderr, "Error joining thread\n");
@@ -80,7 +91,6 @@ int main(int argc, char* argv[]) {
 
 	}*/
 	nivel_gui_terminar();
-
 
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
@@ -305,7 +315,7 @@ void eliminarEntrenador(int fd_entrenador){
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor){
 	t_queue* colaAux;
 	t_entrenador* entrenadorAux;
-	while(entrenadorAux == queue_pop(cola)){
+	while(entrenadorAux = queue_pop(cola)){
 		if(entrenadorAux->id == file_descriptor){
 			liberarEntrenador(entrenadorAux);
 		} else {
@@ -335,4 +345,11 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 		list_add(listaPokenests, pokenest);
 	}
 	closedir(d);
+}
+
+t_log* crear_log(char* nombre){
+	char nombre_archivo[256];
+	snprintf(&nombre_archivo, 256, "%s.log", nombre);
+	t_log* logger = log_create(nombre_archivo, "MAPA", false, LOG_LEVEL_TRACE);
+	return logger;
 }
