@@ -736,7 +736,7 @@ void osada_write(int * client_socket) {
 	// writing bytes
 	offset = offset - (OSADA_BLOCK_SIZE * movs);
 	osada_block * data_ptr = (osada_block *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * DATA_0));
-	char * aux_data_ptr = (char *)(data_ptr + (* aux_map_ptr) + offset);
+	char * aux_data_ptr = (char *)(data_ptr + (* aux_map_ptr));
 	bytes_availables_in_block = OSADA_BLOCK_SIZE - offset;
 	int bytes_to_write = size;
 	int buff_pos = 0;
@@ -744,13 +744,14 @@ void osada_write(int * client_socket) {
 
 	while (bytes_to_write > 0) {
 		bytes_writing = (bytes_to_write >= bytes_availables_in_block) ? bytes_availables_in_block : bytes_to_write;
-		memcpy(aux_data_ptr, buffer + buff_pos, bytes_writing);
+		memcpy(&aux_data_ptr[offset], buffer + buff_pos, bytes_writing);
 		bytes_to_write = bytes_to_write - bytes_writing;
 		aux_map_ptr = map_ptr + (* aux_map_ptr);
 		if ((* aux_map_ptr) == END_OF_FILE) break;
 		aux_data_ptr  = (char *)(data_ptr + (* aux_map_ptr));
 		buff_pos = buff_pos + bytes_writing;
 		bytes_availables_in_block = OSADA_BLOCK_SIZE;
+		offset = 0;
 	}
 
 	// << sending response >>
