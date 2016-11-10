@@ -35,14 +35,10 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 int main(int argc, char* argv[]) {
 
-	items = malloc(sizeof(t_list));
 	items  = list_create();
-
-	entrenadores = malloc(sizeof(t_list));
 	entrenadores = list_create();
-
-	listaPokenests = malloc(sizeof(t_list));
 	listaPokenests = list_create();
+
 	nivel_gui_inicializar();
     nivel_gui_get_area_nivel(&rows, &cols);
 
