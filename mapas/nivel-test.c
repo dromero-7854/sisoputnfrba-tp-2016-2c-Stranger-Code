@@ -37,13 +37,8 @@ int main(int argc, char* argv[]) {
 
 	log_mapa = crear_log(argv[1]);
 
-	items = malloc(sizeof(t_list));
 	items  = list_create();
-
-	entrenadores = malloc(sizeof(t_list));
 	entrenadores = list_create();
-
-	listaPokenests = malloc(sizeof(t_list));
 	listaPokenests = list_create();
 
 	colaListos = queue_create();
