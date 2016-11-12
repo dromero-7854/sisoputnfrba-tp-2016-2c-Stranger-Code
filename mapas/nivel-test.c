@@ -35,7 +35,7 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 int main(int argc, char* argv[]) {
 
-	t_log* log_mapa = crear_log(argv[1]);
+	log_mapa = crear_log(argv[1]);
 
 	items = malloc(sizeof(t_list));
 	items  = list_create();
@@ -45,6 +45,22 @@ int main(int argc, char* argv[]) {
 
 	listaPokenests = malloc(sizeof(t_list));
 	listaPokenests = list_create();
+
+	colaListos = queue_create();
+	colaBloqueados = queue_create();
+
+	char* rutaMetadata;
+	listaPokenests = list_create();
+	rutaMetadata = getRutaMetadata(argv[2], argv[1]);
+	log_trace(log_mapa, "Se obtuvo la ruta a metadata %s", rutaMetadata);
+	conf_metadata = malloc(sizeof(metadata));
+	leerConfiguracion(conf_metadata, rutaMetadata);
+	log_trace(log_mapa, "se cargo la metadata");
+	pthread_t planificador;
+	if(pthread_create(&planificador, NULL, (void *) planificar, NULL) != 0){
+		log_error(log_mapa, "problemas al crear hilo planificador");
+	}
+
 	nivel_gui_inicializar();
     nivel_gui_get_area_nivel(&rows, &cols);
 
@@ -57,7 +73,7 @@ int main(int argc, char* argv[]) {
 	comboListas.pokenests = listaPokenests;
 
 	getchar();
-
+	log_trace(log_mapa, "Se iniciaron las colas y listas");
 	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		fprintf(stderr, "Error creating thread\n");
@@ -71,11 +87,7 @@ int main(int argc, char* argv[]) {
 	colaListos = queue_create();
 	colaBloqueados = queue_create();
 
-	char* rutaMetadata;
-	listaPokenests = list_create();
-	rutaMetadata = getRutaMetadata(argv[2], argv[1]);
-	conf_metadata = malloc(sizeof(metadata));
-	leerConfiguracion(conf_metadata, rutaMetadata);
+
 
 	char *rutaPokenests;
 	rutaPokenests = getRutaPokenests(argv[2], argv[1]);
@@ -88,6 +100,9 @@ int main(int argc, char* argv[]) {
 	listener = socket_servidor("33000", log_mapa);
 	manejar_select(listener, log_mapa);
 
+	if(pthread_join(planificador, NULL)){
+		log_error(log_mapa, "problema al terminar hilo planificador");
+	}
 	/*if(pthread_join(pth, NULL)) {
 
 	fprintf(stderr, "Error joining thread\n");
@@ -353,7 +368,7 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 
 t_log* crear_log(char* nombre){
 	char nombre_archivo[256];
-	snprintf(&nombre_archivo, 256, "%s.log", nombre);
+	snprintf((char *)&nombre_archivo, 256, "%s.log", nombre);
 	t_log* logger = log_create(nombre_archivo, "MAPA", false, LOG_LEVEL_TRACE);
 	return logger;
 }
