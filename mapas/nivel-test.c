@@ -18,13 +18,11 @@
 #include "nivel-test.h"
 #include "planificacion.h"
 #include "deteccionDeadlock.h"
-#include <pthread.h>
+#include "dibujarNivel.h"
 #include <bibliotecaCharMander.h>
-
 
 #define QUANTUM 5
 
-int rows, cols;
 
 PokeNest* crearPokenest(char* rutaPokenest);
 
@@ -56,13 +54,9 @@ int main(int argc, char* argv[]) {
 		log_error(log_mapa, "problemas al crear hilo planificador");
 	}
 
-	nivel_gui_inicializar();
-    nivel_gui_get_area_nivel(&rows, &cols);
 
 
-	nivel_gui_dibujar(items, "Stranger Code");
-
-	pthread_t pth;
+	pthread_t pth, guipth;
 	t_combo comboListas;
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = listaPokenests;
@@ -71,7 +65,7 @@ int main(int argc, char* argv[]) {
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
 	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
-		fprintf(stderr, "Error creating thread\n");
+		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
 
 	}
@@ -104,36 +98,17 @@ int main(int argc, char* argv[]) {
 	return 2;
 
 	}*/
-	nivel_gui_terminar();
+	if(pthread_create(&guipth, NULL, (void *) dibujarNivel, &comboListas)) {
+		log_error(log_mapa, "Error creando el hilo de la GUI");
+		return 1;
+	}
+
 
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
 }
 
-void moverJugadores(t_list * entrenadores, t_list *items)
-{
-	int i = 0;
 
-	while(!list_is_empty(entrenadores))
-	{
-		t_entrenador *personaje = list_get(entrenadores, i);
-
-		while(personaje -> quantum < QUANTUM)
-		{
-			sleep(1);
-			moverJugador(personaje, items, 25, 5);
-			personaje -> quantum++;
-
-			nivel_gui_dibujar(items, 0);
-		}
-
-		personaje -> quantum = 0;
-
-		i++;
-		if(i == list_size(entrenadores)) i = 0;
-
-	}
-}
 
 void moverJugador(t_entrenador *personaje, t_list *items, int x, int y) {
 
