@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = listaPokenests;
 
-	getchar();
+	//getchar();
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
 	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
@@ -69,12 +69,13 @@ int main(int argc, char* argv[]) {
 		return 1;
 
 	}
-	getchar();
+	log_trace(log_mapa, "se creo hilo deadlock");
+	//getchar();
 	//moverJugadores(entrenadores, items);
 
 
-	colaListos = queue_create();
-	colaBloqueados = queue_create();
+	//colaListos = queue_create();
+	//colaBloqueados = queue_create();
 
 
 
@@ -84,24 +85,25 @@ int main(int argc, char* argv[]) {
 
 	cargarPokenests(rutaPokenests, fabrica);
 
-
+	if(pthread_create(&guipth, NULL, (void *) dibujarNivel, &comboListas)) {
+		log_error(log_mapa, "Error creando el hilo de la GUI");
+		return 1;
+	}
+	log_trace(log_mapa, "se creo hilo de dibujo");
 	int listener;
 	listener = socket_servidor("33000", log_mapa);
 	manejar_select(listener, log_mapa);
 
-	if(pthread_join(planificador, NULL)){
+	/*if(pthread_join(planificador, NULL)){
 		log_error(log_mapa, "problema al terminar hilo planificador");
 	}
+	log_trace(log_mapa, "joing del planificador");*/
 	/*if(pthread_join(pth, NULL)) {
 
 	fprintf(stderr, "Error joining thread\n");
 	return 2;
 
 	}*/
-	if(pthread_create(&guipth, NULL, (void *) dibujarNivel, &comboListas)) {
-			log_error(log_mapa, "Error creando el hilo de la GUI");
-			return 1;
-	}
 
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
@@ -329,6 +331,9 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 
 		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
 		list_add(listaPokenests, pokenest);
+		CrearCaja(items, pokenest->id, pokenest->posx, pokenest->posy, pokenest->cantidad);
+		getchar();
+
 	}
 	closedir(d);
 }

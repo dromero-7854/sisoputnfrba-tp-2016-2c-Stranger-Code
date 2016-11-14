@@ -51,10 +51,10 @@ void planificar(){
 
 	while(1){
 		if(!strcmp(conf_metadata->algoritmo, "RR")){
-			log_trace(log_mapa, "Planificacion RR");
+			//log_trace(log_mapa, "Planificacion RR");
 			ejecutarRafagaRR();
 		} else {
-			log_trace(log_mapa, "Planificacion SRDF");
+			//log_trace(log_mapa, "Planificacion SRDF");
 			ejecutarRafagaSRDF();
 		}
 	}
