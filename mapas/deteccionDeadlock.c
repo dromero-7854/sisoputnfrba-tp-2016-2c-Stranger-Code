@@ -6,10 +6,13 @@
  */
 
 #include "deteccionDeadlock.h"
+#include "nivel-test.h"
 
 bool estaBloqueado(t_entrenador * entrenador);
 
 void detectarDeadlock(t_combo * comboLista) {
+
+	t_log * log_deadlock = crear_log("deadlock");
 
 	t_list * entrenadores = comboLista ->entrenadores;
 	t_list * pokenest = comboLista ->pokenests;
@@ -85,20 +88,25 @@ void detectarDeadlock(t_combo * comboLista) {
 		}
 		if(count1 == count2) {
 
-			t_entrenador * entrenador1 = list_take_and_remove(bloqueados, 1);
+			log_trace(log_deadlock, "Se detecto un deadlock!");
 
-			while(list_size(bloqueados) > 0) {
+			if(conf_metadata->batalla) {
+				t_entrenador * entrenador1 = list_take_and_remove(bloqueados, 1);
 
-				t_entrenador * entrenador2 = list_take_and_remove(bloqueados, 1);
-				t_entrenador * loser = mandarAPelear(entrenador1, entrenador2);
-				entrenador1 = loser;
+				while(list_size(bloqueados) > 0) {
 
-				free(loser);
+					t_entrenador * entrenador2 = list_take_and_remove(bloqueados, 1);
+					t_entrenador * loser = mandarAPelear(entrenador1, entrenador2);
+					entrenador1 = loser;
 
+					free(loser);
+
+				}
+				matarEntrenador(entrenador1);
+				free(entrenador1);
+				break;
 			}
-			matarEntrenador(entrenador1);
-			free(entrenador1);
-			break;
+
 		}
 	}
 
@@ -126,12 +134,11 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 void matarEntrenador(t_entrenador * entrenador){
 
 	int i, j;
-	//Lo tengo que sacar de la lista de entrenadores
+
 	for(i=0; entrenador != list_get(entrenadores, i); i++);
 
 	list_remove(entrenadores, i);
 
-	//Tengo que agregarlos a las pokenests
 	for(i = 0; i < list_size(entrenador ->pokemons); i++) {
 		t_pokemon * pokemon = list_get(entrenador ->pokemons, i);
 

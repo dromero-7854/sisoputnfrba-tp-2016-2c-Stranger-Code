@@ -1,14 +1,16 @@
 
-Compilar
->> utnso@utnso40:~$ gcc fuse-example.c -o fuse-example -DFUSE_USE_VERSION=27 -D_FILE_OFFSET_BITS=64 -lpthread -lfuse 
+1 - compilar
+      utnso@utnso40:~$ gcc pokedex-client.c -o pokedex-client -DFUSE_USE_VERSION=27 -D_FILE_OFFSET_BITS=64 -lpthread -lfuse -lcommons -w
 
-Montar filesystem en el directorio ./mnt/pokedex 
-(En el directorio en el que estoy parado, existe un subdirectorio vacio /mnt/pokedex/)
->> utnso@utnso40:~$ ./fuse-example ./mnt/pokedex
+2 - crear un drectorio que será nuestrp punto de montaje (a este diretorio se le haran todos los pedidos de lectura de archivos, escritura, etc.)
+      /mnt/pokedex
 
-Para enviar parámetros customizados al montar filesystem
->> utnso@utnso40:~$ ./fuse-example ./mnt/pokedex --welcome-msg "Bienvenido al Ejemplo" -f 
+3 - en el directorio donde se encuentra el ejecutable, crear un subdirectorio "conf" donde se encuentra el archivo de propiedades con los datos de conexión al servidor (ver ejemplo repositorio git)
 
-Importante: Desmontar 
-(debo estar parado en el directorio donde se encuentra el subdirectorio vacio /mnt/pokedex/)
-utnso@utnso40:~$ fusermount -u ./mnt/pokedex
+4 - montar: se manda como parámetro el directorio que creamos como nuestro punto de montaje (en este ejemplo estoy ejecutando el proceso desde un directorio que contiene el punto de montaje)
+      se debe ejecutar previamente el proceso pokedex-server
+      utnso@utnso40:~$ ./pokedex-client ./mnt/pokedex
+
+5 - desmontar: debo estar parado en el directorio que contiene el punto de montaje (/mnt/pokedex), sino el comando no funciona correctamente
+      utilizar este comando cuando finalizamos con las pruebas, o si ocurrió un error y el proceso finalizó (también se debe correr el comando, para que podamos volver a ejecutar el cliente nuevamente)
+      utnso@utnso40:~$ fusermount -u ./mnt/pokedex

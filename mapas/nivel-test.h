@@ -15,6 +15,7 @@
 #include <commons/log.h>
 #include <dirent.h>
 #include <pkmn/factory.h>
+#include <pthread.h>
 
 #define DIRECCION_METADATA "/home/utnso/workspace/tp-2016-2c-Stranger-Code/mapas/Debug/metadata"
 
@@ -30,9 +31,10 @@ t_list *listaPokenests;
 t_list *items;
 t_list *entrenadores;
 int quantum;
+int rows, cols;
 
 typedef struct {
-	//int fd;
+
 	int posx;
 	int posy;
 

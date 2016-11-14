@@ -1,0 +1,4 @@
+compilar
+utnso@utnso40:~/pokedex-server$ gcc pokedex-server.c -o pokedex-server -D_FILE_OFFSET_BITS=64 -lpthread -lcommons -w
+
+importante antes de ejecutar: en el directorio donde se encuentra el ejecutable, crear un subdirectorio "conf" donde se encuentra el archivo de propiedades con la configuraciones necesarias (ver ejemplo repositorio git)
