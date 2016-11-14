@@ -83,6 +83,8 @@ typedef struct PokeNest {
 
 metadata* conf_metadata;
 
+pthread_mutex_t mutex_cola_listos;
+
 void manejar_select(int socket, t_log* log);
 t_entrenador* crearEntrenador(int file_descriptor);
 void liberarEntrenador();

@@ -20,6 +20,7 @@
 #include "deteccionDeadlock.h"
 #include <pthread.h>
 #include <bibliotecaCharMander.h>
+#include <semaphore.h>
 
 
 #define QUANTUM 5
@@ -52,15 +53,16 @@ int main(int argc, char* argv[]) {
 	leerConfiguracion(conf_metadata, rutaMetadata);
 	log_trace(log_mapa, "se cargo la metadata");
 	pthread_t planificador;
+	pthread_mutex_init(&mutex_cola_listos, NULL);
 	if(pthread_create(&planificador, NULL, (void *) planificar, NULL) != 0){
 		log_error(log_mapa, "problemas al crear hilo planificador");
 	}
 
-	nivel_gui_inicializar();
+	/*nivel_gui_inicializar();
     nivel_gui_get_area_nivel(&rows, &cols);
 
 
-	nivel_gui_dibujar(items, "Stranger Code");
+	nivel_gui_dibujar(items, "Stranger Code");*/
 
 	pthread_t pth;
 	t_combo comboListas;
@@ -104,7 +106,7 @@ int main(int argc, char* argv[]) {
 	return 2;
 
 	}*/
-	nivel_gui_terminar();
+	//nivel_gui_terminar();
 
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
@@ -327,17 +329,15 @@ void eliminarEntrenador(int fd_entrenador){
 }
 
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor){
-	t_queue* colaAux;
+	t_list* listaAux;
 	t_entrenador* entrenadorAux;
-	while(entrenadorAux = queue_pop(cola)){
-		if(entrenadorAux->id == file_descriptor){
-			liberarEntrenador(entrenadorAux);
-		} else {
-			queue_push(colaAux, entrenadorAux);
-		}
-
+	int _mismo_id(t_entrenador* entrenador){
+		return (entrenador->id == file_descriptor);
 	}
-	cola = colaAux;
+	pthread_mutex_lock(&mutex_cola_listos);
+	entrenadorAux = list_remove_by_condition(cola->elements, (void *)_mismo_id);
+	pthread_mutex_unlock(&mutex_cola_listos);
+	liberarEntrenador(entrenadorAux);
 }
 
 void liberarEntrenador(t_entrenador* entrenador){

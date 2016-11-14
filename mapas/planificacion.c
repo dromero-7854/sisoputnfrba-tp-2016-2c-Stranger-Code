@@ -76,12 +76,13 @@ t_entrenador* atender(t_queue* cola){
 
 void ejecutarRafagaSRDF(){
 	t_entrenador* entrenador;
-	atenderEntrenadoresSinDistanciaDefinida();
+	if(!queue_is_empty(colaListos)){
+		atenderEntrenadoresSinDistanciaDefinida();
 
-	entrenador = buscarEntrenadorConMenorDistancia();
-	atenderSolicitud(entrenador);
-	queue_push(colaListos, entrenador);
-
+		entrenador = buscarEntrenadorConMenorDistancia();
+		atenderSolicitud(entrenador);
+		queue_push(colaListos, entrenador);
+	}
 }
 
 void ejecutarRafagaRR(){
@@ -89,8 +90,10 @@ void ejecutarRafagaRR(){
 	t_entrenador* entrenador;
 	if(!queue_is_empty(colaListos)){
 		entrenador = atender(colaListos);
-	} else {
+	} else if(!queue_is_empty(colaBloqueados)) {
 		entrenador = atender(colaBloqueados);
+	} else {
+		return;
 	}
 	if (quantum == QUANTUM){
 		queue_push(colaListos, entrenador);
@@ -101,24 +104,19 @@ void ejecutarRafagaRR(){
 
 void atenderEntrenadoresSinDistanciaDefinida(){
 	t_entrenador* entrenador;
-	t_queue* colaAux;
-	while(entrenador = queue_pop(colaListos)){
-		if(entrenador->objetivoActual == NULL){
-			atenderSolicitud(entrenador);
-			queue_push(colaAux, entrenador);
-		} else {
-			queue_push(colaAux, entrenador);
-		}
+	int _no_tiene_objetivo_asignado(t_entrenador* entrenador){
+		return (entrenador-> objetivoActual == NULL);
 	}
-	colaListos = colaAux;
+	while((entrenador = list_remove_by_condition(colaListos->elements, (void *)_no_tiene_objetivo_asignado)) != NULL){
+			atenderSolicitud(entrenador);
+			queue_push(colaListos, entrenador);
+	}
 }
 
 t_entrenador* buscarEntrenadorConMenorDistancia(){
 	t_entrenador* entrenador;
-	t_list* listaAux;
-	while(entrenador = queue_pop(colaListos)){
-		list_add(listaAux, entrenador);
-	}
+	t_list* listaAux = list_create();
+	list_add_all(listaAux, colaListos->elements);
 	int _menor_distancia_a_pokenest(t_entrenador* entrenador1, t_entrenador* entrenador2){
 		int dist1, dist2;
 		PokeNest *pokenest1, *pokenest2;
@@ -128,8 +126,11 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 		dist2 = abs(pokenest2->posx - entrenador2->posx) + abs(pokenest2->posy - entrenador2->posy);
 		return dist1 < dist2;
 	}
+
 	list_sort(listaAux, (void*) _menor_distancia_a_pokenest);
 	entrenador = list_get(listaAux, 0);
-	list_remove(listaAux, 0);
-	return entrenador;
+	int _mismo_id(t_entrenador* e){
+		return (e->id == entrenador->id);
+	}
+	return list_remove_by_condition(colaListos->elements, _mismo_id);
 }
