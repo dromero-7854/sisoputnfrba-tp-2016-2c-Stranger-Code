@@ -24,19 +24,6 @@
 #include <thread_db.h>
 #include "osada.h"
 
-#define RES_MKDIR_OK 1
-#define RES_MKNOD_OK 1
-#define RES_READDIR_ISDIR 1
-#define RES_READDIR_ISEMPTYDIR 2
-#define RES_GETATTR_ISDIR 1
-#define RES_GETATTR_ISREG 2
-#define RES_GETATTR_ENOENT 3
-#define RES_WRITE_OK 1
-#define RES_READ_OK 1
-#define RES_TRUNCATE_OK 1
-#define RES_UNLINK_OK 1
-#define RES_RMDIR_OK 1
-
 int HEADER_SIZE, BITMAP_SIZE, MAPPING_TABLE_SIZE, DATA_SIZE;
 int HEADER_0, HEADER_1, BITMAP_0, BITMAP_1, FILE_TABLE_0, FILE_TABLE_1, MAPPING_TABLE_0, MAPPING_TABLE_1, DATA_0, DATA_1;
 int BM_HEADER_0, BM_HEADER_1, BM_BITMAP_0, BM_BITMAP_1, BM_FILE_TABLE_0, BM_FILE_TABLE_1, BM_MAPPING_TABLE_0, BM_MAPPING_TABLE_1, BM_DATA_0, BM_DATA_1;
@@ -224,18 +211,21 @@ void closure (char * dir) {
 
 int search_dir(const char * dir_name, int pb_pos) {
 	int node_pos = search_node(dir_name, pb_pos);
-	if (node_pos < 0) return node_pos;
+	if (node_pos == -OSADA_ENOENT) // no such  file or directory
+		return -OSADA_ENOTDIR; // not a directory
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	file_table_ptr = file_table_ptr + node_pos;
 	if (file_table_ptr->state == DIRECTORY) {
 		return node_pos;
 	} else {
-		return -1;
+		return -OSADA_ENOTDIR; // not a directory
 	}
 }
 
 int search_node(const char * node_name, int pb_pos) {
+
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+
 	int file_block_number = 0;
 	int node_size, i;
 	char * fname = malloc(sizeof(char) * (OSADA_FILENAME_LENGTH + 1));
@@ -255,13 +245,17 @@ int search_node(const char * node_name, int pb_pos) {
 		file_table_ptr++;
 	}
 	free(fname);
+
 	if (file_block_number > (FILE_BLOCKS_MOUNT - 1))
-		return -1;
+		return -OSADA_ENOENT; // no such file or directory
+
 	return file_block_number;
 }
 
 int create_dir(const char * dir_name, int pb_pos) {
+
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+
 	int file_block_number = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
 		if (file_table_ptr->state == DELETED)
@@ -269,6 +263,9 @@ int create_dir(const char * dir_name, int pb_pos) {
 		file_block_number++;
 		file_table_ptr++;
 	}
+
+	if (file_block_number > (FILE_BLOCKS_MOUNT - 1))
+		return -OSADA_ENOSPC; // no space left on device
 
 	osada_file * o_file = malloc(sizeof(osada_file));
 	int dir_name_size = strlen(dir_name);
@@ -286,7 +283,9 @@ int create_dir(const char * dir_name, int pb_pos) {
 }
 
 int create_node(const char * node_name, int pb_pos) {
+
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+
 	int file_block_number = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
 		if (file_table_ptr->state == DELETED)
@@ -294,6 +293,9 @@ int create_node(const char * node_name, int pb_pos) {
 		file_block_number++;
 		file_table_ptr++;
 	}
+	if (file_block_number > (FILE_BLOCKS_MOUNT - 1))
+		return -OSADA_ENOSPC; // no space left on device
+
 	osada_file * o_file = malloc(sizeof(osada_file));
 	int node_name_size = strlen(node_name);
 	memcpy((char *)(o_file->fname), node_name, node_name_size);
@@ -351,6 +353,7 @@ void process_request(int * client_socket) {
 }
 
 void osada_mkdir(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -371,8 +374,23 @@ void osada_mkdir(int * client_socket) {
 	char * dir = strtok(path,"/");
 	while (dir != NULL) {
 		ft_pos = search_dir(dir, pb_pos);
-		if (ft_pos < 0) {
+		if (ft_pos == -OSADA_ENOTDIR) {
 			pb_pos = create_dir(dir, pb_pos);
+			if (pb_pos == -OSADA_ENOSPC) {
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENOSPC; // no space left on device
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, prot_resp_code_size);
+				free(resp);
+				free(path);
+				return;
+			}
 			break;
 		} else {
 			pb_pos = ft_pos;
@@ -381,10 +399,11 @@ void osada_mkdir(int * client_socket) {
 	}
 	free(path);
 
+	//
 	// << sending response >>
 	// response code
 	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = RES_MKDIR_OK;
+	uint8_t resp_code = OSADA_ISDIR; // is a directory
 
 	int response_size = sizeof(char) * (prot_resp_code_size);
 	void * resp = malloc(response_size);
@@ -394,6 +413,7 @@ void osada_mkdir(int * client_socket) {
 }
 
 void osada_readdir(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -414,6 +434,21 @@ void osada_readdir(int * client_socket) {
 		char * dir = strtok(path,"/");
 		while (dir != NULL) {
 			pb_pos = search_dir(dir, pb_pos);
+			if (pb_pos == -OSADA_ENOTDIR) {
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENOTDIR; // not a directory
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, response_size);
+				free(resp);
+				free(path);
+				return;
+			}
 			dir = strtok(NULL, "/");
 		}
 	}
@@ -462,10 +497,11 @@ void osada_readdir(int * client_socket) {
 		buffer[buffer_size] = '\0';
 		list_destroy_and_destroy_elements(node_list, &closure);
 
+		//
 		// << sending response >>
 		// response code
 		uint8_t prot_resp_code_size = 1;
-		uint8_t resp_code = RES_READDIR_ISDIR;
+		uint8_t resp_code = OSADA_NOTEMPTYDIR; // no empty directory
 		// response size
 		uint32_t prot_resp_size = 4;
 		uint32_t resp_size = (strlen(buffer) + 1);
@@ -482,10 +518,11 @@ void osada_readdir(int * client_socket) {
 	} else {
 		list_destroy(node_list);
 
+		//
 		// << sending response >>
 		// response code
 		uint8_t prot_resp_code_size = 1;
-		uint8_t resp_code = RES_READDIR_ISEMPTYDIR;
+		uint8_t resp_code = OSADA_EMPTYDIR; // empty directory
 
 		int response_size = sizeof(char) * (prot_resp_code_size);
 		void * resp = malloc(response_size);
@@ -496,6 +533,7 @@ void osada_readdir(int * client_socket) {
 }
 
 void osada_getattr(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -516,23 +554,27 @@ void osada_getattr(int * client_socket) {
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		node_pos = search_node(node, pb_pos);
-		if (node_pos < 0) {
+		if (node_pos == -OSADA_ENOENT) {
+			//
 			// << sending response >>
 			// response code
 			uint8_t prot_resp_code_size = 1;
-			uint8_t resp_code = RES_GETATTR_ENOENT;
+			uint8_t resp_code = OSADA_ENOENT;	// no such file or directory
 
 			int response_size = sizeof(char) * (prot_resp_code_size);
 			void * resp = malloc(response_size);
 			memcpy(resp, &resp_code, prot_resp_code_size);
 			write(* client_socket, resp, response_size);
 			free(resp);
+			free(path);
+			return;
 		}
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
 	free(path);
 
+	//
 	// << sending response >>
 	// response code
 	uint8_t prot_resp_code_size = 1;
@@ -543,9 +585,9 @@ void osada_getattr(int * client_socket) {
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	file_table_ptr = file_table_ptr + node_pos;
 	if (file_table_ptr->state == DIRECTORY) {
-		resp_code = RES_GETATTR_ISDIR;
+		resp_code = OSADA_ISDIR; // is a directory
 	} else if (file_table_ptr->state == REGULAR){
-		resp_code = RES_GETATTR_ISREG;
+		resp_code = OSADA_ISREG; // is a regular file
 		file_size = file_table_ptr->file_size;
 	}
 
@@ -559,6 +601,7 @@ void osada_getattr(int * client_socket) {
 }
 
 void osada_mknod(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -579,8 +622,43 @@ void osada_mknod(int * client_socket) {
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		ft_pos = search_dir(node, pb_pos);
-		if (ft_pos < 0) {
-			pb_pos = create_node(node, pb_pos);
+		if (ft_pos == -OSADA_ENOTDIR) {
+			char * rfile = node;
+			node = strtok(NULL, "/");
+			if (node == NULL) {
+				// final node, the regular file to create
+				pb_pos = create_node(rfile, pb_pos);
+				if (pb_pos == -OSADA_ENOSPC) {
+					//
+					// << sending response >>
+					// response code
+					uint8_t prot_resp_code_size = 1;
+					uint8_t resp_code = OSADA_ENOSPC; // no space left on device
+
+					int response_size = sizeof(char) * (prot_resp_code_size);
+					void * resp = malloc(response_size);
+					memcpy(resp, &resp_code, prot_resp_code_size);
+					write(* client_socket, resp, response_size);
+					free(resp);
+					free(path);
+					return;
+				}
+			} else {
+				// the directory where the user want to create the file doesn't exist
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENOTDIR; // not a directory
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, response_size);
+				free(resp);
+				free(path);
+				return;
+			}
 			break;
 		} else {
 			pb_pos = ft_pos;
@@ -589,10 +667,11 @@ void osada_mknod(int * client_socket) {
 	}
 	free(path);
 
+	//
 	// << sending response >>
 	// response code
 	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = RES_MKNOD_OK;
+	uint8_t resp_code = OSADA_ISREG; // is a regular file
 
 	int response_size = sizeof(char) * (prot_resp_code_size);
 	void * resp = malloc(response_size);
@@ -603,6 +682,7 @@ void osada_mknod(int * client_socket) {
 }
 
 void osada_write(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -647,6 +727,22 @@ void osada_write(int * client_socket) {
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		node_pos = search_node(node, pb_pos);
+		if (node_pos == -OSADA_ENOENT) {
+			//
+			// << sending response >>
+			// response code
+			uint8_t prot_resp_code_size = 1;
+			uint8_t resp_code = OSADA_ENOENT; // no such file or directory
+
+			int response_size = sizeof(char) * (prot_resp_code_size);
+			void * resp = malloc(response_size);
+			memcpy(resp, &resp_code, prot_resp_code_size);
+			write(* client_socket, resp, response_size);
+			free(resp);
+			free(path);
+			free(buffer);
+			return;
+		}
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
@@ -655,7 +751,7 @@ void osada_write(int * client_socket) {
 	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
 
-	// variables
+	node_ptr->lastmod = time(NULL);
 	int fsize = node_ptr->file_size;
 	osada_block_pointer * map_ptr = (osada_block_pointer *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * MAPPING_TABLE_0));
 	osada_block_pointer * aux_map_ptr;
@@ -691,7 +787,21 @@ void osada_write(int * client_socket) {
 				free_db++;
 			}
 			if (free_db > BM_DATA_1) {
-				// TODO full disk
+				node_ptr->file_size = fsize;
+
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENOSPC; // no space left on device
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, prot_resp_code_size);
+				free(resp);
+				free(buffer);
+				return;
 			}
 		}
 		aux_map_ptr = map_ptr + (node_ptr->first_block);
@@ -720,7 +830,40 @@ void osada_write(int * client_socket) {
 			free_db++;
 		}
 		if (free_db > BM_DATA_1) {
-			// TODO full disk
+			// no space left on device
+			// releasing blocks
+			node_ptr->file_size = fsize;
+			int necessary_blocks = fsize / OSADA_BLOCK_SIZE;
+			// considering file size = 0 (empty file)
+			if ((fsize > 0) && ((necessary_blocks == 0) || ((fsize % OSADA_BLOCK_SIZE) >= 1))) necessary_blocks++;
+
+			osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
+			while (necessary_blocks > 0) {
+				necessary_blocks--;
+				aux_map_ptr = map_ptr + (* aux_map_ptr);
+			}
+
+			osada_block_pointer aux;
+			while ((* aux_map_ptr) != END_OF_FILE) {
+				aux = (* aux_map_ptr);
+				bitarray_clean_bit(bitmap, (* aux_map_ptr));
+				* aux_map_ptr = END_OF_FILE;
+				aux_map_ptr = map_ptr + aux;
+			}
+
+			//
+			// << sending response >>
+			// response code
+			uint8_t prot_resp_code_size = 1;
+			uint8_t resp_code = OSADA_ENOSPC; // no space left on device
+
+			int response_size = sizeof(char) * (prot_resp_code_size);
+			void * resp = malloc(response_size);
+			memcpy(resp, &resp_code, prot_resp_code_size);
+			write(* client_socket, resp, prot_resp_code_size);
+			free(resp);
+			free(buffer);
+			return;
 		}
 	}
 
@@ -754,9 +897,11 @@ void osada_write(int * client_socket) {
 		offset = 0;
 	}
 
+	//
 	// << sending response >>
+	// response code
 	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = RES_WRITE_OK;
+	uint8_t resp_code = OSADA_SEXE; // successful execution
 
 	int response_size = sizeof(char) * (prot_resp_code_size);
 	void * resp = malloc(response_size);
@@ -768,6 +913,7 @@ void osada_write(int * client_socket) {
 }
 
 void osada_read(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -801,6 +947,21 @@ void osada_read(int * client_socket) {
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		node_pos = search_node(node, pb_pos);
+		if (node_pos == -OSADA_ENOENT) {
+			//
+			// << sending response >>
+			// response code
+			uint8_t prot_resp_code_size = 1;
+			uint8_t resp_code = OSADA_ENOENT; // no such file or directory
+
+			int response_size = sizeof(char) * (prot_resp_code_size);
+			void * resp = malloc(response_size);
+			memcpy(resp, &resp_code, prot_resp_code_size);
+			write(* client_socket, resp, response_size);
+			free(resp);
+			free(path);
+			return;
+		}
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
@@ -855,10 +1016,11 @@ void osada_read(int * client_socket) {
 		bytes_transferred = size;
 	}
 
+	//
 	// << sending response >>
 	// response code
 	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = RES_READ_OK;
+	uint8_t resp_code = OSADA_SEXE; // successful execution
 	// bytes transferred
 	uint8_t prot_bytes_transferred_size = 4;
 
@@ -869,13 +1031,14 @@ void osada_read(int * client_socket) {
 	// content
 	if (bytes_transferred > 0) {
 		memcpy(resp + prot_resp_code_size + prot_bytes_transferred_size, buff, bytes_transferred);
+		free(buff);
 	}
 	write(* client_socket, resp, response_size);
 	free(resp);
-	free(buff);
 }
 
 void osada_truncate(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -903,6 +1066,21 @@ void osada_truncate(int * client_socket) {
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		node_pos = search_node(node, pb_pos);
+		if (node_pos == -OSADA_ENOENT) {
+			//
+			// << sending response >>
+			// response code
+			uint8_t prot_resp_code_size = 1;
+			uint8_t resp_code = OSADA_ENOENT; // no such file or directory
+
+			int response_size = sizeof(char) * (prot_resp_code_size);
+			void * resp = malloc(response_size);
+			memcpy(resp, &resp_code, prot_resp_code_size);
+			write(* client_socket, resp, response_size);
+			free(resp);
+			free(path);
+			return;
+		}
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
@@ -925,8 +1103,8 @@ void osada_truncate(int * client_socket) {
 		}
 		// getting necessary blocks
 		int necessary_blocks = new_size / OSADA_BLOCK_SIZE;
-		// considering a new size = 0 (empty file)
-		if ((new_size != 0) && ((necessary_blocks == 0) || ((new_size % OSADA_BLOCK_SIZE) >= 1))) necessary_blocks++;
+		// considering new size = 0 (empty file)
+		if ((new_size > 0) && ((necessary_blocks == 0) || ((new_size % OSADA_BLOCK_SIZE) >= 1))) necessary_blocks++;
 		if (new_size > old_size && necessary_blocks > current_blocks) {
 			//
 			// adding blocks
@@ -947,10 +1125,42 @@ void osada_truncate(int * client_socket) {
 				}
 				free_db++;
 			}
-			if (free_db > BM_MAPPING_TABLE_1) {
+			if (free_db > BM_DATA_1) {
 				//
-				// TODO full disk
+				// no space left on device
+				// releasing blocks
 				//
+				node_ptr->file_size = old_size;
+				necessary_blocks = old_size / OSADA_BLOCK_SIZE;
+				// considering old file size = 0 (empty file)
+				if ((old_size > 0) && ((necessary_blocks == 0) || ((old_size % OSADA_BLOCK_SIZE) >= 1))) necessary_blocks++;
+
+				osada_block_pointer * aux_map_ptr = &(node_ptr->first_block);
+				while (necessary_blocks > 0) {
+					necessary_blocks--;
+					aux_map_ptr = map_ptr + (* aux_map_ptr);
+				}
+
+				osada_block_pointer aux;
+				while ((* aux_map_ptr) != END_OF_FILE) {
+					aux = (* aux_map_ptr);
+					bitarray_clean_bit(bitmap, (* aux_map_ptr));
+					* aux_map_ptr = END_OF_FILE;
+					aux_map_ptr = map_ptr + aux;
+				}
+
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENOSPC; // no space left on device
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, prot_resp_code_size);
+				free(resp);
+				return;
 			}
 		} else if (new_size < old_size && necessary_blocks < current_blocks) {
 			//
@@ -962,7 +1172,7 @@ void osada_truncate(int * client_socket) {
 				aux_map_ptr = map_ptr + (* aux_map_ptr);
 			}
 
-			uint32_t aux;
+			osada_block_pointer aux;
 			while ((* aux_map_ptr) != END_OF_FILE) {
 				aux = (* aux_map_ptr);
 				bitarray_clean_bit(bitmap, (* aux_map_ptr));
@@ -972,19 +1182,21 @@ void osada_truncate(int * client_socket) {
 		}
 	}
 
+	//
 	// << sending response >>
+	// response code
 	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = RES_TRUNCATE_OK;
+	uint8_t resp_code = OSADA_SEXE;	// successful execution
 
 	int response_size = sizeof(char) * (prot_resp_code_size);
 	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
 	write(* client_socket, resp, response_size);
 	free(resp);
-
 }
 
 void osada_unlink(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -1006,6 +1218,21 @@ void osada_unlink(int * client_socket) {
 	char * node = strtok(path,"/");
 	while (node != NULL) {
 		node_pos = search_node(node, pb_pos);
+		if (node_pos == -OSADA_ENOENT) {
+			//
+			// << sending response >>
+			// response code
+			uint8_t prot_resp_code_size = 1;
+			uint8_t resp_code = OSADA_ENOENT; // no such file or directory
+
+			int response_size = sizeof(char) * (prot_resp_code_size);
+			void * resp = malloc(response_size);
+			memcpy(resp, &resp_code, prot_resp_code_size);
+			write(* client_socket, resp, response_size);
+			free(resp);
+			free(path);
+			return;
+		}
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
@@ -1029,9 +1256,11 @@ void osada_unlink(int * client_socket) {
 
 	node_ptr->state = DELETED;
 
+	//
 	// << sending response >>
+	// response code
 	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = RES_UNLINK_OK;
+	uint8_t resp_code = OSADA_SEXE;	// successful execution
 
 	int response_size = sizeof(char) * (prot_resp_code_size);
 	void * resp = malloc(response_size);
@@ -1042,6 +1271,7 @@ void osada_unlink(int * client_socket) {
 }
 
 void osada_rmdir(int * client_socket) {
+	//
 	// << receiving message >>
 	// path size
 	uint8_t prot_path_size = 4;
@@ -1062,7 +1292,22 @@ void osada_rmdir(int * client_socket) {
 	int pb_pos = ROOT;
 	char * node = strtok(path,"/");
 	while (node != NULL) {
-		node_pos = search_node(node, pb_pos);
+		node_pos = search_dir(node, pb_pos);
+		if (node_pos == -OSADA_ENOTDIR) {
+			//
+			// << sending response >>
+			// response code
+			uint8_t prot_resp_code_size = 1;
+			uint8_t resp_code = OSADA_ENOTDIR;	// not a directory
+
+			int response_size = sizeof(char) * (prot_resp_code_size);
+			void * resp = malloc(response_size);
+			memcpy(resp, &resp_code, prot_resp_code_size);
+			write(* client_socket, resp, response_size);
+			free(resp);
+			free(path);
+			return;
+		}
 		pb_pos = node_pos;
 		node = strtok(NULL, "/");
 	}
@@ -1072,14 +1317,15 @@ void osada_rmdir(int * client_socket) {
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
 	node_ptr->state = DELETED;
 
+	//
 	// << sending response >>
+	// response code
 	uint8_t prot_resp_code_size = 1;
-	uint8_t resp_code = RES_RMDIR_OK;
+	uint8_t resp_code = OSADA_SEXE;	// successful execution
 
 	int response_size = sizeof(char) * (prot_resp_code_size);
 	void * resp = malloc(response_size);
 	memcpy(resp, &resp_code, prot_resp_code_size);
 	write(* client_socket, resp, response_size);
 	free(resp);
-
 }
