@@ -127,10 +127,17 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 		// file size
 		uint32_t prot_resp_file_size = 4;
 		uint32_t file_size;
+		// last modification
+		uint8_t prot_resp_lastmod_size = 4;
+		uint32_t lastmod = 0;
 		if (resp_code == OSADA_ENOENT) {
 			res = -ENOENT;
 		} else {
 			if (recv(server_socket, &file_size, prot_resp_file_size, 0) <= 0) {
+				printf("pokedex client: server %d disconnected...\n", server_socket);
+				return 1;
+			}
+			if (recv(server_socket, &lastmod, prot_resp_lastmod_size, 0) <= 0) {
 				printf("pokedex client: server %d disconnected...\n", server_socket);
 				return 1;
 			}

@@ -9,7 +9,7 @@
 
 4 - montar: se manda como parámetro el directorio que creamos como nuestro punto de montaje (en este ejemplo estoy ejecutando el proceso desde un directorio que contiene el punto de montaje)
       se debe ejecutar previamente el proceso pokedex-server
-      utnso@utnso40:~$ ./pokedex-client ./mnt/pokedex
+      utnso@utnso40:~$ ./pokedex-client ./mnt/pokedex -s
 
 5 - desmontar: debo estar parado en el directorio que contiene el punto de montaje (/mnt/pokedex), sino el comando no funciona correctamente
       utilizar este comando cuando finalizamos con las pruebas, o si ocurrió un error y el proceso finalizó (también se debe correr el comando, para que podamos volver a ejecutar el cliente nuevamente)
