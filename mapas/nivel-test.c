@@ -77,8 +77,6 @@ int main(int argc, char* argv[]) {
 	//colaListos = queue_create();
 	//colaBloqueados = queue_create();
 
-
-
 	char *rutaPokenests;
 	rutaPokenests = getRutaPokenests(argv[2], argv[1]);
 	t_pkmn_factory* fabrica = create_pkmn_factory();
@@ -86,8 +84,8 @@ int main(int argc, char* argv[]) {
 	cargarPokenests(rutaPokenests, fabrica);
 
 	if(pthread_create(&guipth, NULL, (void *) dibujarNivel, &comboListas)) {
-		log_error(log_mapa, "Error creando el hilo de la GUI");
-		return 1;
+				log_error(log_mapa, "Error creando el hilo de la GUI");
+				return 1;
 	}
 	log_trace(log_mapa, "se creo hilo de dibujo");
 	int listener;
@@ -327,13 +325,13 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 	while((directorio = readdir(d)) != NULL){
 		if((!strcmp(directorio->d_name, ".")) || (!strcmp(directorio->d_name, ".."))) continue;
 		char* rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
+		getchar();
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
 		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
 		list_add(listaPokenests, pokenest);
+		//getchar();
 		CrearCaja(items, pokenest->id, pokenest->posx, pokenest->posy, pokenest->cantidad);
-		getchar();
-
 	}
 	closedir(d);
 }
