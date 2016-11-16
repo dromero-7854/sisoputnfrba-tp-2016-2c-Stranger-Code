@@ -329,6 +329,7 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
 		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
+		pokenest->cantidad = list_size(pokenest->listaPokemons);
 		list_add(listaPokenests, pokenest);
 		//getchar();
 		CrearCaja(items, pokenest->id, pokenest->posx, pokenest->posy, pokenest->cantidad);
