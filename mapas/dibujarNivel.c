@@ -14,13 +14,10 @@ void dibujarNivel(t_combo * comboLista) {
 
 	nivel_gui_inicializar();
 	nivel_gui_get_area_nivel(&rows, &cols);
+
 	while(1) {
 
 		//pthread_mutex_lock(&mutex);
-
-
-
-
 		nivel_gui_dibujar(items, "Stranger Code");
 
 		sleep(1);

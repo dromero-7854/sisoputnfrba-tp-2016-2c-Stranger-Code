@@ -115,8 +115,8 @@ bool estaBloqueado(t_entrenador * entrenador) {
 
 	return (entrenador ->bloq);
 }
-bool esDeMayorNivel(t_pokemon * pokemon1, t_pokemon * pokemon2) {
-	return pokemon1 ->level > pokemon2->level;
+bool esDeMayorNivel(t_infoPokemon * pokemon1, t_infoPokemon * pokemon2) {
+	return pokemon1 ->pokemon->level > pokemon2->pokemon->level;
 }
 t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2){
 	list_sort(entrenador1 ->pokemons, (void*)esDeMayorNivel);
@@ -140,13 +140,13 @@ void matarEntrenador(t_entrenador * entrenador){
 	list_remove(entrenadores, i);
 
 	for(i = 0; i < list_size(entrenador ->pokemons); i++) {
-		t_pokemon * pokemon = list_get(entrenador ->pokemons, i);
+		t_infoPokemon * pokemon = list_get(entrenador ->pokemons, i);
 
 		for(j=0; j < list_size(listaPokenests); j++) {
 
 			PokeNest * pokenest = list_get(listaPokenests, j);
 
-			if(strcmp(pokenest->nombrePokemon, pokemon->species) == 0) {
+			if(pokenest->id == pokemon->id_pokenest) {
 
 				list_add(pokenest->listaPokemons, pokemon);
 				pokenest->cantidad++;
