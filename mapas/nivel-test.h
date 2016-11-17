@@ -85,7 +85,7 @@ typedef struct PokeNest {
 } PokeNest;
 
 metadata* conf_metadata;
-
+char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
 
 void manejar_select(int socket, t_log* log);
@@ -95,5 +95,9 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica);
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor);
 void eliminarEntrenador(int fd_entrenador);
 t_log* crear_log(char* nombre);
+PokeNest* crearPokenest(char* rutaPokenest);
+void moverJugadores(t_list *entrenadores, t_list *items);
+void moverJugador(t_entrenador *personaje, t_list *items,int x,int y);
+void leerConfiguracion(metadata* conf_metadata, char* ruta);
 
 #endif /* NIVEL_TEST_H_ */

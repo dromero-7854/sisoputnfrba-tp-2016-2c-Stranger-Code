@@ -20,19 +20,21 @@
 #include "deteccionDeadlock.h"
 #include "dibujarNivel.h"
 #include <bibliotecaCharMander.h>
+#include <signal.h>
 
 #define QUANTUM 5
 
 
-PokeNest* crearPokenest(char* rutaPokenest);
+void releerConfiguracion(int n){
+	leerConfiguracion(conf_metadata, rutaMetadata);
+}
 
-void moverJugadores(t_list *entrenadores, t_list *items);
-void moverJugador(t_entrenador *personaje, t_list *items,int x,int y);
-void leerConfiguracion(metadata* conf_metadata, char* ruta);
+
 
 
 int main(int argc, char* argv[]) {
 
+	signal(SIGUSR1, releerConfiguracion);
 	log_mapa = crear_log(argv[1]);
 
 	items  = list_create();
@@ -42,7 +44,7 @@ int main(int argc, char* argv[]) {
 	colaListos = queue_create();
 	colaBloqueados = queue_create();
 
-	char* rutaMetadata;
+
 	listaPokenests = list_create();
 	rutaMetadata = getRutaMetadata(argv[2], argv[1]);
 	log_trace(log_mapa, "Se obtuvo la ruta a metadata %s", rutaMetadata);
