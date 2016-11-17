@@ -21,34 +21,69 @@ t_log* crear_log(char* nombreEntrenador, char* pathConfig) {
 	return logger;
 }
 
-int cargar_metadata(char* path, t_list* travel_sheet){
+t_coach* cargar_metadata(char* path, char* nombre_entrenador){
+	char *pathConfig = string_new();
+	string_append(&pathConfig, path);
+	string_append(&pathConfig, "Entrenadores/");
+	string_append(&pathConfig, nombre_entrenador);
+	string_append(&pathConfig, "/metadata.conf");
+
+	t_config* configuracion = config_create(pathConfig);
+	char* name = config_get_string_value(configuracion, "nombre");
+	char* simbol = config_get_string_value(configuracion, "simbolo");
+	int life = config_get_int_value(configuracion, "vidas");
+	t_coach* entrenador = coach_create(name, simbol, life);
+
+	// se obtienen los mapas de la hoja de viaje
+	char** hojaDeViaje = config_get_array_value(configuracion, "hojaDeViaje");
+	char** objetivosDelMapa;
+	char** infoMapa;
+	char *mapa;
+	char *info;
+	t_map* map;
 	char* ip = "127.0.0.1";
 	char* port = "6667";
-	t_map* map;
-	t_list* poke_list;
 
-	//travel_sheet = list_create();
-	list_add(travel_sheet, map_create("pueblo paleta", ip, port));
-	port = "7000";
-    /*list_add(travel_sheet, map_create("algun otro pueblo", ip, port));
-    list_add(travel_sheet, map_create("el mejor pueblo", ip, port));
-    list_add(travel_sheet, map_create("pueblo capital", ip, port));
-    list_add(travel_sheet, map_create("pueblo olvidado", ip, port));*/
+	int posObj;
+	int posMapa = 0;
+	while(hojaDeViaje[posMapa] != NULL){
+		mapa = string_new();
+		string_append(&mapa, "obj[");
+		string_append(&mapa, hojaDeViaje[posMapa]);
+		string_append(&mapa, "]");
 
-	map = find_map_by_name(travel_sheet, "pueblo paleta");
-	poke_list = map->pokemon_list;
-	list_add(poke_list, pokemon_create("Picachu", "P"));
-	list_add(poke_list, pokemon_create("Raychu", "R"));
-	list_add(poke_list, pokemon_create("Bulbasaur", "B"));
+		info = string_new();
+		string_append(&info, "info[");
+		string_append(&info, hojaDeViaje[posMapa]);
+		string_append(&info, "]");
 
-	return 0;
+		// se obtiene la información necesaria para conectarse al mapa
+		infoMapa = config_get_array_value(configuracion, info);
+
+		// se obtienen los objetivos de un mapa
+		objetivosDelMapa = config_get_array_value(configuracion, mapa);
+		map = map_create(hojaDeViaje[posMapa], infoMapa[INFO_IP], infoMapa[INFO_PORT]);
+		posObj = 0;
+		//TODO: se debe validar que no haya dos pokemones iguales sucesivamente
+		while(objetivosDelMapa[posObj] != NULL){
+			// se agregan los objetivos a un mapa
+			list_add(map->pokemon_list, pokemon_create("desconocido", objetivosDelMapa[posObj]));
+		posObj++;
+		}
+		// se agrega el mapa a la hoja de viaje
+		list_add(entrenador->travel_sheet, map);
+	posMapa++;
+	}
+
+	return entrenador;
 }
 
 int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	coach_connect_to_map(entrenador, mapa);
 	uint8_t operation_code;
 	t_coor* coor;
-	connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->name);
+	//connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->name);
+	connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, "");
 	connection_recv(entrenador->conn, &operation_code, &coor);
 
 	entrenador->coor = coor;
@@ -76,6 +111,7 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 
 		pokemon = map_next_pokemon(mapa);
 	}
+	coach_medal_copy(entrenador, mapa);
 	log_info(logger, "Felicitaciones! completaste el mapa: %s.\n", mapa->name);
 
 	return 0;
@@ -137,4 +173,41 @@ uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coo
 	}
 
 	return mover;
+}
+
+int copy_file(char* f_origen,char* f_destino){
+	FILE *fp_org,*fp_dest;
+	char c;
+
+	if(!(fp_org=fopen(f_origen,"rb")) || !(fp_dest=fopen(f_destino,"wb")))
+	{
+		perror("Error de apertura de ficheros");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Para meter lo que vamos leyendo del fichero */
+	char buffer[1000];
+	/* Para guardar el número de items leidos o si ha habido error */
+	int totalLeidos;
+	int leidos = 0;
+	leidos = fread (buffer, 1, 1000, fp_org);
+
+	/* Mientras se haya leido algo ... */
+	while (leidos!=0)
+	{
+		totalLeidos = totalLeidos + leidos;
+	   /* ... meterlo en el fichero destino */
+	   fwrite (buffer, 1, leidos, fp_dest);
+	   /* y leer siguiente bloque */
+	   leidos = fread (buffer, 1, 1000, fp_org);
+	}
+	//while((c=fgetc(fp_org)) != EOF && !ferror(fp_org) && !ferror(fp_dest)) fputc(c, fp_dest);
+
+	if(ferror(fp_org) || ferror(fp_org)){
+		return 1;
+	} else {
+		fclose(fp_org);
+		fclose(fp_dest);
+		return 0;
+	}
 }

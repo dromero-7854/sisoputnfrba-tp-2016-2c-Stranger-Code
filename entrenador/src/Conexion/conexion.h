@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <netdb.h>
 #include <stddef.h>
+#include <commons/string.h>
 #include "../Coordenadas/coordenadas.h"
 
 #define OC_MENSAJE 0
@@ -21,6 +22,8 @@
 #define OC_ATRAPAR_POKEMON 4
 #define OC_UBICACION_POKENEST 5
 #define OC_UBICACION_ENTRENADOR 6
+#define OC_OBTENER_MEDALLA 7
+#define OC_MEDALLA 8
 
 #define MOVE_UP 72
 #define MOVE_RIGHT 77

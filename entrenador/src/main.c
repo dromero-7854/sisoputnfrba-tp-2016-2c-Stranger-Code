@@ -31,12 +31,12 @@ int main(int argc, char** argv){
 	char* nombreEntrenador = argv[1];
 	char* pathConfig = argv[2];
 
-	t_coach* entrenador = coach_create(nombreEntrenador, life);
+	string_to_lower(nombreEntrenador);
 	logger = crear_log(nombreEntrenador, pathConfig);
-	log_info(logger, "Vidas del Entrenador: %d\n", entrenador->life);
 
 	log_info(logger, "Cargando archivo de metadata: %s", pathConfig);
-	cargar_metadata(pathConfig, entrenador->travel_sheet);
+	t_coach* entrenador = cargar_metadata(pathConfig, nombreEntrenador);
+	log_info(logger, "Vidas del Entrenador: %d\n", entrenador->life);
 	log_info(logger, "Archivo de metadata cargado correctamente\n");
 
 	t_map* mapa = coach_next_map(entrenador);
@@ -51,7 +51,7 @@ int main(int argc, char** argv){
 
 		mapa = coach_next_map(entrenador);
 	}
-
+	coach_medal_copy(entrenador, mapa);
 	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.", entrenador->name);
 
 	coach_destroy(entrenador);

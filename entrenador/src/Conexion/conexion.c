@@ -46,7 +46,7 @@ int connection_send(t_connection* connection, uint8_t operation_code, void* mess
 	╚══════════════════════════════════════════════╩══════════════════════════════════════════╩══════════════════════════════╝ **/
 
 	uint8_t operation_code_value = operation_code;
-	uint32_t message_size_value;
+	uint8_t message_size_value;
 
 	switch ((int)operation_code) {
 		case OC_UBICACION_POKENEST:
@@ -57,16 +57,18 @@ int connection_send(t_connection* connection, uint8_t operation_code, void* mess
 		case OC_UBICAR_ENTRENADOR:
 		case OC_AVANZAR_POSICION:
 		case OC_ATRAPAR_POKEMON:
+		case OC_OBTENER_MEDALLA:
+		case OC_MEDALLA:
 		case OC_MENSAJE:
-			message_size_value = sizeof(*message);
+			message_size_value = string_length((char*)message);
 			break;
 		default:
 			printf("ERROR: Socket %d, Invalid operation code...\n", connection->socket);
 			break;
 	}
 
-	uint8_t operation_code_length = 1;
-	uint8_t message_size_length = 4;
+	uint8_t operation_code_length = sizeof(uint8_t);
+	uint8_t message_size_length = sizeof(uint8_t);
 	void * buffer = malloc(operation_code_length + message_size_length + message_size_value);
 	memcpy(buffer, &operation_code_value, operation_code_length);
 	memcpy(buffer + operation_code_length, &message_size_value, message_size_length);
@@ -82,9 +84,9 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 	║ operation_code_value (operation_code_length) ║ message_size_value (message_size_length) ║ message (message_size_value) ║
 	╚══════════════════════════════════════════════╩══════════════════════════════════════════╩══════════════════════════════╝ **/
 
-	uint8_t prot_ope_code_size = 1;
-	uint8_t prot_message_size = 4;
-	uint32_t message_size;
+	uint8_t prot_ope_code_size = sizeof(uint8_t);
+	uint8_t prot_message_size = sizeof(uint8_t);
+	uint8_t message_size;
 	int status = 1;
 	int ret = 0;
 	char* buffer;
@@ -115,9 +117,13 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 				case OC_UBICAR_ENTRENADOR:
 				case OC_AVANZAR_POSICION:
 				case OC_ATRAPAR_POKEMON:
+				case OC_OBTENER_MEDALLA:
+				case OC_MEDALLA:
 				case OC_MENSAJE:
 					buffer = malloc(message_size + 1);
-					status = recv(connection->socket, buffer, message_size, 0);
+					if(message_size > 0){
+						status = recv(connection->socket, buffer, message_size, 0);
+					}
 					if(status > 0){
 						buffer[message_size] = '\0';
 						*message = buffer;
