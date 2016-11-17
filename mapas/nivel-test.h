@@ -65,6 +65,7 @@ typedef struct {
 typedef struct {
 	t_pokemon* pokemon;
 	char* nombre;
+	char id_pokenest;
 }t_infoPokemon;
 
 typedef struct {

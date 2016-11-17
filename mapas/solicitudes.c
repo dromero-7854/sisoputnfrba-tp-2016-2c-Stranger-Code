@@ -65,6 +65,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
+		list_add(entrenador->pokemons, infopokemon);
 
 		int len = strlen(infopokemon->pokemon->species);
 		int bytes_a_mandar = len + sizeof(t_level) + sizeof(t_pokemon_type) * 2;
