@@ -76,8 +76,10 @@ static int pk_mkdir(const char * path, mode_t mode) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
 	}
 	close_connection(&server_socket);
 
@@ -120,8 +122,10 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 		// response code
 		uint8_t prot_resp_code_size = 1;
 		uint8_t resp_code = 0;
-		if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+		int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+		if (received_bytes <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
+			return -EIO;
 		}
 
 		// file size
@@ -133,13 +137,15 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 		if (resp_code == OSADA_ENOENT) {
 			res = -ENOENT;
 		} else {
-			if (recv(server_socket, &file_size, prot_resp_file_size, 0) <= 0) {
+			received_bytes = recv(server_socket, &file_size, prot_resp_file_size, MSG_WAITALL);
+			if (received_bytes <= 0) {
 				printf("pokedex client: server %d disconnected...\n", server_socket);
-				return 1;
+				return -EIO;
 			}
-			if (recv(server_socket, &lastmod, prot_resp_lastmod_size, 0) <= 0) {
+			received_bytes = recv(server_socket, &lastmod, prot_resp_lastmod_size, MSG_WAITALL);
+			if (received_bytes <= 0) {
 				printf("pokedex client: server %d disconnected...\n", server_socket);
-				return 1;
+				return -EIO;
 			}
 			if (resp_code == OSADA_ISDIR) {
 				stbuf->st_mode = S_IFDIR | 0755;
@@ -188,9 +194,10 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
-		return 1;
+		return -EIO;
 	}
 
 	if (resp_code == OSADA_ENOTDIR) {
@@ -200,14 +207,16 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 		// directories and files
 		uint8_t prot_resp_size = 4;
 		uint32_t resp_size;
-		if (recv(server_socket, &resp_size, prot_resp_size, 0) <= 0) {
+		received_bytes = recv(server_socket, &resp_size, prot_resp_size, MSG_WAITALL);
+		if (received_bytes <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
-			return 1;
+			return -EIO;
 		}
 		char * resp = malloc(resp_size);
-		if (recv(server_socket, resp, resp_size, 0) <= 0) {
+		received_bytes = recv(server_socket, resp, resp_size, MSG_WAITALL);
+		if (received_bytes <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
-			return 1;
+			return -EIO;
 		}
 
 		char * dir = strtok(resp, ",");
@@ -250,8 +259,10 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
 	}
 	close_connection(&server_socket);
 
@@ -292,8 +303,10 @@ static int pk_truncate(const char * path, off_t offset) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
 	}
 	close_connection(&server_socket);
 
@@ -338,9 +351,10 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
-		return 1;
+		return -EIO;
 	}
 
 	if (resp_code == OSADA_ENOENT) {
@@ -351,16 +365,18 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 	// bytes transferred
 	uint8_t prot_resp_bytes_transferred_size = 4;
 	uint32_t bytes_transferred;
-	if (recv(server_socket, &bytes_transferred, prot_resp_bytes_transferred_size, 0) <= 0) {
+	received_bytes = recv(server_socket, &bytes_transferred, prot_resp_bytes_transferred_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
-		return 1;
+		return -EIO;
 	}
 	if (bytes_transferred > 0) {
 		// content
 		char * file_content = malloc(bytes_transferred);
-		if (recv(server_socket, file_content, bytes_transferred, 0) <= 0) {
+		received_bytes = recv(server_socket, file_content, bytes_transferred, MSG_WAITALL);
+		if (received_bytes <= 0) {
 			printf("pokedex client: server %d disconnected...\n", server_socket);
-			return 1;
+			return -EIO;
 		}
 		memcpy(buf, file_content, bytes_transferred);
 		free(file_content);
@@ -408,8 +424,10 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
 	}
 	close_connection(&server_socket);
 
@@ -446,8 +464,10 @@ static int pk_open(const char * path, struct fuse_file_info * fi) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
 	}
 	close_connection(&server_socket);
 
@@ -482,8 +502,10 @@ static int pk_unlink(const char* path) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
 	}
 	close_connection(&server_socket);
 
@@ -518,8 +540,10 @@ static int pk_rmdir(const char* path) {
 	// response code
 	uint8_t prot_resp_code_size = 1;
 	uint8_t resp_code = 0;
-	if (recv(server_socket, &resp_code, prot_resp_code_size, 0) <= 0) {
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
 	}
 	close_connection(&server_socket);
 

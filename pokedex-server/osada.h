@@ -17,6 +17,7 @@
 #define	OSADA_EMPTYDIR 				6 // empty directory
 #define	OSADA_NOTEMPTYDIR 			7 // no empty directory
 #define	OSADA_SEXE		 			8 // successful execution
+#define	OSADA_ENAMETOOLONG		 	9 // name too long
 
 #define OSADA_BLOCK_SIZE 64
 #define OSADA_FILE_BLOCK_SIZE 32

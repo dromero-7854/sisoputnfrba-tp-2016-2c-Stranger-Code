@@ -77,7 +77,6 @@ int main(int argc , char * argv[]) {
 		socklen_t addrlen = sizeof(addr);
 		int client_socket = accept(listenning_socket, (struct sockaddr *) &addr, &addrlen);
 
-		printf("pokedex server: hi client %d!!\n", client_socket);
 		pthread_attr_t attr;
 		pthread_t thread;
 		pthread_attr_init(&attr);
@@ -317,9 +316,12 @@ int create_node(const char * node_name, int pb_pos) {
 void process_request(int * client_socket) {
 	uint8_t op_code;
 	uint8_t prot_ope_code_size = 1;
-	if (recv(* client_socket, &op_code, prot_ope_code_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &op_code, prot_ope_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	} else {
+		log_info("client %d >> OPERATION CODE %d", * client_socket, op_code);
 		switch (op_code) {
 		case 1:
 			osada_mkdir(client_socket);
@@ -361,13 +363,17 @@ void osada_mkdir(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	log_info(logger, "client %d, mkdir %s...", * client_socket, path);
@@ -382,6 +388,24 @@ void osada_mkdir(int * client_socket) {
 	while (dir != NULL) {
 		ft_pos = search_dir(dir, pb_pos);
 		if (ft_pos == -OSADA_ENOTDIR) {
+			if (strlen(dir) > OSADA_FILENAME_LENGTH) {
+				// name too long
+				log_error(logger, "client %d, mkdir '%s', creating directory '%s' : name too long", * client_socket, path, dir);
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENAMETOOLONG; // name too long
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, prot_resp_code_size);
+				free(resp);
+				free(path_c);
+				free(path);
+				return;
+			}
 			pb_pos = create_dir(dir, pb_pos);
 			if (pb_pos == -OSADA_ENOSPC) {
 				log_error(logger, "client %d, mkdir '%s', creating directory '%s' : no space left on device", * client_socket, path, dir);
@@ -428,13 +452,17 @@ void osada_readdir(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	log_info(logger, "client %d, readdir %s", * client_socket, path);
@@ -556,13 +584,17 @@ void osada_getattr(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	log_info(logger, "client %d, getattr %s", * client_socket, path);
@@ -636,13 +668,17 @@ void osada_mknod(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	log_info(logger, "client %d, mknod %s...", * client_socket, path);
@@ -660,7 +696,28 @@ void osada_mknod(int * client_socket) {
 			char * rfile = node;
 			node = strtok(NULL, "/");
 			if (node == NULL) {
+				//
 				// final node, the regular file to create
+				//
+				// checking file name size
+				if (strlen(rfile) > OSADA_FILENAME_LENGTH) {
+					// name too long
+					log_error(logger, "client %d, mkdir '%s', creating regular file '%s' : name too long", * client_socket, path, rfile);
+					//
+					// << sending response >>
+					// response code
+					uint8_t prot_resp_code_size = 1;
+					uint8_t resp_code = OSADA_ENAMETOOLONG; // name too long
+
+					int response_size = sizeof(char) * (prot_resp_code_size);
+					void * resp = malloc(response_size);
+					memcpy(resp, &resp_code, prot_resp_code_size);
+					write(* client_socket, resp, prot_resp_code_size);
+					free(resp);
+					free(path_c);
+					free(path);
+					return;
+				}
 				pb_pos = create_node(rfile, pb_pos);
 				if (pb_pos == -OSADA_ENOSPC) {
 					log_error(logger, "client %d, mknod '%s', creating regular file '%s' : no space left on device", * client_socket, path, rfile);
@@ -726,37 +783,49 @@ void osada_write(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	// buffer size
 	uint8_t prot_buf_size = 4;
 	uint32_t req_buf_size;
-	if (recv(* client_socket, &req_buf_size, prot_buf_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, &req_buf_size, prot_buf_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// buffer
 	char * buffer = malloc(sizeof(char) * (req_buf_size));
-	if (recv(* client_socket, buffer, req_buf_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, buffer, req_buf_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// size (amount of bytes to write)
 	uint8_t prot_size = 4;
 	uint32_t size;
-	if (recv(* client_socket, &size, prot_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, &size, prot_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// offset
 	uint8_t prot_offset = 4;
 	uint32_t offset;
-	if (recv(* client_socket, &offset, prot_offset, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, &offset, prot_offset, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	log_info(logger, "client %d, write %s, size %d, offset %d", * client_socket, path, size, offset);
 
@@ -967,26 +1036,34 @@ void osada_read(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	// size (amount of bytes to read)
 	uint8_t prot_size = 4;
 	uint32_t size;
-	if (recv(* client_socket, &size, prot_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, &size, prot_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// offset
 	uint8_t prot_offset = 4;
 	uint32_t offset;
-	if (recv(* client_socket, &offset, prot_offset, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, &offset, prot_offset, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	log_info(logger, "client %d, read %s, size %d, offset %d", * client_socket, path, size, offset);
 
@@ -1099,20 +1176,26 @@ void osada_truncate(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	// new size
 	uint8_t prot_size = 4;
 	uint32_t new_size;
-	if (recv(* client_socket, &new_size, prot_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, &new_size, prot_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	log_info(logger, "client %d, truncate %s, size %d", * client_socket, path, new_size);
 
@@ -1266,13 +1349,17 @@ void osada_unlink(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	log_info(logger, "client %d, unlink %s", * client_socket, path);
@@ -1348,13 +1435,17 @@ void osada_rmdir(int * client_socket) {
 	// path size
 	uint8_t prot_path_size = 4;
 	uint32_t req_path_size;
-	if (recv(* client_socket, &req_path_size, prot_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	int received_bytes = recv(* client_socket, &req_path_size, prot_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	// path
 	char * path = malloc(sizeof(char) * (req_path_size + 1));
-	if (recv(* client_socket, path, req_path_size, 0) <= 0) {
-		log_warning(logger, "client %d disconnected...", * client_socket);
+	received_bytes = recv(* client_socket, path, req_path_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
 	}
 	path[req_path_size] = '\0';
 	log_info(logger, "client %d, rmdir %s", * client_socket, path);
