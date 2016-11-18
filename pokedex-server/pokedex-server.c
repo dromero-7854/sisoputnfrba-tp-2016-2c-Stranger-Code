@@ -39,6 +39,7 @@ void * osada_fs_ptr;
 t_bitarray * bitmap;
 t_log * logger;
 
+pthread_rwlock_t* locks;
 int open_socket_connection(void);
 int close_socket_connection(void);
 int map_osada_fs(void);
@@ -69,6 +70,7 @@ int main(int argc , char * argv[]) {
 	create_logger();
 	map_osada_fs();
 	read_and_set();
+	init_locks();
 	open_socket_connection();
 	for (;;) {
 		listen(listenning_socket, config_get_int_value(conf, "backlog")); // blocking syscall
@@ -85,6 +87,7 @@ int main(int argc , char * argv[]) {
 		pthread_attr_destroy(&attr);
 	}
 	close_socket_connection();
+	free(locks);
 	return EXIT_SUCCESS;
 }
 
@@ -106,6 +109,21 @@ int open_socket_connection(void) {
 	return EXIT_SUCCESS;
 }
 
+int init_locks(){
+
+    int i;
+    locks = (pthread_rwlock_t *)malloc(FILE_BLOCKS_MOUNT*sizeof(pthread_rwlock_t));
+
+    for (i=0;i<FILE_BLOCKS_MOUNT;i++){
+		if (pthread_rwlock_init( locks+i, NULL) != 0)
+		{
+			log_error(logger,"Error en inicio de semaforo nro. %d",i);
+			//log_destroy(logger);
+			exit(1);
+		}
+	}
+	return EXIT_SUCCESS;
+}
 int close_socket_connection(void) {
 	close(listenning_socket);
 	return EXIT_SUCCESS;
@@ -232,6 +250,8 @@ int search_node(const char * node_name, int pb_pos) {
 	int node_size, i;
 	char * fname = malloc(sizeof(char) * (OSADA_FILENAME_LENGTH + 1));
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
+		//log_debug(logger, "search_node. Antes del lock. node_pos %d", file_block_number);
+		pthread_rwlock_rdlock(locks+file_block_number);
 		if (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) {
 			for (node_size = 0, i = 0; i < OSADA_FILENAME_LENGTH; i++) {
 				if ((file_table_ptr->fname)[i] == '\0')
@@ -243,6 +263,8 @@ int search_node(const char * node_name, int pb_pos) {
 			if ((strcmp(fname, node_name) == 0) && file_table_ptr->parent_directory == pb_pos)
 				break;
 		}
+		//log_debug(logger, "search_node. Antes del unlock. node_pos %d", file_block_number);
+		pthread_rwlock_unlock(locks+file_block_number);
 		file_block_number++;
 		file_table_ptr++;
 	}
@@ -254,10 +276,8 @@ int search_node(const char * node_name, int pb_pos) {
 	return file_block_number;
 }
 
-int create_dir(const char * dir_name, int pb_pos) {
-
+int getFreeFileBlock(){
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
-
 	int file_block_number = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
 		if (file_table_ptr->state == DELETED)
@@ -265,7 +285,24 @@ int create_dir(const char * dir_name, int pb_pos) {
 		file_block_number++;
 		file_table_ptr++;
 	}
+	//log_debug(logger, "getFreeFileBlock. Antes del lock. node_pos %d", file_block_number);
+	//pthread_rwlock_wrlock(locks+file_block_number);
+	return file_block_number;
+}
+int create_dir(const char * dir_name, int pb_pos) {
 
+	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+	int file_block_number = 0;
+	/*
+	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
+		if (file_table_ptr->state == DELETED)
+			break;
+		file_block_number++;
+		file_table_ptr++;
+	}*/
+
+	file_block_number = getFreeFileBlock();
+	file_table_ptr+=file_block_number;
 	if (file_block_number > (FILE_BLOCKS_MOUNT - 1))
 		return -OSADA_ENOSPC; // no space left on device
 
@@ -280,6 +317,8 @@ int create_dir(const char * dir_name, int pb_pos) {
 	o_file->first_block = 0;
 	memcpy(file_table_ptr, o_file, sizeof(osada_file));
 	free(o_file);
+	log_debug(logger, "create_dir. Antes del unlock. node_pos %d", file_block_number);
+	pthread_rwlock_unlock(locks+file_block_number);
 
 	return file_block_number;
 }
@@ -289,12 +328,17 @@ int create_node(const char * node_name, int pb_pos) {
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 
 	int file_block_number = 0;
-	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
+/*	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
+
 		if (file_table_ptr->state == DELETED)
 			break;
 		file_block_number++;
 		file_table_ptr++;
-	}
+	}*/
+	file_block_number = getFreeFileBlock();
+	file_table_ptr+=file_block_number;
+	
+	
 	if (file_block_number > (FILE_BLOCKS_MOUNT - 1))
 		return -OSADA_ENOSPC; // no space left on device
 
@@ -309,6 +353,8 @@ int create_node(const char * node_name, int pb_pos) {
 	o_file->first_block = END_OF_FILE;
 	memcpy(file_table_ptr, o_file, sizeof(osada_file));
 	free(o_file);
+	log_debug(logger, "create_node. Antes del unlock. node_pos %d", file_block_number);
+	pthread_rwlock_unlock(locks+file_block_number);
 
 	return file_block_number;
 }
@@ -507,6 +553,8 @@ void osada_readdir(int * client_socket) {
 	int node_size, i;
 	int file_block_number = 0, buffer_size = 0;
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
+		//log_debug(logger, "osada_readdir. Antes del lock. node_pos %d", file_block_number);
+		pthread_rwlock_rdlock(locks+file_block_number);
 		if ((file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) && file_table_ptr->parent_directory == pb_pos) {
 			for (i = 0, node_size = 0; i < OSADA_FILENAME_LENGTH; i++) {
 				if ((file_table_ptr->fname)[i] == '\0') break;
@@ -518,6 +566,8 @@ void osada_readdir(int * client_socket) {
 			buffer_size = buffer_size + node_size;
 			list_add(node_list, node);
 		}
+		//log_debug(logger, "osada_readdir. Antes del unlock. node_pos %d", file_block_number);
+		pthread_rwlock_unlock(locks+file_block_number);
 		file_block_number++;
 		file_table_ptr++;
 	}
@@ -644,6 +694,9 @@ void osada_getattr(int * client_socket) {
 	uint32_t lastmod = 0;
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 	file_table_ptr = file_table_ptr + node_pos;
+	log_debug(logger, "osada_getattr. Antes del lock. node_pos %d", node_pos);
+	pthread_rwlock_rdlock(locks+node_pos);
+	
 	if (file_table_ptr->state == DIRECTORY) {
 		resp_code = OSADA_ISDIR; // is a directory
 	} else if (file_table_ptr->state == REGULAR){
@@ -651,6 +704,9 @@ void osada_getattr(int * client_socket) {
 		file_size = file_table_ptr->file_size;
 	}
 	lastmod = file_table_ptr->lastmod;
+
+	pthread_rwlock_unlock(locks+node_pos);
+	log_debug(logger, "osada_getattr. Despues del unlock. node_pos %d", node_pos);
 
 	int response_size = sizeof(char) * (prot_resp_code_size + prot_resp_file_size + prot_resp_lastmod_size);
 	void * resp = malloc(response_size);
@@ -861,6 +917,8 @@ void osada_write(int * client_socket) {
 		node = strtok(NULL, "/");
 	}
 	free(path_c);
+	//log_debug(logger, "osada_write. Antes del lock. node_pos %d", node_pos);
+	//pthread_rwlock_wrlock(locks+node_pos);
 
 	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
@@ -908,6 +966,9 @@ void osada_write(int * client_socket) {
 				// response code
 				uint8_t prot_resp_code_size = 1;
 				uint8_t resp_code = OSADA_ENOSPC; // no space left on device
+				
+				log_debug(logger, "osada_writer. Antes del unlock. node_pos %d", node_pos);
+				pthread_rwlock_unlock(locks+node_pos);
 
 				int response_size = sizeof(char) * (prot_resp_code_size);
 				void * resp = malloc(response_size);
@@ -966,7 +1027,9 @@ void osada_write(int * client_socket) {
 				* aux_map_ptr = END_OF_FILE;
 				aux_map_ptr = map_ptr + aux;
 			}
-
+			log_debug(logger, "osada_write. Antes del unlock. node_pos %d", node_pos);
+			pthread_rwlock_unlock(locks+node_pos);
+			
 			//
 			// << sending response >>
 			// response code
@@ -1013,6 +1076,8 @@ void osada_write(int * client_socket) {
 		bytes_availables_in_block = OSADA_BLOCK_SIZE;
 		offset = 0;
 	}
+	//log_debug(logger, "osada_write. Antes del unlock. node_pos %d", node_pos);
+	//pthread_rwlock_unlock(locks+node_pos);
 
 	//
 	// << sending response >>
@@ -1100,6 +1165,8 @@ void osada_read(int * client_socket) {
 	free(path_c);
 	free(path);
 
+	log_debug(logger, "osada_read. Antes del lock. node_pos %d", node_pos);
+	pthread_rwlock_rdlock(locks+node_pos);
 	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
 
@@ -1148,6 +1215,8 @@ void osada_read(int * client_socket) {
 
 		bytes_transferred = size;
 	}
+	log_debug(logger, "osada_read. Antes del unlock. node_pos %d", node_pos);
+	pthread_rwlock_unlock(locks+node_pos);
 
 	//
 	// << sending response >>
@@ -1231,6 +1300,9 @@ void osada_truncate(int * client_socket) {
 	}
 	free(path_c);
 
+	//log_debug(logger, "osada_truncate. Antes del lock. node_pos %d", node_pos);
+	//pthread_rwlock_wrlock(locks+node_pos);
+	
 	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
 	int old_size = node_ptr->file_size;
@@ -1294,6 +1366,8 @@ void osada_truncate(int * client_socket) {
 					* aux_map_ptr = END_OF_FILE;
 					aux_map_ptr = map_ptr + aux;
 				}
+				log_debug(logger, "osada_truncate. Antes del unlock. node_pos %d", node_pos);
+				pthread_rwlock_unlock(locks+node_pos);
 
 				//
 				// << sending response >>
@@ -1328,6 +1402,8 @@ void osada_truncate(int * client_socket) {
 			}
 		}
 	}
+	//log_debug(logger, "osada_truncate. Antes del unlock. node_pos %d", node_pos);
+	//pthread_rwlock_unlock(locks+node_pos);
 
 	//
 	// << sending response >>
@@ -1396,6 +1472,8 @@ void osada_unlink(int * client_socket) {
 	}
 	free(path_c);
 	free(path);
+	//log_debug(logger, "osada_unlink. Antes del lock. node_pos %d", node_pos);
+	//pthread_rwlock_wrlock(locks+node_pos);
 
 	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
@@ -1414,6 +1492,8 @@ void osada_unlink(int * client_socket) {
 	}
 
 	node_ptr->state = DELETED;
+	//log_debug(logger, "osada_unlink. Antes del unlock. node_pos %d", node_pos);
+	//pthread_rwlock_unlock(locks+node_pos);
 
 	//
 	// << sending response >>
@@ -1482,11 +1562,15 @@ void osada_rmdir(int * client_socket) {
 	}
 	free(path_c);
 	free(path);
+	log_debug(logger, "osada_rmdir. Antes del lock. node_pos %d", node_pos);
+	pthread_rwlock_wrlock(locks+node_pos);
 
 	// set pointer to file node
 	osada_file * node_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0) + (OSADA_FILE_BLOCK_SIZE * node_pos));
 	node_ptr->state = DELETED;
-
+	
+	//log_debug(logger, "osada_rmdir. Antes del unlock. node_pos %d", node_pos);
+	//pthread_rwlock_unlock(locks+node_pos);
 	//
 	// << sending response >>
 	// response code
