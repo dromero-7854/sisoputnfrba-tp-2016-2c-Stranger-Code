@@ -65,7 +65,7 @@ t_entrenador* atender(t_queue* cola){
 	quantum = 0;
 	t_entrenador* entrenador;
 	for(q = 0; q < QUANTUM; q++){ // QUANTUM lo va a leer de config
-
+		pthread_mutex_lock(&mutex_cola_listos);
 		entrenador = queue_pop(colaListos);
 		capturo_pokemon = atenderSolicitud(entrenador);
 		quantum ++;
@@ -97,6 +97,7 @@ void ejecutarRafagaRR(){
 	}
 	if (quantum == QUANTUM){
 		queue_push(colaListos, entrenador);
+		pthread_mutex_unlock(&mutex_cola_listos);
 	} else {
 		queue_push(colaBloqueados, entrenador);
 	}
