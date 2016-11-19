@@ -79,9 +79,10 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 
 char handshake(int socketCliente, t_log* logger){
 
-	uint32_t cantLetras;
+	uint8_t tam_msg;
 	uint8_t operation_code;
 	char *buffer;
+	void *paquete_a_mandar;
 
 	//recv(socketCliente, &operation_code, sizeof(operation_code), 0);
 	connection_recv(socketCliente, &operation_code, &buffer);
@@ -90,18 +91,22 @@ char handshake(int socketCliente, t_log* logger){
 		exit(1);
 	}
 
-
+	int offset = sizeof(operation_code);
 	t_coor* coordenadas = malloc(sizeof(t_coor));
 	coordenadas->x = 1;
 	coordenadas->y = 1;
+	paquete_a_mandar = malloc(sizeof(uint8_t) * 2 + tam_msg);
+	tam_msg = sizeof(coordenadas);
 	operation_code = OC_UBICACION_ENTRENADOR;
-	memcpy(buffer, &operation_code, sizeof(uint8_t));
-	memcpy(buffer + sizeof(uint8_t), coordenadas, sizeof(t_coor));
-	send(socketCliente, buffer, sizeof(t_coor), 0);
+	memcpy(paquete_a_mandar, &operation_code, sizeof(uint8_t));
+	memcpy(paquete_a_mandar + offset, &tam_msg, sizeof(uint8_t));
+	offset += sizeof(uint8_t);
+	memcpy(paquete_a_mandar + offset, coordenadas, sizeof(t_coor));
+	send(socketCliente, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
 
-	printf("FUNCIONOO\n");
+	//printf("FUNCIONOO\n");
 	//printf("%s", buffer);
-	free(buffer);
+	//free(buffer);
 	free(coordenadas);
 
 	return *(buffer);

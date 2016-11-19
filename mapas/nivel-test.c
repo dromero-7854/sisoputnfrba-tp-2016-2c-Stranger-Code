@@ -169,6 +169,7 @@ void manejar_select(int socket, t_log* log){
 			if(FD_ISSET(a, &lectura)){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
+						simbolo = handshake(nuevaConexion, log_mapa);
 						FD_SET(nuevaConexion, &master);
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
