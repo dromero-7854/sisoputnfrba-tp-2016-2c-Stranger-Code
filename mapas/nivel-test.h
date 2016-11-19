@@ -40,6 +40,7 @@ typedef struct {
 
 	bool movVert;
 	int id;
+	char simbolo;
 	char estado;
 
 	char *proximoMapa;
