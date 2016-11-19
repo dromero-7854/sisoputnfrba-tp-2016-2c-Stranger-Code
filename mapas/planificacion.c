@@ -135,3 +135,30 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 	}
 	return list_remove_by_condition(colaListos->elements, _mismo_id);
 }
+
+void liberarRecursos(t_entrenador* entrenador){
+	int index_pokemon, index_entrenador;
+	t_infoPokemon* infoPokemon;
+	t_entrenador* entrenadorBloqueado;
+	for(index_pokemon = 0 ; index_pokemon < list_size(entrenador->pokemons); index_pokemon ++ ){
+		infoPokemon = list_get(entrenador->pokemons, index_pokemon);
+
+		for(index_entrenador = 0; index_entrenador < list_size(colaBloqueados->elements); index_entrenador++){
+			entrenadorBloqueado = list_get(colaBloqueados, index_entrenador);
+			if(entrenadorBloqueado->objetivoActual == infoPokemon->id_pokenest){
+				list_add(entrenadorBloqueado->pokemons, infoPokemon);
+				//entrenadorBloqueado->objetivoActual = NULL;
+				int _mismo_id(t_entrenador* e){
+					return (e->id == entrenadorBloqueado->id);
+				}
+				queue_push(colaListos, list_remove_by_condition(colaBloqueados->elements, _mismo_id));
+				/**
+				 * VER QUE PASA CON EL ENTRENADOR SIGUIENTE EN LA COLA RECORRIDA
+				 */
+				break;
+			}
+		}
+	}
+	list_destroy(entrenador->pokemons);
+	liberarEntrenador(entrenador);
+}
