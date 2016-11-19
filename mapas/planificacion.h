@@ -16,7 +16,6 @@ typedef struct pcb{
 	int posy;
 }t_pcb;
 
-void handshake(int socketCliente, t_log* logger);
 void planificar();
 void verificarBloqueados();
 t_entrenador* atender(t_queue* cola);

@@ -14,34 +14,6 @@
 #define QUANTUM 3
 
 
-void handshake(int socketCliente, t_log* logger){
-
-	uint32_t cantLetras;
-	uint8_t operation_code;
-	void *buffer;
-
-	recv(socketCliente, &operation_code, sizeof(operation_code), 0);
-	if(operation_code != OC_UBICAR_ENTRENADOR){
-		log_error(logger, "codigo de operacion incorrecto en handshake");
-		exit(1);
-	}
-
-
-	t_coor* coordenadas = malloc(sizeof(t_coor));
-	coordenadas->x = 1;
-	coordenadas->y = 1;
-	operation_code = OC_UBICACION_ENTRENADOR;
-	memcpy(buffer, &operation_code, sizeof(uint8_t));
-	memcpy(buffer + sizeof(uint8_t), coordenadas, sizeof(t_coor));
-	send(socketCliente, buffer, sizeof(t_coor), 0);
-
-
-	printf("FUNCIONOO\n");
-	//printf("%s", buffer);
-	free(buffer);
-	free(coordenadas);
-}
-
 void planificar(){
 
 
