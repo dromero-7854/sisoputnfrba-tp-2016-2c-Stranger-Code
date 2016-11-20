@@ -14,34 +14,6 @@
 #define QUANTUM 3
 
 
-void handshake(int socketCliente, t_log* logger){
-
-	uint32_t cantLetras;
-	uint8_t operation_code;
-	void *buffer;
-
-	recv(socketCliente, &operation_code, sizeof(operation_code), 0);
-	if(operation_code != OC_UBICAR_ENTRENADOR){
-		log_error(logger, "codigo de operacion incorrecto en handshake");
-		exit(1);
-	}
-
-
-	t_coor* coordenadas = malloc(sizeof(t_coor));
-	coordenadas->x = 1;
-	coordenadas->y = 1;
-	operation_code = OC_UBICACION_ENTRENADOR;
-	memcpy(buffer, &operation_code, sizeof(uint8_t));
-	memcpy(buffer + sizeof(uint8_t), coordenadas, sizeof(t_coor));
-	send(socketCliente, buffer, sizeof(t_coor), 0);
-
-
-	printf("FUNCIONOO\n");
-	//printf("%s", buffer);
-	free(buffer);
-	free(coordenadas);
-}
-
 void planificar(){
 
 
@@ -134,4 +106,31 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 		return (e->id == entrenador->id);
 	}
 	return list_remove_by_condition(colaListos->elements, _mismo_id);
+}
+
+void liberarRecursos(t_entrenador* entrenador){
+	int index_pokemon, index_entrenador;
+	t_infoPokemon* infoPokemon;
+	t_entrenador* entrenadorBloqueado;
+	for(index_pokemon = 0 ; index_pokemon < list_size(entrenador->pokemons); index_pokemon ++ ){
+		infoPokemon = list_get(entrenador->pokemons, index_pokemon);
+
+		for(index_entrenador = 0; index_entrenador < list_size(colaBloqueados->elements); index_entrenador++){
+			entrenadorBloqueado = list_get(colaBloqueados, index_entrenador);
+			if(entrenadorBloqueado->objetivoActual == infoPokemon->id_pokenest){
+				list_add(entrenadorBloqueado->pokemons, infoPokemon);
+				//entrenadorBloqueado->objetivoActual = NULL;
+				int _mismo_id(t_entrenador* e){
+					return (e->id == entrenadorBloqueado->id);
+				}
+				queue_push(colaListos, list_remove_by_condition(colaBloqueados->elements, _mismo_id));
+				/**
+				 * VER QUE PASA CON EL ENTRENADOR SIGUIENTE EN LA COLA RECORRIDA
+				 */
+				break;
+			}
+		}
+	}
+	list_destroy(entrenador->pokemons);
+	liberarEntrenador(entrenador);
 }

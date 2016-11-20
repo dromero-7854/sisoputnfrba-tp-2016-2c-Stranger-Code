@@ -157,6 +157,7 @@ void manejar_select(int socket, t_log* log){
 	fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
+	char simbolo;
 	fdMax = socket;
 	FD_ZERO(&lectura);
 	FD_ZERO(&master);
@@ -168,12 +169,13 @@ void manejar_select(int socket, t_log* log){
 			if(FD_ISSET(a, &lectura)){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
+						simbolo = handshake(nuevaConexion, log_mapa);
 						FD_SET(nuevaConexion, &master);
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
-						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion);
+						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
 
 						//TODO: crear el entrenador en la GUI aca y sacar la funcion crearJugadores
-						CrearPersonaje(items, nuevoEntrenador -> id, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
+						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
 
 						queue_push(colaListos, nuevoEntrenador);
@@ -289,11 +291,12 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 	return listaPokemons;
 }
 
-t_entrenador* crearEntrenador(int file_descriptor){
+t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
+	entrenador->simbolo = simbolo;
 	return entrenador;
 }
 

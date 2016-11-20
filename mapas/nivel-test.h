@@ -90,7 +90,7 @@ char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
 
 void manejar_select(int socket, t_log* log);
-t_entrenador* crearEntrenador(int file_descriptor);
+t_entrenador* crearEntrenador(int file_descriptor, char simbolo);
 void liberarEntrenador();
 void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica);
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor);
