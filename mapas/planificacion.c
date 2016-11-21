@@ -102,10 +102,7 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 
 	list_sort(listaAux, (void*) _menor_distancia_a_pokenest);
 	entrenador = list_get(listaAux, 0);
-	int _mismo_id(t_entrenador* e){
-		return (e->id == entrenador->id);
-	}
-	return list_remove_by_condition(colaListos->elements, _mismo_id);
+	return buscarEntrenador(entrenador->id, colaListos->elements);
 }
 
 void liberarRecursos(t_entrenador* entrenador){
@@ -120,10 +117,7 @@ void liberarRecursos(t_entrenador* entrenador){
 			if(entrenadorBloqueado->objetivoActual == infoPokemon->id_pokenest){
 				list_add(entrenadorBloqueado->pokemons, infoPokemon);
 				//entrenadorBloqueado->objetivoActual = NULL;
-				int _mismo_id(t_entrenador* e){
-					return (e->id == entrenadorBloqueado->id);
-				}
-				queue_push(colaListos, list_remove_by_condition(colaBloqueados->elements, _mismo_id));
+				queue_push(colaListos, buscarEntrenador(entrenadorBloqueado->id, colaBloqueados->elements));
 				/**
 				 * VER QUE PASA CON EL ENTRENADOR SIGUIENTE EN LA COLA RECORRIDA
 				 */
@@ -133,4 +127,11 @@ void liberarRecursos(t_entrenador* entrenador){
 	}
 	list_destroy(entrenador->pokemons);
 	liberarEntrenador(entrenador);
+}
+
+t_entrenador* buscarEntrenador(int socket, t_list* lista){
+	int _mismo_id(t_entrenador* e){
+		return (e->id == socket);
+	}
+	return list_remove_by_condition(lista, _mismo_id);
 }

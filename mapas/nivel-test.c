@@ -217,7 +217,7 @@ char* getRutaMetadata(char* ptoMnt, char* nombreMapa){
 	char* directorio = strdup("/metadata");
 	int x = strlen(directorio);
 	char* ruta = malloc(letrasPto + letrasNombre + x + 3);
-	snprintf(ruta, letrasPto + letrasNombre + x + 3, "%s/%s%s", ptoMnt, nombreMapa, directorio);
+	snprintf(ruta, letrasPto + letrasNombre + x + 3, "%s%s%s", ptoMnt, nombreMapa, directorio);
 	return ruta;
 }
 
@@ -227,7 +227,7 @@ char* getRutaPokenests(char* ptoMnt, char* nombreMapa){
 	char* directorio = strdup("/PokeNests");
 	int x = strlen(directorio);
 	char* ruta = malloc(letrasPto + letrasNombre + x + 3);
-	snprintf(ruta, letrasPto + letrasNombre + x + 3, "%s/%s%s", ptoMnt, nombreMapa, directorio);
+	snprintf(ruta, letrasPto + letrasNombre + x + 3, "%s%s%s", ptoMnt, nombreMapa, directorio);
 	return ruta;
 }
 
@@ -306,13 +306,11 @@ void eliminarEntrenador(int fd_entrenador){
 }
 
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor){
-	t_list* listaAux;
+	//t_list* listaAux;
 	t_entrenador* entrenadorAux;
-	int _mismo_id(t_entrenador* entrenador){
-		return (entrenador->id == file_descriptor);
-	}
+
 	pthread_mutex_lock(&mutex_cola_listos);
-	entrenadorAux = list_remove_by_condition(cola->elements, (void *)_mismo_id);
+	entrenadorAux = buscarEntrenador(file_descriptor, cola->elements);
 	pthread_mutex_unlock(&mutex_cola_listos);
 	liberarEntrenador(entrenadorAux);
 }
@@ -330,7 +328,7 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 	while((directorio = readdir(d)) != NULL){
 		if((!strcmp(directorio->d_name, ".")) || (!strcmp(directorio->d_name, ".."))) continue;
 		char* rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
-		getchar();
+		//getchar();
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
 		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);

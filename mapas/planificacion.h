@@ -23,4 +23,5 @@ void ejecutarRafagaRR();
 void ejecutarRafagaSRDF();
 void atenderEntrenadoresSinDistanciaDefinida();
 t_entrenador* buscarEntrenadorConMenorDistancia();
+t_entrenador* buscarEntrenador(int socket, t_list* lista);
 #endif /* PLANIFICACION_H_ */

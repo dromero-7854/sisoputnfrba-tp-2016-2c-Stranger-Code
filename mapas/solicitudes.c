@@ -114,16 +114,17 @@ char handshake(int socketCliente, t_log* logger){
 
 int atenderSolicitud(t_entrenador* entrenador){
 	int recibidos;
-	uint32_t operation_code, direccion;
-	int capturo_pokemon;
-	recibidos = recv(entrenador->id, &operation_code, sizeof(uint32_t), 0);
+	uint8_t operation_code, tam_msg;
+	int capturo_pokemon, offset;
+	void *buffer, *paquete_a_mandar;
+	connection_recv(entrenador->id, &operation_code, &buffer);
 
 	switch(operation_code){
 	case OC_UBICAR_POKENEST:
 	{
-		char pokenest_id;
-		recv(entrenador->id, &pokenest_id, sizeof(char), 0);
-		void *buffer;
+		char pokenest_id = *((char*)buffer);
+		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
+		//void *buffer;
 		//recibidos = recv(entrenador->id, buffer, 1, 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 
@@ -132,10 +133,14 @@ int atenderSolicitud(t_entrenador* entrenador){
 		coordenadas_pokenest->y = pokenest->posy;
 
 		uint8_t oc_send = OC_UBICACION_POKENEST;
-		buffer = malloc(sizeof(uint8_t) + sizeof(t_coor));
-		memcpy(buffer, &oc_send, sizeof(uint8_t));
-		memcpy(buffer + sizeof(uint8_t), coordenadas_pokenest, sizeof(t_coor));
-		send(entrenador->id, buffer, sizeof(t_coor), 0);
+		tam_msg = sizeof(t_coor);
+		paquete_a_mandar = malloc(sizeof(uint8_t) * 2+ sizeof(t_coor));
+		offset = sizeof(uint8_t);
+		memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
+		memcpy(paquete_a_mandar + offset, &tam_msg, sizeof(uint8_t));
+		offset += sizeof(uint8_t);
+		memcpy(paquete_a_mandar + offset, coordenadas_pokenest, sizeof(t_coor));
+		send(entrenador->id, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
 		free(coordenadas_pokenest);
 		free(buffer);
 		capturo_pokemon = 0;
@@ -143,8 +148,8 @@ int atenderSolicitud(t_entrenador* entrenador){
 	}
 	case OC_AVANZAR_POSICION:
 	{
-		recv(entrenador->id, &direccion, sizeof(uint32_t), 0);
-		switch(direccion){
+
+		switch(*((int*)buffer)){
 		case MOVE_UP:
 			entrenador->posy--;
 		case MOVE_DOWN:
@@ -163,8 +168,8 @@ int atenderSolicitud(t_entrenador* entrenador){
 		// volver a dibujar ??????
 	case OC_ATRAPAR_POKEMON:
 	{
-		char pokenest_id;
-		recv(entrenador->id, &pokenest_id, sizeof(char), 0);
+		char pokenest_id = *((char*)buffer);
+		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
 		list_add(entrenador->pokemons, infopokemon);
@@ -188,7 +193,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 }
 
 PokeNest* buscarPokenest(t_list* lista, char id){
-	int _id_buscado(PokeNest* pokenest, char id){
+	int _id_buscado(PokeNest* pokenest){
 		return pokenest->id == id;
 	}
 	return list_find(lista, (void*) _id_buscado);
