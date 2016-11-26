@@ -83,7 +83,7 @@ int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	uint8_t operation_code;
 	t_coor* coor;
 	//connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->name);
-	connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, "");
+	connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->simbol);
 	connection_recv(entrenador->conn, &operation_code, &coor);
 
 	entrenador->coor = coor;

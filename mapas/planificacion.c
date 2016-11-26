@@ -32,18 +32,19 @@ void planificar(){
 	}
 }
 
-t_entrenador* atender(t_queue* cola){
+int atender(t_entrenador* entrenador){
 	int q, capturo_pokemon;
-	quantum = 0;
-	t_entrenador* entrenador;
-	for(q = 0; q < QUANTUM; q++){ // QUANTUM lo va a leer de config
-		pthread_mutex_lock(&mutex_cola_listos);
-		entrenador = queue_pop(colaListos);
+	//entrenador = queue_pop(colaListos);
+	for(q = 0; q < conf_metadata->quantum; q++){ // QUANTUM lo va a leer de config
+		log_trace(log_mapa, "quantum del entrenador: %d", q);
+		//pthread_mutex_lock(&mutex_cola_listos);
 		capturo_pokemon = atenderSolicitud(entrenador);
-		quantum ++;
+		//quantum ++;
 		if(capturo_pokemon) break;
 	}
-	return entrenador;
+	if(q == conf_metadata->quantum){
+		return 1;
+	} else return 0;
 }
 
 void ejecutarRafagaSRDF(){
@@ -58,18 +59,18 @@ void ejecutarRafagaSRDF(){
 }
 
 void ejecutarRafagaRR(){
-	quantum = 0;
+	int completo_quantum;
 	t_entrenador* entrenador;
 	if(!queue_is_empty(colaListos)){
-		entrenador = atender(colaListos);
-	} else if(!queue_is_empty(colaBloqueados)) {
-		entrenador = atender(colaBloqueados);
+		log_trace(log_mapa, "atendiendo cola Listos");
+		entrenador = queue_pop(colaListos);
+		completo_quantum = atender(entrenador);
 	} else {
 		return;
 	}
-	if (quantum == QUANTUM){
+	if (completo_quantum){
 		queue_push(colaListos, entrenador);
-		pthread_mutex_unlock(&mutex_cola_listos);
+		//pthread_mutex_unlock(&mutex_cola_listos);
 	} else {
 		queue_push(colaBloqueados, entrenador);
 	}

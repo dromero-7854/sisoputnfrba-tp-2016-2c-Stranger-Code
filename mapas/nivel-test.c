@@ -179,7 +179,7 @@ void manejar_select(int socket, t_log* log){
 						list_add(entrenadores, nuevoEntrenador);
 
 						queue_push(colaListos, nuevoEntrenador);
-					}else {
+					}/*else {
 						recibido = recv(a,  (void*) buf, 512, 0);
 						if(recibido <= 0){
 							if(recibido < 0){
@@ -193,7 +193,7 @@ void manejar_select(int socket, t_log* log){
 							close(a);
 							FD_CLR(a, &master);
 							}
-						}
+						}*/
 				}
 		}
 	}

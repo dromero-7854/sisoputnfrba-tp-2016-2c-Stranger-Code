@@ -115,8 +115,10 @@ char handshake(int socketCliente, t_log* logger){
 int atenderSolicitud(t_entrenador* entrenador){
 	int recibidos;
 	uint8_t operation_code, tam_msg;
+	t_coor* coor;
 	int capturo_pokemon, offset;
 	void *buffer, *paquete_a_mandar;
+	log_trace(log_mapa, "atendiendo solicitud");
 	connection_recv(entrenador->id, &operation_code, &buffer);
 
 	switch(operation_code){
@@ -149,7 +151,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 	case OC_AVANZAR_POSICION:
 	{
 
-		switch(*((int*)buffer)){
+		switch((int)buffer){
 		case MOVE_UP:
 			entrenador->posy--;
 		case MOVE_DOWN:
@@ -162,6 +164,20 @@ int atenderSolicitud(t_entrenador* entrenador){
 			fprintf(stderr, "no se recibio una direccion adecuada");
 			//log_error
 		}
+		coor = malloc(sizeof(t_coor));
+		coor->x = entrenador->posx;
+		coor->y = entrenador->posy;
+
+		uint8_t oc_send = OC_AVANZAR_POSICION;
+		tam_msg = sizeof(t_coor);
+		paquete_a_mandar = malloc(sizeof(uint8_t) * 2+ sizeof(t_coor));
+		offset = sizeof(uint8_t);
+		memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
+		memcpy(paquete_a_mandar + offset, &tam_msg, sizeof(uint8_t));
+		offset += sizeof(uint8_t);
+		memcpy(paquete_a_mandar + offset, coor, sizeof(t_coor));
+		send(entrenador->id, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
+		free(coor);
 		capturo_pokemon = 0;
 		break;
 	}

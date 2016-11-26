@@ -18,7 +18,7 @@ typedef struct pcb{
 
 void planificar();
 void verificarBloqueados();
-t_entrenador* atender(t_queue* cola);
+int atender(t_entrenador* entrenador);
 void ejecutarRafagaRR();
 void ejecutarRafagaSRDF();
 void atenderEntrenadoresSinDistanciaDefinida();
