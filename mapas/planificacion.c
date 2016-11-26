@@ -40,7 +40,9 @@ int atender(t_entrenador* entrenador){
 		//pthread_mutex_lock(&mutex_cola_listos);
 		capturo_pokemon = atenderSolicitud(entrenador);
 		//quantum ++;
-		if(capturo_pokemon) break;
+		sleep(conf_metadata->retardo);
+		//if(capturo_pokemon) break;
+
 	}
 	if(q == conf_metadata->quantum){
 		return 1;

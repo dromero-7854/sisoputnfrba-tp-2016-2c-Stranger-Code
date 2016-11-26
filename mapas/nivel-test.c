@@ -296,6 +296,7 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
+	entrenador->pokemons = list_create();
 	entrenador->simbolo = simbolo;
 	return entrenador;
 }
