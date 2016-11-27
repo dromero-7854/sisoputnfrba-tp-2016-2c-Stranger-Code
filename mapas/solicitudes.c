@@ -144,7 +144,8 @@ int atenderSolicitud(t_entrenador* entrenador){
 		memcpy(paquete_a_mandar + offset, coordenadas_pokenest, sizeof(t_coor));
 		send(entrenador->id, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
 		free(coordenadas_pokenest);
-		free(buffer);
+		free(paquete_a_mandar);
+
 		capturo_pokemon = 0;
 		break;
 	}
@@ -182,6 +183,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		memcpy(paquete_a_mandar + offset, coor, sizeof(t_coor));
 		send(entrenador->id, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
 		free(coor);
+		free(paquete_a_mandar);
 		MoverPersonaje(items, entrenador->simbolo, entrenador->posx, entrenador->posy);
 		capturo_pokemon = 0;
 		break;
@@ -202,7 +204,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 
 		uint8_t tamanio_mensaje = strlen("/home/utnso/git/tp-2016-2c-Stranger-Code/mapas/PuebloPaleta/PokeNests/Picachu/pikachu001.dat");
 		int bytes_a_mandar = sizeof(uint8_t) * 2 + tamanio_mensaje;
-		char* mensaje  = malloc(tamanio_mensaje+1);
+		char* mensaje ;
 		mensaje = strdup("/home/utnso/git/tp-2016-2c-Stranger-Code/mapas/PuebloPaleta/PokeNests/Picachu/pikachu001.dat");
 		paquete_a_mandar = malloc(sizeof(mensaje) + sizeof(uint8_t) * 2);
 		memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
@@ -213,6 +215,8 @@ int atenderSolicitud(t_entrenador* entrenador){
 		//offset += sizeof(t_pokemon_type);
 		//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
 		send(entrenador->id, paquete_a_mandar, bytes_a_mandar, 0);
+		free(mensaje);
+		free(paquete_a_mandar);
 		capturo_pokemon = 1;
 		break;
 	}
@@ -237,6 +241,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		break;
 	}
 	}
+	free(buffer);
 	return capturo_pokemon;
 }
 

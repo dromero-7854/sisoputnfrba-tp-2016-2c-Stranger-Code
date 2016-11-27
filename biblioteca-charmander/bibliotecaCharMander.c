@@ -62,8 +62,6 @@ int socket_servidor(char* puerto, t_log* log)
 			exit(1);
 		}
 
-	printf("se creo servidor!!!\n");
-	printf("escuchando en socket: %d\n", sockfd);
 	log_trace(log, "Se creo servidor, escuchando en : %d", sockfd);
 	return sockfd;
 }
@@ -119,8 +117,8 @@ int aceptar_conexion(int socket, t_log* log)
 
 	nuevoSocket = accept(socket, (struct sockaddr *) &aux, &tamanio);
 
-	log_trace(log, "Se conecto alguien");
-	printf("se conecto alguien en: %d \n", nuevoSocket);
+	log_trace(log, "Se conecto alguien. Socket asignado: %d", nuevoSocket);
+
 
 	return nuevoSocket;
 
