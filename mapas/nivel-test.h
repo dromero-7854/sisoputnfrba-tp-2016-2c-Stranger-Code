@@ -19,10 +19,11 @@
 
 #define DIRECCION_METADATA "/home/utnso/workspace/tp-2016-2c-Stranger-Code/mapas/Debug/metadata"
 
-char* getRutaPokenests(char* ptoMnt, char* nombreMapa);
+char* getRutaPokenests();
 char* getRutaPokemon(char* rutaPokenests, char* pokemon);
 t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePokemon);
-char* getRutaMetadata(char* ptoMnt, char* nombreMapa);
+char* getRutaMetadata();
+char* getRutaMapa(char* ptoMnt, char* nombreMapa);
 
 
 t_log *log_mapa;
@@ -88,6 +89,9 @@ typedef struct PokeNest {
 metadata* conf_metadata;
 char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
+char* pto_montaje;
+char* nombre_mapa;
+char* ruta_mapa;
 
 void manejar_select(int socket, t_log* log);
 t_entrenador* crearEntrenador(int file_descriptor, char simbolo);
