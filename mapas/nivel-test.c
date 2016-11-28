@@ -226,6 +226,7 @@ char* getRutaMapa(char* ptoMnt, char* nombreMapa){
 	len = strlen(directorio);
 	ruta = malloc(letrasPto + letrasNombre + len + 2);
 	snprintf(ruta, letrasPto + letrasNombre + len + 2, "%s%s/%s", ptoMnt, directorio, nombreMapa);
+	free(directorio);
 	return ruta;
 }
 char* getRutaMetadata(){
@@ -234,6 +235,7 @@ char* getRutaMetadata(){
 	int len_ruta_mapa = strlen(ruta_mapa);
 	char* ruta = malloc(len_ruta_mapa + x + 1);
 	snprintf(ruta, len_ruta_mapa + x + 1, "%s%s", ruta_mapa, directorio);
+	free(directorio);
 	return ruta;
 }
 
@@ -242,6 +244,7 @@ char* getRutaPokenests(){
 	int x = strlen(directorio);
 	char* ruta = malloc(strlen(ruta_mapa) + x + 1);
 	snprintf(ruta, strlen(ruta_mapa) + x + 1, "%s%s", ruta_mapa, directorio);
+	free(directorio);
 	return ruta;
 }
 
@@ -268,6 +271,9 @@ PokeNest* crearPokenest(char* rutaPokenest){
 	pokeNest->posx = atoi(posicion);
 	posicion = strtok(NULL, ";");
 	pokeNest->posy = atoi(posicion);
+	//free(posiciones);
+	//free(posicion);
+	free(aux);
 	free(metadata);
 	config_destroy(config);
 	return pokeNest;
@@ -310,6 +316,7 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
+	entrenador->objetivoActual = 0;
 	entrenador->pokemons = list_create();
 	entrenador->simbolo = simbolo;
 	return entrenador;
@@ -340,9 +347,10 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 	DIR* d;
 	struct dirent *directorio;
 	d = opendir(rutaPokenests);
+	char* rutaPokemon;
 	while((directorio = readdir(d)) != NULL){
 		if((!strcmp(directorio->d_name, ".")) || (!strcmp(directorio->d_name, ".."))) continue;
-		char* rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
+		rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
 
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
@@ -351,6 +359,7 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 		list_add(listaPokenests, pokenest);
 
 		CrearCaja(items, pokenest->id, pokenest->posx, pokenest->posy, pokenest->cantidad);
+		free(rutaPokemon);
 	}
 	closedir(d);
 }
@@ -360,4 +369,10 @@ t_log* crear_log(char* nombre){
 	snprintf((char *)&nombre_archivo, 256, "%s.log", nombre);
 	t_log* logger = log_create(nombre_archivo, "MAPA", false, LOG_LEVEL_TRACE);
 	return logger;
+}
+void destruir_config(metadata* config){
+	free(config->algoritmo);
+	free(config->ip);
+	free(config->puerto);
+	free(config);
 }

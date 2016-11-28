@@ -51,11 +51,24 @@ int atender(t_entrenador* entrenador){
 
 void ejecutarRafagaSRDF(){
 	t_entrenador* entrenador;
+	int capturo_pokemon;
+	int _no_tiene_objetivo_asignado(t_entrenador* entrenador){
+		return (entrenador-> objetivoActual == NULL);
+	}
+	if((entrenador = list_find(colaListos->elements, (void*) _no_tiene_objetivo_asignado)) != NULL){
+		atenderSolicitud(entrenador);
+		sleep(conf_metadata->retardo);
+		return;
+	}
 	if(!queue_is_empty(colaListos)){
-		atenderEntrenadoresSinDistanciaDefinida();
+		//atenderEntrenadoresSinDistanciaDefinida();
 
 		entrenador = buscarEntrenadorConMenorDistancia();
-		atenderSolicitud(entrenador);
+		while(1){
+			capturo_pokemon = atenderSolicitud(entrenador);
+			sleep(conf_metadata->retardo);
+			if(capturo_pokemon)break;
+		}
 		queue_push(colaListos, entrenador);
 	}
 }
