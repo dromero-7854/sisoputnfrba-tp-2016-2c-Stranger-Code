@@ -20,11 +20,12 @@
 #define	OSADA_ENOENT		 		1 // no such file or directory
 #define	OSADA_ISREG		 			2 // is a regular file
 #define	OSADA_ISDIR		 			3 // is a directory
-#define	OSADA_ENOTDIR				4 // not a directory */
+#define	OSADA_ENOTDIR				4 // not a directory
 #define	OSADA_ENOSPC				5 // no space left on device
 #define	OSADA_EMPTYDIR 				6 // empty directory
 #define	OSADA_NOTEMPTYDIR 			7 // no empty directory
 #define	OSADA_SEXE		 			8 // successful execution
+#define	OSADA_ENAMETOOLONG		 	9 // name too long
 
 const uint8_t REQ_MKDIR = 1;
 const uint8_t REQ_READ_DIR = 2;
@@ -82,6 +83,8 @@ static int pk_mkdir(const char * path, mode_t mode) {
 
 	if (resp_code == OSADA_ENOSPC)
 		return -ENOSPC;
+	if (resp_code == OSADA_ENAMETOOLONG)
+			return -EINVAL;
 
 	return 0;
 }
@@ -250,6 +253,8 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 
 	if (resp_code == OSADA_ENOSPC)
 		return -ENOSPC;
+	if (resp_code == OSADA_ENAMETOOLONG)
+		return -EINVAL;
 	if (resp_code == OSADA_ENOTDIR)
 		return -ENOTDIR;
 
