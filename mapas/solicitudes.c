@@ -23,12 +23,12 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 
 	status = recv(socket, operation_code_value, prot_ope_code_size, 0);
 	if (status <= 0) {
-		printf("ERROR: Socket %d, disconnected...\n", socket);
+		log_error(log_mapa, "se desconecto alguien en socket: d", socket);
 	} else {
 		ret = ret + status;
 		status = recv(socket, &message_size, prot_message_size, 0);
 		if (status <= 0) {
-			printf("ERROR: Socket %d, no message size...\n", socket);
+			log_error(log_mapa, "se desconecto alguien en socket: d", socket);
 		} else {
 			ret = ret + status;
 			//message = (void*) malloc(message_size);
@@ -52,6 +52,9 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 					buffer = malloc(message_size + 1);
 					if(message_size > 0){
 						status = recv(socket, buffer, message_size, 0);
+					}
+					if(status <= 0){
+						log_error(log_mapa, "se desconecto alguien en socket: d", socket);
 					}
 					if(status > 0){
 						buffer[message_size] = '\0';
@@ -143,6 +146,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		offset += sizeof(uint8_t);
 		memcpy(paquete_a_mandar + offset, coordenadas_pokenest, sizeof(t_coor));
 		send(entrenador->id, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
+		entrenador->objetivoActual = pokenest_id;
 		free(coordenadas_pokenest);
 		free(paquete_a_mandar);
 
@@ -215,6 +219,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		//offset += sizeof(t_pokemon_type);
 		//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
 		send(entrenador->id, paquete_a_mandar, bytes_a_mandar, 0);
+		entrenador->objetivoActual = NULL;
 		//free(mensaje);
 		free(paquete_a_mandar);
 		capturo_pokemon = 1;

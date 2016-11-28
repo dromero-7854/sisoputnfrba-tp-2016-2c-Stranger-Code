@@ -46,7 +46,7 @@ typedef struct {
 
 	char *proximoMapa;
 	char *objetivos;
-	int objetivoActual;
+	char objetivoActual;
 	char quantum;
 
 	t_list * pokemons;
