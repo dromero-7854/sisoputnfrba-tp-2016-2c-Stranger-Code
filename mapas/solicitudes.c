@@ -24,11 +24,13 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 	status = recv(socket, operation_code_value, prot_ope_code_size, 0);
 	if (status <= 0) {
 		log_error(log_mapa, "se desconecto alguien en socket: d", socket);
+		return 0;
 	} else {
 		ret = ret + status;
 		status = recv(socket, &message_size, prot_message_size, 0);
 		if (status <= 0) {
 			log_error(log_mapa, "se desconecto alguien en socket: d", socket);
+			return 0;
 		} else {
 			ret = ret + status;
 			//message = (void*) malloc(message_size);
@@ -39,6 +41,10 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 					status = recv(socket, coor, message_size, 0);
 					if(status > 0){
 						*message = coor;
+					}
+					if(status <= 0){
+						log_error(log_mapa, "se desconecto alguien en socket: d", socket);
+						return 0;
 					}
 					//free(coor);
 					break;
@@ -55,6 +61,7 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 					}
 					if(status <= 0){
 						log_error(log_mapa, "se desconecto alguien en socket: d", socket);
+						return 0;
 					}
 					if(status > 0){
 						buffer[message_size] = '\0';
@@ -116,13 +123,13 @@ char handshake(int socketCliente, t_log* logger){
 }
 
 int atenderSolicitud(t_entrenador* entrenador){
-	int recibidos;
+	int recibido;
 	uint8_t operation_code, tam_msg;
 	t_coor* coor;
 	int capturo_pokemon, offset;
 	void *buffer, *paquete_a_mandar;
 	log_trace(log_mapa, "atendiendo solicitud");
-	connection_recv(entrenador->id, &operation_code, &buffer);
+	recibido = connection_recv(entrenador->id, &operation_code, &buffer);
 
 	switch(operation_code){
 	case OC_UBICAR_POKENEST:
@@ -149,6 +156,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		entrenador->objetivoActual = pokenest_id;
 		free(coordenadas_pokenest);
 		free(paquete_a_mandar);
+		free(buffer);
 
 		capturo_pokemon = 0;
 		break;
@@ -188,6 +196,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		send(entrenador->id, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
 		free(coor);
 		free(paquete_a_mandar);
+		free(buffer);
 		MoverPersonaje(items, entrenador->simbolo, entrenador->posx, entrenador->posy);
 		capturo_pokemon = 0;
 		break;
@@ -199,6 +208,9 @@ int atenderSolicitud(t_entrenador* entrenador){
 		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
+		if(infopokemon == NULL){
+			return -1;
+		}
 		list_add(entrenador->pokemons, infopokemon);
 
 		int len = strlen(infopokemon->pokemon->species);
@@ -222,6 +234,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		entrenador->objetivoActual = NULL;
 		//free(mensaje);
 		free(paquete_a_mandar);
+		free(buffer);
 		capturo_pokemon = 1;
 		break;
 	}
@@ -247,11 +260,14 @@ int atenderSolicitud(t_entrenador* entrenador){
 		//offset += sizeof(t_pokemon_type);
 		//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
 		send(entrenador->id, paquete_a_mandar, tamanio + sizeof(uint8_t) * 2, 0);
-		capturo_pokemon = 1;
+		capturo_pokemon = 2;
 		break;
 	}
+	default:
+		capturo_pokemon = 2;
+		break;
 	}
-	free(buffer);
+
 	return capturo_pokemon;
 }
 

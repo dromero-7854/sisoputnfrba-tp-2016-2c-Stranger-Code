@@ -34,19 +34,16 @@ void planificar(){
 
 int atender(t_entrenador* entrenador){
 	int q, capturo_pokemon;
-	//entrenador = queue_pop(colaListos);
-	for(q = 0; q < conf_metadata->quantum; q++){ // QUANTUM lo va a leer de config
+	for(q = 0; q < conf_metadata->quantum; q++){
 		log_trace(log_mapa, "quantum del entrenador: %d", q);
-		//pthread_mutex_lock(&mutex_cola_listos);
-		capturo_pokemon = atenderSolicitud(entrenador);
-		//quantum ++;
 		sleep(conf_metadata->retardo);
-		//if(capturo_pokemon) break;
+		capturo_pokemon = atenderSolicitud(entrenador);
+
+
+		//if(capturo_pokemon == TERMINO_MAPA) break;
 
 	}
-	if(q == conf_metadata->quantum){
-		return 1;
-	} else return 0;
+	return capturo_pokemon;
 }
 
 void ejecutarRafagaSRDF(){
@@ -55,51 +52,76 @@ void ejecutarRafagaSRDF(){
 	int _no_tiene_objetivo_asignado(t_entrenador* entrenador){
 		return (entrenador-> objetivoActual == NULL);
 	}
-	if((entrenador = list_find(colaListos->elements, (void*) _no_tiene_objetivo_asignado)) != NULL){
-		atenderSolicitud(entrenador);
+	//if((entrenador = list_find(colaListos->elements, (void*) _no_tiene_objetivo_asignado)) != NULL){
+	if ((entrenador = buscarEntrenadorSinDistanciaDefinida()) != NULL){
 		sleep(conf_metadata->retardo);
+		capturo_pokemon = atenderSolicitud(entrenador);
+		if(capturo_pokemon){
+			liberarEntrenador(entrenador);
+			return;
+		}
+		queue_push(colaListos, entrenador);
 		return;
 	}
+	//}
 	if(!queue_is_empty(colaListos)){
 		//atenderEntrenadoresSinDistanciaDefinida();
 
 		entrenador = buscarEntrenadorConMenorDistancia();
 		while(1){
-			capturo_pokemon = atenderSolicitud(entrenador);
 			sleep(conf_metadata->retardo);
-			if(capturo_pokemon)break;
+			capturo_pokemon = atenderSolicitud(entrenador);
+			if(capturo_pokemon){
+				if(capturo_pokemon == 1){
+					break;
+				} else {
+					liberarEntrenador(entrenador);
+					return;
+				}
+			}
 		}
 		queue_push(colaListos, entrenador);
 	}
 }
 
 void ejecutarRafagaRR(){
-	int completo_quantum;
+	int respuesta, q, capturo_pokemon;
 	t_entrenador* entrenador;
 	if(!queue_is_empty(colaListos)){
 		log_trace(log_mapa, "atendiendo cola Listos");
 		entrenador = queue_pop(colaListos);
-		completo_quantum = atender(entrenador);
-	} else {
-		return;
-	}
-	if (completo_quantum){
-		queue_push(colaListos, entrenador);
-		//pthread_mutex_unlock(&mutex_cola_listos);
-	} else {
-		queue_push(colaBloqueados, entrenador);
+		for(q = 0; q < conf_metadata->quantum; q++){
+			log_trace(log_mapa, "quantum del entrenador: %d", q);
+			sleep(conf_metadata->retardo);
+			respuesta = atenderSolicitud(entrenador);
+
+
+			if(respuesta != TURNO_NORMAL) break;
+
+		}
+		//respuesta = atender(entrenador);
+		switch(respuesta){
+		case DESCONEXION:
+			liberarEntrenador(entrenador);
+			break;
+		case NO_ENCONTRO_POKEMON:
+			queue_push(colaBloqueados, entrenador);
+			break;
+		default:
+			queue_push(colaListos, entrenador);
+			break;
+		}
+		//queue_push(colaListos, entrenador);
 	}
 }
 
-void atenderEntrenadoresSinDistanciaDefinida(){
+t_entrenador* buscarEntrenadorSinDistanciaDefinida(){
 	t_entrenador* entrenador;
 	int _no_tiene_objetivo_asignado(t_entrenador* entrenador){
 		return (entrenador-> objetivoActual == NULL);
 	}
-	while((entrenador = list_remove_by_condition(colaListos->elements, (void *)_no_tiene_objetivo_asignado)) != NULL){
-			atenderSolicitud(entrenador);
-			queue_push(colaListos, entrenador);
-	}
+	entrenador = list_remove_by_condition(colaListos->elements, (void*) _no_tiene_objetivo_asignado);
+	return entrenador;
 }
 
 t_entrenador* buscarEntrenadorConMenorDistancia(){

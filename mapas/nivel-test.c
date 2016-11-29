@@ -316,7 +316,7 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
-	entrenador->objetivoActual = 0;
+	entrenador->objetivoActual = NULL;
 	entrenador->pokemons = list_create();
 	entrenador->simbolo = simbolo;
 	return entrenador;
@@ -338,8 +338,10 @@ void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor){
 }
 
 void liberarEntrenador(t_entrenador* entrenador){
-	free(entrenador->objetivos);
-	free(entrenador->proximoMapa);
+	//free(entrenador->objetivos);
+	//free(entrenador->proximoMapa);
+	BorrarItem(items, entrenador->simbolo);
+	list_destroy(entrenador->pokemons);
 	free(entrenador);
 }
 
