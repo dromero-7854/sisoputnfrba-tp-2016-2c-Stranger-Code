@@ -10,8 +10,7 @@
 #include "planificacion.h"
 #include "solicitudes.h"
 
-#define MENSAJE_BIENVENIDA "Bienvenido al mapa"
-#define QUANTUM 3
+
 
 
 void planificar(){
@@ -60,7 +59,9 @@ void ejecutarRafagaSRDF(){
 			liberarEntrenador(entrenador);
 			return;
 		}
+		pthread_mutex_lock(&mutex_cola_listos);
 		queue_push(colaListos, entrenador);
+		pthread_mutex_unlock(&mutex_cola_listos);
 		return;
 	}
 	//}
@@ -80,7 +81,9 @@ void ejecutarRafagaSRDF(){
 				}
 			}
 		}
+		pthread_mutex_lock(&mutex_cola_listos);
 		queue_push(colaListos, entrenador);
+		pthread_mutex_unlock(&mutex_cola_listos);
 	}
 }
 
@@ -89,7 +92,9 @@ void ejecutarRafagaRR(){
 	t_entrenador* entrenador;
 	if(!queue_is_empty(colaListos)){
 		log_trace(log_mapa, "atendiendo cola Listos");
+		pthread_mutex_lock(&mutex_cola_listos);
 		entrenador = queue_pop(colaListos);
+		pthread_mutex_unlock(&mutex_cola_listos);
 		for(q = 0; q < conf_metadata->quantum; q++){
 			log_trace(log_mapa, "quantum del entrenador: %d", q);
 			sleep(conf_metadata->retardo);
@@ -108,7 +113,9 @@ void ejecutarRafagaRR(){
 			queue_push(colaBloqueados, entrenador);
 			break;
 		default:
+			pthread_mutex_lock(&mutex_cola_listos);
 			queue_push(colaListos, entrenador);
+			pthread_mutex_unlock(&mutex_cola_listos);
 			break;
 		}
 		//queue_push(colaListos, entrenador);

@@ -279,8 +279,13 @@ PokeNest* buscarPokenest(t_list* lista, char id){
 }
 
 t_infoPokemon* buscarPrimerPokemon(t_list* listaDePokemons){
+	t_list* listaAux;
+	t_infoPokemon* infoPokemon;
+	//list_add_all(listaAux, listaDePokemons);
 	int _pokemon_de_menor_nombre(t_infoPokemon* infoPokemon1, t_infoPokemon* infoPokemon2){
 		return infoPokemon1->nombre < infoPokemon2->nombre;
 	}
-	return list_find(listaDePokemons, (void*) _pokemon_de_menor_nombre);
+	list_sort(listaDePokemons, (void*) _pokemon_de_menor_nombre);
+	//infoPokemon = list_get(listaAux)
+	return list_remove(listaDePokemons, 0);
 }

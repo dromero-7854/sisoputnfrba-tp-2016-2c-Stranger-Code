@@ -59,7 +59,7 @@ typedef struct {
 	int batalla;
 	char* algoritmo;
 	int quantum;
-	int retardo;
+	double retardo;
 	char* ip;
 	char* puerto;
 }metadata;

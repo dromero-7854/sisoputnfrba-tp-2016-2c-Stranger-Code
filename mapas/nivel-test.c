@@ -183,8 +183,9 @@ void manejar_select(int socket, t_log* log){
 						//TODO: crear el entrenador en la GUI aca y sacar la funcion crearJugadores
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
-
+						pthread_mutex_lock(&mutex_cola_listos);
 						queue_push(colaListos, nuevoEntrenador);
+						pthread_mutex_unlock(&mutex_cola_listos);
 					}/*else {
 						recibido = recv(a,  (void*) buf, 512, 0);
 						if(recibido <= 0){
@@ -212,7 +213,7 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta){
 	meterStringEnEstructura(&(conf_metadata->algoritmo), config_get_string_value(configuracion, "algoritmo"));
 	meterStringEnEstructura(&(conf_metadata->ip), config_get_string_value(configuracion, "IP"));
 	meterStringEnEstructura(&(conf_metadata->puerto), config_get_string_value(configuracion, "Puerto"));
-	conf_metadata->retardo = config_get_int_value(configuracion, "retardo");
+	conf_metadata->retardo = config_get_double_value(configuracion, "retardo");
 	conf_metadata->quantum = config_get_int_value(configuracion, "quantum");
 	config_destroy(configuracion);
 }
