@@ -20,11 +20,12 @@
 #define	OSADA_ENOENT		 		1 // no such file or directory
 #define	OSADA_ISREG		 			2 // is a regular file
 #define	OSADA_ISDIR		 			3 // is a directory
-#define	OSADA_ENOTDIR				4 // not a directory */
+#define	OSADA_ENOTDIR				4 // not a directory
 #define	OSADA_ENOSPC				5 // no space left on device
 #define	OSADA_EMPTYDIR 				6 // empty directory
 #define	OSADA_NOTEMPTYDIR 			7 // no empty directory
 #define	OSADA_SEXE		 			8 // successful execution
+#define	OSADA_ENAMETOOLONG		 	9 // name too long
 
 const uint8_t REQ_MKDIR = 1;
 const uint8_t REQ_READ_DIR = 2;
@@ -40,21 +41,20 @@ t_config * conf;
 struct addrinfo hints;
 struct addrinfo * server_info;
 
+int server_socket;
+
 struct t_runtime_options {
 	char * welcome_msg;
 } runtime_options;
 
 #define CUSTOM_FUSE_OPT_KEY(t, p, v) { t, offsetof(struct t_runtime_options, p), v }
 
-void open_connection(int *);
-void close_connection(int *);
+void open_connection();
+void close_connection();
 void load_properties_file(void);
 
 static int pk_mkdir(const char * path, mode_t mode) {
-	int server_socket;
-	open_connection(&server_socket);
 
-	//
 	// << sending message >>
 	// operation code
 	uint8_t prot_ope_code_size = 1;
@@ -71,7 +71,6 @@ static int pk_mkdir(const char * path, mode_t mode) {
 	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
-	//
 	// << receiving message >>
 	// response code
 	uint8_t prot_resp_code_size = 1;
@@ -81,11 +80,11 @@ static int pk_mkdir(const char * path, mode_t mode) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return -EIO;
 	}
-	close_connection(&server_socket);
 
-	if (resp_code == OSADA_ENOSPC) {
+	if (resp_code == OSADA_ENOSPC)
 		return -ENOSPC;
-	}
+	if (resp_code == OSADA_ENAMETOOLONG)
+			return -EINVAL;
 
 	return 0;
 }
@@ -97,10 +96,7 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 	} else if (strlen(path) > 0) {
-		int server_socket;
-		open_connection(&server_socket);
 
-		//
 		// << sending message >>
 		// operation code
 		uint8_t prot_ope_code_size = 1;
@@ -117,7 +113,6 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 		send(server_socket, buffer, buffer_size, 0);
 		free(buffer);
 
-		//
 		// << receiving message >>
 		// response code
 		uint8_t prot_resp_code_size = 1;
@@ -157,7 +152,6 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 			}
 		}
 
-		close_connection(&server_socket);
 	} else {
 		res = -ENOENT;
 	}
@@ -169,10 +163,7 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 	(void) fi;
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
-	int server_socket;
-	open_connection(&server_socket);
 
-	//
 	// << sending message >>
 	// operation code
 	uint8_t prot_ope_code_size = 1;
@@ -189,7 +180,6 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
-	//
 	// << receiving message >>
 	// response code
 	uint8_t prot_resp_code_size = 1;
@@ -201,7 +191,6 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 	}
 
 	if (resp_code == OSADA_ENOTDIR) {
-		close_connection(&server_socket);
 		return -ENOTDIR;
 	} else  if (resp_code == OSADA_NOTEMPTYDIR) {
 		// directories and files
@@ -231,13 +220,10 @@ static int pk_readdir(const char * path, void * buf, fuse_fill_dir_t filler, off
 		free(resp);
 	}
 
-	close_connection(&server_socket);
 	return 0;
 }
 
 static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
-	int server_socket;
-	open_connection(&server_socket);
 
 	// << sending message >>
 	// operation code
@@ -264,20 +250,18 @@ static int pk_mknod(const char * path, mode_t mode, dev_t dev) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return -EIO;
 	}
-	close_connection(&server_socket);
 
-	if (resp_code == OSADA_ENOSPC) {
+	if (resp_code == OSADA_ENOSPC)
 		return -ENOSPC;
-	} else if (resp_code == OSADA_ENOTDIR) {
+	if (resp_code == OSADA_ENAMETOOLONG)
+		return -EINVAL;
+	if (resp_code == OSADA_ENOTDIR)
 		return -ENOTDIR;
-	}
 
 	return 0;
 }
 
 static int pk_truncate(const char * path, off_t offset) {
-	int server_socket;
-	open_connection(&server_socket);
 
 	// << sending message >>
 	// operation code
@@ -308,20 +292,16 @@ static int pk_truncate(const char * path, off_t offset) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return -EIO;
 	}
-	close_connection(&server_socket);
 
-	if (resp_code == OSADA_ENOENT) {
+	if (resp_code == OSADA_ENOENT)
 		return -ENOENT;
-	} else if (resp_code == OSADA_ENOSPC) {
+	if (resp_code == OSADA_ENOSPC)
 		return -ENOSPC;
-	}
 
 	return 0;
 }
 
 static int pk_read(const char * path, char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
-	int server_socket;
-	open_connection(&server_socket);
 
 	// << sending message >>
 	// operation code
@@ -357,10 +337,8 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 		return -EIO;
 	}
 
-	if (resp_code == OSADA_ENOENT) {
-		close_connection(&server_socket);
+	if (resp_code == OSADA_ENOENT)
 		return -ENOENT;
-	}
 
 	// bytes transferred
 	uint8_t prot_resp_bytes_transferred_size = 4;
@@ -382,14 +360,11 @@ static int pk_read(const char * path, char * buf, size_t size, off_t offset, str
 		free(file_content);
 	}
 
-	close_connection(&server_socket);
 	return bytes_transferred;
 }
 
 static int pk_write(const char * path, const char * buf, size_t size, off_t offset, struct fuse_file_info * fi) {
-	int retstat;
-	int server_socket;
-	open_connection(&server_socket);
+	int retstat = 0;
 
 	// << sending message >>
 	// operation code
@@ -429,20 +404,15 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return -EIO;
 	}
-	close_connection(&server_socket);
 
 	if (resp_code == OSADA_SEXE) {
 		retstat = size;
-	} else {
-		retstat = 0;
 	}
 
 	return retstat;
 }
 
 static int pk_open(const char * path, struct fuse_file_info * fi) {
-	int server_socket;
-	open_connection(&server_socket);
 
 	// << sending message >>
 	// operation code
@@ -469,7 +439,28 @@ static int pk_open(const char * path, struct fuse_file_info * fi) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return -EIO;
 	}
-	close_connection(&server_socket);
+
+	// file size
+	uint32_t prot_resp_file_size = 4;
+	uint32_t file_size;
+	// last modification
+	uint8_t prot_resp_lastmod_size = 4;
+	uint32_t lastmod = 0;
+	if (resp_code == OSADA_ENOENT) {
+		return -ENOENT;
+	} else {
+		// releasing socket queue
+		received_bytes = recv(server_socket, &file_size, prot_resp_file_size, MSG_WAITALL);
+		if (received_bytes <= 0) {
+			printf("pokedex client: server %d disconnected...\n", server_socket);
+			return -EIO;
+		}
+		received_bytes = recv(server_socket, &lastmod, prot_resp_lastmod_size, MSG_WAITALL);
+		if (received_bytes <= 0) {
+			printf("pokedex client: server %d disconnected...\n", server_socket);
+			return -EIO;
+		}
+	}
 
 	if (resp_code != OSADA_ISREG)
 		return -ENOENT;
@@ -479,8 +470,6 @@ static int pk_open(const char * path, struct fuse_file_info * fi) {
 }
 
 static int pk_unlink(const char* path) {
-	int server_socket;
-	open_connection(&server_socket);
 
 	// << sending message >>
 	// operation code
@@ -507,18 +496,14 @@ static int pk_unlink(const char* path) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return -EIO;
 	}
-	close_connection(&server_socket);
 
-	if (resp_code == OSADA_ENOENT) {
+	if (resp_code == OSADA_ENOENT)
 		return -ENOENT;
-	}
 
 	return 0;
 }
 
 static int pk_rmdir(const char* path) {
-	int server_socket;
-	open_connection(&server_socket);
 
 	// << sending message >>
 	// operation code
@@ -545,11 +530,9 @@ static int pk_rmdir(const char* path) {
 		printf("pokedex client: server %d disconnected...\n", server_socket);
 		return -EIO;
 	}
-	close_connection(&server_socket);
 
-	if (resp_code == OSADA_ENOTDIR) {
+	if (resp_code == OSADA_ENOTDIR)
 		return -ENOTDIR;
-	}
 
 	return 0;
 }
@@ -584,6 +567,7 @@ static struct fuse_opt fuse_options[] = {
 
 int main(int argc, char* argv[]) {
 	load_properties_file();
+	open_connection();
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 	memset(&runtime_options, 0, sizeof(struct t_runtime_options));
@@ -601,15 +585,15 @@ int main(int argc, char* argv[]) {
 	return fuse_main(args.argc, args.argv, &pk_oper, NULL);
 }
 
-void open_connection(int * server_socket) {
+void open_connection() {
 	getaddrinfo(config_get_string_value(conf, "pokedex.server.ip"), config_get_string_value(conf, "pokedex.server.port"), &hints, &server_info);
-	* server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-	connect(* server_socket, server_info->ai_addr, server_info->ai_addrlen);
+	server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
+	connect(server_socket, server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
 }
 
-void close_connection(int * server_socket) {
-	close(* server_socket);
+void close_connection() {
+	close(server_socket);
 }
 
 void load_properties_file(void) {
