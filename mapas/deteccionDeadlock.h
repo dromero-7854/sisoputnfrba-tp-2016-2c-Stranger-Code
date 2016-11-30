@@ -9,6 +9,7 @@
 #define MAPAS_DETECCIONDEADLOCK_H_
 
 #include <commons/collections/list.h>
+#include <bibliotecaCharMander.h>
 #include "nivel-test.h"
 
 void detectarDeadlock(t_combo* comboLista);
