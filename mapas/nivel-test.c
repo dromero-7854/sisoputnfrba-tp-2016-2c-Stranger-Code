@@ -136,29 +136,6 @@ void moverJugador(t_entrenador *personaje, t_list *items, int x, int y) {
 
 }
 
-void darRecurso(PokeNest * pokenest, t_list * items) {
-
-	if(pokenest ->cantidad >0 && !queue_is_empty(pokenest->colaBloqueados)) {
-		t_entrenador * entrenador = queue_pop(pokenest->colaBloqueados);
-
-		t_pokemon * pokemon = list_get(pokenest->listaPokemons, 1);
-		list_add(entrenador ->pokemons, pokemon);
-		list_remove(pokenest->listaPokemons, 1);
-		restarRecurso(items, pokenest->id);
-		entrenador ->objetivoActual++;
-		pokenest->cantidad--;
-
-	}
-}
-void solicitarRecurso(t_entrenador * entrenador, PokeNest * pokenest, t_list * items) {
-
-	queue_push(pokenest -> colaBloqueados, (t_entrenador *)entrenador);
-	entrenador->bloq= true;
-
-	darRecurso(pokenest, items);
-
-}
-
 void manejar_select(int socket, t_log* log){
 	fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;

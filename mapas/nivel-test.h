@@ -51,7 +51,6 @@ typedef struct {
 
 	t_list * pokemons;
 
-	bool bloq;
 }t_entrenador;
 
 typedef struct {
@@ -81,7 +80,7 @@ typedef struct PokeNest {
 	char posx;
 	char posy;
 	char cantidad;
-	t_queue * colaBloqueados;
+	//t_queue * colaBloqueados;
 	t_pokemon_type tipo;
 	t_list* listaPokemons;
 } PokeNest;
