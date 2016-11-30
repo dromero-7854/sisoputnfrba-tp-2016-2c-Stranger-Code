@@ -212,6 +212,8 @@ int atenderSolicitud(t_entrenador* entrenador){
 			return -1;
 		}
 		list_add(entrenador->pokemons, infopokemon);
+		pokenest->cantidad--;
+		entrenador->objetivoActual++;
 
 		int len = strlen(infopokemon->pokemon->species);
 

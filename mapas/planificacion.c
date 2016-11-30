@@ -151,16 +151,19 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 }
 
 void liberarRecursos(t_entrenador* entrenador){
-	int index_pokemon, index_entrenador;
+	int index_pokemon, index_entrenador, index_pokenest, nadieLoQuiso;
 	t_infoPokemon* infoPokemon;
 	t_entrenador* entrenadorBloqueado;
-	for(index_pokemon = 0 ; index_pokemon < list_size(entrenador->pokemons); index_pokemon ++ ){
-		infoPokemon = list_get(entrenador->pokemons, index_pokemon);
+
+	while(!list_is_empty(entrenador->pokemons)) {
+		infoPokemon = list_get(entrenador->pokemons, 0);
+		nadieLoQuiso = 1;
 
 		for(index_entrenador = 0; index_entrenador < list_size(colaBloqueados->elements); index_entrenador++){
 			entrenadorBloqueado = list_get(colaBloqueados, index_entrenador);
 			if(entrenadorBloqueado->objetivoActual == infoPokemon->id_pokenest){
 				list_add(entrenadorBloqueado->pokemons, infoPokemon);
+				nadieLoQuiso = 0;
 				//entrenadorBloqueado->objetivoActual = NULL;
 				queue_push(colaListos, buscarEntrenador(entrenadorBloqueado->id, colaBloqueados->elements));
 				/**
@@ -169,7 +172,24 @@ void liberarRecursos(t_entrenador* entrenador){
 				break;
 			}
 		}
+		if(nadieLoQuiso) {
+			for(index_pokenest = 0; index_pokenest < list_size(listaPokenests); index_pokenest++) {
+
+				PokeNest *pokenest = list_get(listaPokenests, index_pokenest);
+				if(infoPokemon->id_pokenest == pokenest->id) {
+					list_add(pokenest->listaPokemons, infoPokemon);
+					pokenest->cantidad++;
+					break;
+				}
+			}
+		}
+		list_remove(entrenador->pokemons, 0);
 	}
+
+	/*Esto es por si queriamos hacer al reves y guardar primero en las pokenest y despues darlo a los entrenadores
+	entregarLiberadosALosBloqueados();
+	>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
 	list_destroy(entrenador->pokemons);
 	liberarEntrenador(entrenador);
 }
@@ -180,3 +200,20 @@ t_entrenador* buscarEntrenador(int socket, t_list* lista){
 	}
 	return list_remove_by_condition(lista, _mismo_id);
 }
+/*TODO:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+void entregarLiberadosALosBloqueados() {
+	t_list * pokenestsFiltradas = list_filter(listaPokenests, (void *) tienenEntrenadoresBloqYPkmnDisp());
+	int i, j;
+	for(i =0; i < list_size(pokenestsFiltradas); i++) {
+		PokeNest *pokenest = list_get(pokenestsFiltradas, i);
+		for(j = 0; j < queue_size(pokenest->colaBloqueados); j++) {
+			t_entrenador *entrenador = queue_pop(pokenest->colaBloqueados);
+			atender(entrenador);
+		}
+	}
+
+}
+int tienenEntrenadoresBloqYPkmnDisp(PokeNest pokenest) {
+	return (queue_size(pokenest.colaBloqueados) > 0 && list_size(pokenest.listaPokemons));
+}
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<*/
