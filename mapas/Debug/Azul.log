@@ -1,0 +1,57 @@
+[TRACE] 18:17:37:479 MAPA/(6996:6996): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 18:17:37:479 MAPA/(6996:6996): se cargo la metadata
+[TRACE] 18:17:37:479 MAPA/(6996:6996): Se iniciaron las colas y listas
+[TRACE] 18:17:37:479 MAPA/(6996:6996): se creo hilo deadlock
+[TRACE] 18:17:37:480 MAPA/(6996:6996): se creo hilo de dibujo
+[TRACE] 18:17:37:480 MAPA/(6996:6996): Se creo servidor, escuchando en : 4
+[TRACE] 18:18:29:31 MAPA/(7007:7007): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 18:18:29:82 MAPA/(7007:7007): se cargo la metadata
+[TRACE] 18:18:29:82 MAPA/(7007:7007): Se iniciaron las colas y listas
+[TRACE] 18:18:29:82 MAPA/(7007:7007): se creo hilo deadlock
+[TRACE] 18:18:29:106 MAPA/(7007:7007): se creo hilo de dibujo
+[TRACE] 18:18:29:113 MAPA/(7007:7007): Se creo servidor, escuchando en : 4
+[TRACE] 18:20:28:767 MAPA/(7057:7057): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 18:20:28:784 MAPA/(7057:7057): se cargo la metadata
+[TRACE] 18:20:28:784 MAPA/(7057:7057): Se iniciaron las colas y listas
+[TRACE] 18:20:28:784 MAPA/(7057:7057): se creo hilo deadlock
+[TRACE] 18:20:28:815 MAPA/(7057:7057): se creo hilo de dibujo
+[TRACE] 18:20:28:838 MAPA/(7057:7057): Se creo servidor, escuchando en : 4
+[TRACE] 18:41:04:772 MAPA/(7601:7601): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 18:41:04:772 MAPA/(7601:7601): se cargo la metadata
+[TRACE] 18:41:04:772 MAPA/(7601:7601): Se iniciaron las colas y listas
+[TRACE] 18:41:04:772 MAPA/(7601:7601): se creo hilo deadlock
+[TRACE] 18:41:04:772 MAPA/(7601:7601): se creo hilo de dibujo
+[TRACE] 18:41:04:773 MAPA/(7601:7601): Se creo servidor, escuchando en : 4
+[TRACE] 18:42:09:491 MAPA/(7635:7635): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 18:42:09:491 MAPA/(7635:7635): se cargo la metadata
+[TRACE] 18:42:09:491 MAPA/(7635:7635): Se iniciaron las colas y listas
+[TRACE] 18:42:09:491 MAPA/(7635:7635): se creo hilo deadlock
+[TRACE] 18:42:09:491 MAPA/(7635:7635): se creo hilo de dibujo
+[TRACE] 18:42:09:492 MAPA/(7635:7635): Se creo servidor, escuchando en : 4
+[TRACE] 18:42:18:684 MAPA/(7635:7635): Se conecto alguien. Socket asignado: 5
+[TRACE] 18:42:19:190 MAPA/(7635:7636): atendiendo solicitud
+[TRACE] 18:42:19:694 MAPA/(7635:7636): atendiendo solicitud
+[TRACE] 18:42:20:196 MAPA/(7635:7636): atendiendo solicitud
+[TRACE] 18:42:20:698 MAPA/(7635:7636): atendiendo solicitud
+[TRACE] 18:42:21:201 MAPA/(7635:7636): atendiendo solicitud
+[TRACE] 18:42:21:702 MAPA/(7635:7636): atendiendo solicitud
+[TRACE] 19:31:26:685 MAPA/(7635:7635): Se conecto alguien. Socket asignado: 6
+[TRACE] 19:31:27:205 MAPA/(7635:7636): atendiendo solicitud
+[TRACE] 19:37:36:311 MAPA/(8178:8178): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 19:37:36:311 MAPA/(8178:8178): se cargo la metadata
+[TRACE] 19:37:36:311 MAPA/(8178:8178): Se iniciaron las colas y listas
+[TRACE] 19:37:36:311 MAPA/(8178:8178): se creo hilo deadlock
+[TRACE] 19:37:36:312 MAPA/(8178:8178): se creo hilo de dibujo
+[TRACE] 19:37:36:312 MAPA/(8178:8178): Se creo servidor, escuchando en : 4
+[TRACE] 19:40:07:861 MAPA/(8214:8214): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 19:40:07:861 MAPA/(8214:8214): se cargo la metadata
+[TRACE] 19:40:07:861 MAPA/(8214:8214): Se iniciaron las colas y listas
+[TRACE] 19:40:07:861 MAPA/(8214:8214): se creo hilo deadlock
+[TRACE] 19:40:07:861 MAPA/(8214:8214): se creo hilo de dibujo
+[TRACE] 19:40:07:861 MAPA/(8214:8214): Se creo servidor, escuchando en : 4
+[TRACE] 19:45:20:248 MAPA/(8309:8309): Se obtuvo la ruta a metadata /home/utnso/so-charmander-pruebas/01-base/Mapas/Azul/metadata
+[TRACE] 19:45:20:248 MAPA/(8309:8309): se cargo la metadata
+[TRACE] 19:45:20:248 MAPA/(8309:8309): Se iniciaron las colas y listas
+[TRACE] 19:45:20:248 MAPA/(8309:8309): se creo hilo deadlock
+[TRACE] 19:45:20:248 MAPA/(8309:8309): se creo hilo de dibujo
+[TRACE] 19:45:20:249 MAPA/(8309:8309): Se creo servidor, escuchando en : 4
