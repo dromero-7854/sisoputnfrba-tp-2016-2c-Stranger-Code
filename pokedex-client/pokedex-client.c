@@ -383,15 +383,15 @@ static int pk_write(const char * path, const char * buf, size_t size, off_t offs
 	uint8_t prot_offset = 4;
 	uint32_t req_offset = offset;
 
-	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size + prot_offset);
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_path_size + req_path_size + req_size + prot_size + prot_offset);
 	void * buffer = malloc(buffer_size);
 	memcpy(buffer, &req_ope_code, prot_ope_code_size);
 	memcpy(buffer + prot_ope_code_size, &req_path_size, prot_path_size);
 	memcpy(buffer + prot_ope_code_size + prot_path_size, path, req_path_size);
-	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size, &req_buf_size, prot_buf_size);
-	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size, buf, req_buf_size);
-	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size, &req_size, prot_size);
-	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_buf_size + req_buf_size + prot_size, &req_offset, prot_offset);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size, &req_size, prot_size);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_size, &req_offset, prot_offset);
+	memcpy(buffer + prot_ope_code_size + prot_path_size + req_path_size + prot_size + prot_offset, buf, req_size);
+
 	send(server_socket, buffer, buffer_size, 0);
 	free(buffer);
 
@@ -578,14 +578,16 @@ int main(int argc, char* argv[]) {
 	if( runtime_options.welcome_msg != NULL ){
 		printf("%s\n", runtime_options.welcome_msg);
 	}
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
 
 	return fuse_main(args.argc, args.argv, &pk_oper, NULL);
 }
 
 void open_connection() {
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
 	getaddrinfo(config_get_string_value(conf, "pokedex.server.ip"), config_get_string_value(conf, "pokedex.server.port"), &hints, &server_info);
 	server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	connect(server_socket, server_info->ai_addr, server_info->ai_addrlen);
