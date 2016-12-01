@@ -76,12 +76,12 @@ int main(int argc, char* argv[]) {
 
 	//getchar();
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
+	/*if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
 
-	}
+	}*/
 	log_trace(log_mapa, "se creo hilo deadlock");
 	//getchar();
 
