@@ -163,9 +163,8 @@ uint8_t move_to(uint8_t movement, t_coach* entrenador){
 uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coor* coor_pokemon){
 	uint8_t mover;
 
-	bool moverHorizontalmente = (lastMovement == MOVE_UP || lastMovement == MOVE_DOWN) && coor_entrenador->x != coor_pokemon->x;
-	//bool moverVerticalmente = !moverHorizontalmente;
-
+	bool moverHorizontalmente = ((lastMovement == MOVE_UP || lastMovement == MOVE_DOWN) && coor_entrenador->x != coor_pokemon->x) || coor_entrenador->y == coor_pokemon->y;
+//bool moverVerticalmente = !moverHorizontalmente;coor_entrenador->x != coor_pokemon->x
 	if(moverHorizontalmente){
 		if(coor_entrenador->x < coor_pokemon->x) mover = MOVE_RIGHT; else mover = MOVE_LEFT;
 	}else{
