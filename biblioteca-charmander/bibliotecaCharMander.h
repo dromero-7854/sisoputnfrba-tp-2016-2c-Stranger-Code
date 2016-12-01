@@ -42,5 +42,6 @@ int socket_servidor(char* puerto, t_log* log);
 int conectar(char* socket_servidor, char* puerto_servidor, t_log* log);
 int aceptar_conexion(int socket, t_log* log);
 void meterStringEnEstructura(char** stringTo, char* stringFrom);
+int comparar_strings(char* string1, char* string2); // retorna 1 si string1 es menor que string2; si es al revez retorna 0
 
 #endif /* BIBLIOTECA_CHARMANDER_BIBLIOTECACHARMANDER_H_ */

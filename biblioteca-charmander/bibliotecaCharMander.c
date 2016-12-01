@@ -129,3 +129,18 @@ void meterStringEnEstructura(char** stringTo, char* stringFrom){
 	*stringTo = malloc(cantLetras + 1);
 	strcpy(*stringTo, stringFrom);
 }
+
+int comparar_strings(char* string1, char* string2){
+	int i, len1, len2;
+	len1 = strlen(string1);
+	len2 = strlen(string2);
+	if(len1 != len2){
+		return strcmp(string1,string2);
+	}
+	for(i = 0; i < len1; i++){
+		if(string1[i] == string2[i])continue;
+		if(string1[i] < string2[i]){
+			return 1;
+		} else return 0;
+	}
+}

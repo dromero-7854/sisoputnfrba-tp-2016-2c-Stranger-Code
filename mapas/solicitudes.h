@@ -17,7 +17,8 @@
 
 
 extern t_list* listaPokenests;
-char handshake(int socketCliente, char* objetivos);
+//char handshake(int socketCliente, char* objetivos);
+char handshake(int socketCliente);
 int connection_recv(int socket, uint8_t* operation_code_value, void** message);
 PokeNest* buscarPokenest(t_list* lista, char id);
 t_infoPokemon* buscarPrimerPokemon(t_list* listaPokemons);
