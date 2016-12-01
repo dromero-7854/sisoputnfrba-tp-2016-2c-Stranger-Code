@@ -886,21 +886,7 @@ void osada_write(int * client_socket) {
 		return;
 	}
 	path[req_path_size] = '\0';
-	// buffer size
-	uint8_t prot_buf_size = 4;
-	uint32_t req_buf_size;
-	received_bytes = recv(* client_socket, &req_buf_size, prot_buf_size, MSG_WAITALL);
-	if (received_bytes <= 0) {
-		log_error(logger, "client %d disconnected...", * client_socket);
-		return;
-	}
-	// buffer
-	char * buffer = malloc(sizeof(char) * (req_buf_size));
-	received_bytes = recv(* client_socket, buffer, req_buf_size, MSG_WAITALL);
-	if (received_bytes <= 0) {
-		log_error(logger, "client %d disconnected...", * client_socket);
-		return;
-	}
+
 	// size (amount of bytes to write)
 	uint8_t prot_size = 4;
 	uint32_t size;
@@ -917,6 +903,15 @@ void osada_write(int * client_socket) {
 		log_error(logger, "client %d disconnected...", * client_socket);
 		return;
 	}
+
+	// buffer
+	char * buffer = malloc(sizeof(char) * (size));
+	received_bytes = recv(* client_socket, buffer, size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
+	}
+
 	log_info(logger, "client %d, write %s, size %d, offset %d", * client_socket, path, size, offset);
 
 	// creating a copy to work with strtok (it modifies the original str)
