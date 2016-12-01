@@ -71,12 +71,12 @@ int main(int argc, char* argv[]) {
 
 	//getchar();
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
+	/*if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
 
-	}
+	}*/
 	log_trace(log_mapa, "se creo hilo deadlock");
 	//getchar();
 	//moverJugadores(entrenadores, items);
@@ -140,6 +140,7 @@ void manejar_select(int socket, t_log* log){
 	fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
+	char* objetivos;
 	char simbolo;
 	fdMax = socket;
 	FD_ZERO(&lectura);
@@ -152,10 +153,10 @@ void manejar_select(int socket, t_log* log){
 			if(FD_ISSET(a, &lectura)){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
-						simbolo = handshake(nuevaConexion, log_mapa);
+						simbolo = handshake(nuevaConexion, objetivos);
 						FD_SET(nuevaConexion, &master);
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
-						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
+						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo, objetivos);
 
 						//TODO: crear el entrenador en la GUI aca y sacar la funcion crearJugadores
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
@@ -190,8 +191,10 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta){
 	meterStringEnEstructura(&(conf_metadata->algoritmo), config_get_string_value(configuracion, "algoritmo"));
 	meterStringEnEstructura(&(conf_metadata->ip), config_get_string_value(configuracion, "IP"));
 	meterStringEnEstructura(&(conf_metadata->puerto), config_get_string_value(configuracion, "Puerto"));
-	conf_metadata->retardo = config_get_double_value(configuracion, "retardo");
+	conf_metadata->retardo = config_get_long_value(configuracion, "retardo");
 	conf_metadata->quantum = config_get_int_value(configuracion, "quantum");
+	tim.tv_sec = 0;
+	tim.tv_nsec = (conf_metadata->retardo) * 1000000;
 	config_destroy(configuracion);
 }
 
@@ -289,12 +292,12 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 	return listaPokemons;
 }
 
-t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
+t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* objetivos){
 	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
-	entrenador->objetivoActual = NULL;
+	entrenador->objetivos = objetivos;
 	entrenador->pokemons = list_create();
 	entrenador->simbolo = simbolo;
 	return entrenador;

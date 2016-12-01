@@ -12,9 +12,11 @@ bool estaBloqueado(t_entrenador * entrenador);
 
 void detectarDeadlock(t_combo * comboLista) {
 
+	t_log * log_deadlock = crear_log("deadlock");
+
 	while (1) {
 
-		t_log * log_deadlock = crear_log("deadlock");
+
 
 		t_list * entrenadores = comboLista->entrenadores;
 		t_list * pokenest = comboLista->pokenests;

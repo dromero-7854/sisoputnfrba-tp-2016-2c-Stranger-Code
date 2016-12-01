@@ -87,17 +87,16 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 	return ret;
 }
 
-char handshake(int socketCliente, t_log* logger){
+char handshake(int socketCliente, char* objetivos){
 
-	uint8_t tam_msg;
-	uint8_t operation_code;
+	uint8_t tam_msg, operation_code;
 	char *buffer;
 	void *paquete_a_mandar;
 
 	//recv(socketCliente, &operation_code, sizeof(operation_code), 0);
 	connection_recv(socketCliente, &operation_code, &buffer);
 	if(operation_code != OC_UBICAR_ENTRENADOR){
-		log_error(logger, "codigo de operacion incorrecto en handshake");
+		log_error(log_mapa, "codigo de operacion incorrecto en handshake");
 		exit(1);
 	}
 
@@ -113,6 +112,17 @@ char handshake(int socketCliente, t_log* logger){
 	offset += sizeof(uint8_t);
 	memcpy(paquete_a_mandar + offset, coordenadas, sizeof(t_coor));
 	send(socketCliente, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
+
+	operation_code = OC_OBTENER_OBJETIVOS;
+	tam_msg = 0;
+
+	memset(paquete_a_mandar, 0, sizeof(paquete_a_mandar));
+	memcpy(paquete_a_mandar, &operation_code, sizeof(uint8_t));
+	memcpy(paquete_a_mandar, &tam_msg, sizeof(uint8_t));
+	send(socketCliente, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t), 0);
+
+	connection_recv(socketCliente, &operation_code, &buffer);
+	objetivos = buffer;
 
 	//printf("FUNCIONOO\n");
 	//printf("%s", buffer);
@@ -153,7 +163,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		offset += sizeof(uint8_t);
 		memcpy(paquete_a_mandar + offset, coordenadas_pokenest, sizeof(t_coor));
 		send(entrenador->id, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
-		entrenador->objetivoActual = pokenest_id;
+		entrenador->pokenest_buscada = pokenest_id;
 		free(coordenadas_pokenest);
 		free(paquete_a_mandar);
 		free(buffer);
@@ -233,7 +243,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		//offset += sizeof(t_pokemon_type);
 		//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
 		send(entrenador->id, paquete_a_mandar, bytes_a_mandar, 0);
-		entrenador->objetivoActual = NULL;
+		entrenador->pokenest_buscada = NULL;
 		//free(mensaje);
 		free(paquete_a_mandar);
 		free(buffer);

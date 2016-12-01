@@ -42,12 +42,10 @@ typedef struct {
 	bool movVert;
 	int id;
 	char simbolo;
-	char estado;
+	char pokenest_buscada;
 
-	char *proximoMapa;
 	char *objetivos;
 	char objetivoActual;
-	char quantum;
 
 	t_list * pokemons;
 
@@ -58,7 +56,7 @@ typedef struct {
 	int batalla;
 	char* algoritmo;
 	int quantum;
-	double retardo;
+	long retardo;
 	char* ip;
 	char* puerto;
 }metadata;
@@ -91,9 +89,10 @@ pthread_mutex_t mutex_cola_listos;
 char* pto_montaje;
 char* nombre_mapa;
 char* ruta_mapa;
+struct timespec tim;
 
 void manejar_select(int socket, t_log* log);
-t_entrenador* crearEntrenador(int file_descriptor, char simbolo);
+t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* objetivos);
 void liberarEntrenador();
 void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica);
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor);
