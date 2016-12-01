@@ -31,7 +31,7 @@ int main(int argc, char** argv){
 	char* nombreEntrenador = argv[1];
 	char* pathConfig = argv[2];
 
-	string_to_lower(nombreEntrenador);
+	string_capitalized(nombreEntrenador);
 	logger = crear_log(nombreEntrenador, pathConfig);
 
 	log_info(logger, "Cargando archivo de metadata: %s", pathConfig);
