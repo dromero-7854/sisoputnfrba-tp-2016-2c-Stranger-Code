@@ -71,15 +71,14 @@ int main(int argc, char* argv[]) {
 
 	//getchar();
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	/*if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
+	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
 
-	}*/
+	}
 	log_trace(log_mapa, "se creo hilo deadlock");
 	//getchar();
-	//moverJugadores(entrenadores, items);
 
 
 	//colaListos = queue_create();
@@ -138,8 +137,8 @@ void manejar_select(int socket, t_log* log){
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 						//t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo, objetivos);
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
+						nuevoEntrenador->objetivos = objetivos;
 
-						//TODO: crear el entrenador en la GUI aca y sacar la funcion crearJugadores
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
 						pthread_mutex_lock(&mutex_cola_listos);

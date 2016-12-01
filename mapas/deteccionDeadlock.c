@@ -16,101 +16,103 @@ void detectarDeadlock(t_combo * comboLista) {
 
 	while (1) {
 
-
-
 		t_list * entrenadores = comboLista->entrenadores;
 		t_list * pokenest = comboLista->pokenests;
 
 		t_list * bloqueados = list_filter(entrenadores, (void*) estaBloqueado);
 
-		int i, j;
-		int count1 = 0, count2 = 0;
-		int tamEntr = list_size(entrenadores);
-		int tamPok = list_size(pokenest);
-		int matrizRetenido[tamEntr][tamPok];
-		int matrizNecesita[tamEntr][tamPok];
-		int recursosDisponibles[tamPok];
-		int completado[tamEntr];
+		if (!list_is_empty(entrenadores)) {
 
-		for (i = 0; i < tamEntr; i++) {
-			completado[i] = 0;
-			for (j = 0; j < tamPok; j++) {
-				matrizRetenido[i][j] = 0;
-				matrizNecesita[i][j] = 0;
-			}
-		}
-		for (i = 0; i < tamPok; i++) {
-			PokeNest * pok = list_get(pokenest, i);
-			recursosDisponibles[i] = pok->cantidad;
-		}
+			int i, j;
+			int count1 = 0, count2 = 0;
+			int tamEntr = list_size(entrenadores);
+			int tamPok = list_size(pokenest);
+			int matrizRetenido[tamEntr][tamPok];
+			int matrizNecesita[tamEntr][tamPok];
+			int recursosDisponibles[tamPok];
+			int completado[tamEntr];
 
-		for (i = 0; i < tamEntr; i++) {
-			t_entrenador *entrenador = list_get(entrenadores, i);
-			int k = 0;
-			for (k = 0; k < entrenador->objetivoActual; k++) {
-				char obj = *(entrenador->objetivos + k);
-
-				for (j = 0; j < tamPok; j++) {
-					PokeNest * pok = list_get(pokenest, j);
-
-					if (pok->id == obj)
-						break;
-				}
-				matrizRetenido[i][j]++;
-			}
-			for (; entrenador->objetivos + k != '\0'; k++) {
-				char obj = *(entrenador->objetivos + k);
-				for (j = 0; j < tamPok; j++) {
-					PokeNest * pok = list_get(pokenest, j);
-
-					if (pok->id == obj)
-						break;
-				}
-				matrizNecesita[i][j]++;
-			}
-		}
-		while (count1 < tamEntr) {
-			count2 = count1;
-			int k = 0;
 			for (i = 0; i < tamEntr; i++) {
-
+				completado[i] = 0;
 				for (j = 0; j < tamPok; j++) {
-					if (matrizNecesita[i][j] <= recursosDisponibles[j])
-						k++;
+					matrizRetenido[i][j] = 0;
+					matrizNecesita[i][j] = 0;
 				}
-				if (k == tamPok && completado[i] == 0) {
-					completado[i] = 1;
-					list_remove(bloqueados, i);
+			}
+			for (i = 0; i < tamPok; i++) {
+				PokeNest * pok = list_get(pokenest, i);
+				recursosDisponibles[i] = pok->cantidad;
+			}
+
+			for (i = 0; i < tamEntr; i++) {
+				t_entrenador *entrenador = list_get(entrenadores, i);
+				int k = 0;
+				for (k = 0; k < entrenador->objetivoActual; k++) {
+					char obj = *(entrenador->objetivos + k);
 
 					for (j = 0; j < tamPok; j++) {
-						recursosDisponibles[j] += matrizRetenido[i][j];
+						PokeNest * pok = list_get(pokenest, j);
+
+						if (pok->id == obj)
+							break;
 					}
-					count1++;
+					matrizRetenido[i][j]++;
 				}
-				k = 0;
+				for (; entrenador->objetivos + k != '\0'; k++) {
+					char obj = *(entrenador->objetivos + k);
+					for (j = 0; j < tamPok; j++) {
+						PokeNest * pok = list_get(pokenest, j);
+
+						if (pok->id == obj)
+							break;
+					}
+					matrizNecesita[i][j]++;
+				}
 			}
-			if (count1 == count2) {
+			while (count1 < tamEntr) {
+				count2 = count1;
+				int k = 0;
+				for (i = 0; i < tamEntr; i++) {
 
-				log_trace(log_deadlock, "Se detecto un deadlock!");
-
-				if (conf_metadata->batalla) {
-					t_entrenador * entrenador1 = list_remove(bloqueados, 0);
-
-					while (list_size(bloqueados) > 0) {
-
-						t_entrenador * entrenador2 = list_remove(bloqueados, 0);
-						t_entrenador * loser = mandarAPelear(entrenador1,
-								entrenador2);
-						entrenador1 = loser;
-
-						free(loser);
-
+					for (j = 0; j < tamPok; j++) {
+						if (matrizNecesita[i][j] <= recursosDisponibles[j])
+							k++;
 					}
-					matarEntrenador(entrenador1);
-					free(entrenador1);
-					break;
-				}
+					if (k == tamPok && completado[i] == 0) {
+						completado[i] = 1;
+						list_remove(bloqueados, i);
 
+						for (j = 0; j < tamPok; j++) {
+							recursosDisponibles[j] += matrizRetenido[i][j];
+						}
+						count1++;
+					}
+					k = 0;
+				}
+				if (count1 == count2) {
+
+					log_trace(log_deadlock, "Se detecto un deadlock!");
+
+					if (conf_metadata->batalla) {
+						t_entrenador * entrenador1 = list_remove(bloqueados, 0);
+
+						while (list_size(bloqueados) > 0) {
+
+							t_entrenador * entrenador2 = list_remove(bloqueados,
+									0);
+							t_entrenador * loser = mandarAPelear(entrenador1,
+									entrenador2);
+							entrenador1 = loser;
+
+							free(loser);
+
+						}
+						matarEntrenador(entrenador1);
+						free(entrenador1);
+						break;
+					}
+
+				}
 			}
 		}
 	}
@@ -119,10 +121,10 @@ void detectarDeadlock(t_combo * comboLista) {
 bool estaBloqueado(t_entrenador * entrenador) {
 
 	int i = 0;
-	for(; i < list_size(colaBloqueados->elements); i++) {
+	for (; i < list_size(colaBloqueados->elements); i++) {
 		t_entrenador *entrBloq = list_get(colaBloqueados->elements, i);
 
-		if(entrBloq->simbolo == entrenador->simbolo)
+		if (entrBloq->simbolo == entrenador->simbolo)
 			return 1;
 	}
 	return 0;
@@ -155,7 +157,8 @@ void matarEntrenador(t_entrenador * entrenador) {
 	memcpy(mandar, &operation_code, sizeof(uint8_t));
 	send(entrenador->id, mandar, sizeof(uint8_t), 0);
 
-	for (i = 0; entrenador != list_get(entrenadores, i); i++);
+	for (i = 0; entrenador != list_get(entrenadores, i); i++)
+		;
 
 	list_remove(entrenadores, i);
 
