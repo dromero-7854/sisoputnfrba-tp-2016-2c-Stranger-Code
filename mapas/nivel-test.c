@@ -115,27 +115,6 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
-
-
-void moverJugador(t_entrenador *personaje, t_list *items, int x, int y) {
-
-	if(personaje-> posx < x && !(personaje->movVert)) {
-		personaje->posx < x ? personaje->posx++ : personaje->posx--;
-
-		if(personaje->posy != y) personaje->movVert = 1;
-	}
-	else if(personaje->posy != y && personaje->movVert) {
-
-		personaje->posy < y ? personaje->posy++ : personaje->posy--;
-
-		if(personaje ->posx !=x) personaje->movVert=0;
-	}
-	else personaje->movVert = !personaje->movVert;
-
-	MoverPersonaje(items, personaje -> id, ((*personaje).posx), ((*personaje).posy));
-
-}
-
 void manejar_select(int socket, t_log* log){
 	fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;

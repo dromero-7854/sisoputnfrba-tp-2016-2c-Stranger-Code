@@ -185,10 +185,23 @@ void liberarRecursos(t_entrenador* entrenador){
 		}
 		list_remove(entrenador->pokemons, 0);
 	}
-
-	/*Esto es por si queriamos hacer al reves y guardar primero en las pokenest y despues darlo a los entrenadores
-	entregarLiberadosALosBloqueados();
-	>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+	int i;
+	for(i = 0; i < queue_size(colaBloqueados); i++) {
+		t_entrenador * entrEnCola = list_get(colaBloqueados->elements, i);
+		if(entrEnCola->simbolo == entrenador->simbolo) {
+			list_remove(colaBloqueados->elements, i);
+			break;
+		}
+	}
+	if(i == queue_size(colaBloqueados)) {
+		for(i = 0; queue_size(colaListos); i++) {
+			t_entrenador * entrEnCola = list_get(colaListos->elements, i);
+			if(entrEnCola->simbolo == entrenador->simbolo){
+				list_remove(colaListos->elements, i);
+				break;
+			}
+		}
+	}
 
 	list_destroy(entrenador->pokemons);
 	liberarEntrenador(entrenador);
@@ -200,20 +213,3 @@ t_entrenador* buscarEntrenador(int socket, t_list* lista){
 	}
 	return list_remove_by_condition(lista, (void*)_mismo_id);
 }
-/*TODO:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-void entregarLiberadosALosBloqueados() {
-	t_list * pokenestsFiltradas = list_filter(listaPokenests, (void *) tienenEntrenadoresBloqYPkmnDisp());
-	int i, j;
-	for(i =0; i < list_size(pokenestsFiltradas); i++) {
-		PokeNest *pokenest = list_get(pokenestsFiltradas, i);
-		for(j = 0; j < queue_size(pokenest->colaBloqueados); j++) {
-			t_entrenador *entrenador = queue_pop(pokenest->colaBloqueados);
-			atender(entrenador);
-		}
-	}
-
-}
-int tienenEntrenadoresBloqYPkmnDisp(PokeNest pokenest) {
-	return (queue_size(pokenest.colaBloqueados) > 0 && list_size(pokenest.listaPokemons));
-}
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<*/

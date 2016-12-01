@@ -38,8 +38,6 @@ typedef struct {
 
 	int posx;
 	int posy;
-
-	bool movVert;
 	int id;
 	char simbolo;
 	char pokenest_buscada;
