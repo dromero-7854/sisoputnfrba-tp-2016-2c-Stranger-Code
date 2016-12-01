@@ -122,7 +122,8 @@ int open_socket_connection(void) {
 
 int init_locks() {
 	int i;
-	locks = malloc(FILE_BLOCKS_MOUNT * sizeof(pthread_rwlock_t));
+	locks = (pthread_rwlock_t *) malloc(FILE_BLOCKS_MOUNT * sizeof(pthread_rwlock_t));
+
 	for (i = 0 ;i < FILE_BLOCKS_MOUNT; i++) {
 		if (pthread_rwlock_init(locks + i, NULL) != 0) {
 			log_error(semaphore_logger, "Error starting semaphore %d", i);
@@ -493,7 +494,6 @@ void osada_mkdir(int * client_socket) {
 			dir = strtok(NULL, "/");
 		}
 		free(path_c);
-		if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
 	}
 	free(path);
 
@@ -844,7 +844,6 @@ void osada_mknod(int * client_socket) {
 				free(path);
 				return;
 			}
-			break;
 		}
 		if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
 		pb_pos = node_pos;
