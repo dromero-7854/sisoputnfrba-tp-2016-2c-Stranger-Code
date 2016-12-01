@@ -28,11 +28,15 @@
 #define OC_UBICACION_ENTRENADOR 6
 #define OC_OBTENER_MEDALLA 7
 #define OC_MEDALLA 8
+#define OC_OBTENER_OBJETIVOS 9
+#define OC_VICTIMA_DEADLOCK 10
 
 #define MOVE_UP 72
 #define MOVE_RIGHT 77
 #define MOVE_DOWN 80
 #define MOVE_LEFT 75
+
+
 
 int socket_servidor(char* puerto, t_log* log);
 int conectar(char* socket_servidor, char* puerto_servidor, t_log* log);

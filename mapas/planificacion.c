@@ -35,7 +35,7 @@ int atender(t_entrenador* entrenador){
 	int q, capturo_pokemon;
 	for(q = 0; q < conf_metadata->quantum; q++){
 		log_trace(log_mapa, "quantum del entrenador: %d", q);
-		sleep(conf_metadata->retardo);
+		nanosleep(&tim, NULL);
 		capturo_pokemon = atenderSolicitud(entrenador);
 
 
@@ -49,11 +49,11 @@ void ejecutarRafagaSRDF(){
 	t_entrenador* entrenador;
 	int capturo_pokemon;
 	int _no_tiene_objetivo_asignado(t_entrenador* entrenador){
-		return (entrenador-> objetivoActual == NULL);
+		return (entrenador-> pokenest_buscada == NULL);
 	}
 	//if((entrenador = list_find(colaListos->elements, (void*) _no_tiene_objetivo_asignado)) != NULL){
 	if ((entrenador = buscarEntrenadorSinDistanciaDefinida()) != NULL){
-		sleep(conf_metadata->retardo);
+		nanosleep(&tim, NULL);
 		capturo_pokemon = atenderSolicitud(entrenador);
 		if(capturo_pokemon){
 			liberarEntrenador(entrenador);
@@ -70,7 +70,7 @@ void ejecutarRafagaSRDF(){
 
 		entrenador = buscarEntrenadorConMenorDistancia();
 		while(1){
-			sleep(conf_metadata->retardo);
+			nanosleep(&tim, NULL);
 			capturo_pokemon = atenderSolicitud(entrenador);
 			if(capturo_pokemon){
 				if(capturo_pokemon == 1){
@@ -97,7 +97,7 @@ void ejecutarRafagaRR(){
 		pthread_mutex_unlock(&mutex_cola_listos);
 		for(q = 0; q < conf_metadata->quantum; q++){
 			log_trace(log_mapa, "quantum del entrenador: %d", q);
-			sleep(conf_metadata->retardo);
+			nanosleep(&tim, NULL);
 			respuesta = atenderSolicitud(entrenador);
 
 
@@ -138,8 +138,8 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 	int _menor_distancia_a_pokenest(t_entrenador* entrenador1, t_entrenador* entrenador2){
 		int dist1, dist2;
 		PokeNest *pokenest1, *pokenest2;
-		pokenest1 = buscarPokenest(listaPokenests, entrenador1->objetivoActual);
-		pokenest2 = buscarPokenest(listaPokenests, entrenador2->objetivoActual);
+		pokenest1 = buscarPokenest(listaPokenests, entrenador1->pokenest_buscada);
+		pokenest2 = buscarPokenest(listaPokenests, entrenador2->pokenest_buscada);
 		dist1 = abs(pokenest1->posx - entrenador1->posx) + abs(pokenest1->posy - entrenador1->posy);
 		dist2 = abs(pokenest2->posx - entrenador2->posx) + abs(pokenest2->posy - entrenador2->posy);
 		return dist1 < dist2;
@@ -161,7 +161,7 @@ void liberarRecursos(t_entrenador* entrenador){
 
 		for(index_entrenador = 0; index_entrenador < list_size(colaBloqueados->elements); index_entrenador++){
 			entrenadorBloqueado = list_get(colaBloqueados, index_entrenador);
-			if(entrenadorBloqueado->objetivoActual == infoPokemon->id_pokenest){
+			if(entrenadorBloqueado->pokenest_buscada == infoPokemon->id_pokenest){
 				list_add(entrenadorBloqueado->pokemons, infoPokemon);
 				nadieLoQuiso = 0;
 				//entrenadorBloqueado->objetivoActual = NULL;
@@ -198,7 +198,7 @@ t_entrenador* buscarEntrenador(int socket, t_list* lista){
 	int _mismo_id(t_entrenador* e){
 		return (e->id == socket);
 	}
-	return list_remove_by_condition(lista, _mismo_id);
+	return list_remove_by_condition(lista, (void*)_mismo_id);
 }
 /*TODO:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 void entregarLiberadosALosBloqueados() {
