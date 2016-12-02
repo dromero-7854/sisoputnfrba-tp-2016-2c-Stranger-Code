@@ -1,6 +1,0 @@
-[TRACE] 19:30:20:885 MAPA/(7949:7949): Se obtuvo la ruta a metadata /home/utnso/pokedex/Mapas/Pueblo Paleta/metadata
-[TRACE] 19:30:20:904 MAPA/(7949:7949): se cargo la metadata
-[TRACE] 19:30:20:904 MAPA/(7949:7949): Se iniciaron las colas y listas
-[TRACE] 19:30:20:904 MAPA/(7949:7949): se creo hilo deadlock
-[TRACE] 19:30:20:976 MAPA/(7949:7949): se creo hilo de dibujo
-[TRACE] 19:30:20:976 MAPA/(7949:7949): Se creo servidor, escuchando en : 4
