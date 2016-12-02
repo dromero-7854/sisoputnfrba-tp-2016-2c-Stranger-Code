@@ -141,6 +141,9 @@ int atenderSolicitud(t_entrenador* entrenador){
 	log_trace(log_mapa, "atendiendo solicitud");
 	recibido = connection_recv(entrenador->id, &operation_code, &buffer);
 
+	if(recibido == 0){
+		return 2;
+	}
 	switch(operation_code){
 	case OC_UBICAR_POKENEST:
 	{
