@@ -197,7 +197,9 @@ void liberarRecursos(t_entrenador* entrenador){
 		for(i = 0; queue_size(colaListos); i++) {
 			t_entrenador * entrEnCola = list_get(colaListos->elements, i);
 			if(entrEnCola->simbolo == entrenador->simbolo){
+				pthread_mutex_lock(&mutex_cola_listos);
 				list_remove(colaListos->elements, i);
+				pthread_mutex_unlock(&mutex_cola_listos);
 				break;
 			}
 		}
