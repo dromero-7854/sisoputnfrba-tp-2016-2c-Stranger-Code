@@ -27,6 +27,7 @@ char* getRutaMapa(char* ptoMnt, char* nombreMapa);
 
 
 t_log *log_mapa;
+t_log * log_deadlock;
 t_queue *colaListos, *colaBloqueados;
 t_list *listaPokenests;
 t_list *items;
@@ -84,6 +85,8 @@ typedef struct PokeNest {
 metadata* conf_metadata;
 char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
+pthread_mutex_t mutex_lista_entrenador;
+pthread_mutex_t mutex_lista_pokenest;
 char* pto_montaje;
 char* nombre_mapa;
 char* ruta_mapa;

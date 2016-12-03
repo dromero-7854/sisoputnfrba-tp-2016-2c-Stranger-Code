@@ -60,6 +60,9 @@ int main(int argc, char* argv[]) {
 	pthread_t planificador;
 	pthread_attr_t attr;
 
+	pthread_mutex_init(&mutex_lista_entrenador, NULL);
+	pthread_mutex_init(&mutex_lista_pokenest, NULL);
+
 	pthread_mutex_init(&mutex_cola_listos, NULL);
 	pthread_attr_init(&attr);
 
@@ -300,6 +303,16 @@ void liberarEntrenador(t_entrenador* entrenador){
 	//free(entrenador->proximoMapa);
 	BorrarItem(items, entrenador->simbolo);
 	list_destroy(entrenador->pokemons);
+	int i = 0;
+	for(i; i < list_size(entrenadores); i++) {
+		t_entrenador *entr = list_get(entrenadores, i);
+		if(entr->simbolo == entrenador->simbolo) {
+			pthread_mutex_lock(&mutex_lista_entrenador);
+			list_remove(entrenadores, i);
+			pthread_mutex_unlock(&mutex_lista_entrenador);
+		}
+
+	}
 	free(entrenador);
 }
 
@@ -316,7 +329,10 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 
 		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
 		pokenest->cantidad = list_size(pokenest->listaPokemons);
+
+		pthread_mutex_lock(&mutex_lista_pokenest);
 		list_add(listaPokenests, pokenest);
+		pthread_mutex_unlock(&mutex_lista_pokenest);
 
 		CrearCaja(items, pokenest->id, pokenest->posx, pokenest->posy, pokenest->cantidad);
 		free(rutaPokemon);

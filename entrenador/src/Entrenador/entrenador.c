@@ -83,7 +83,12 @@ void coach_medal_copy(t_coach* self, t_map* mapa){
 	/*pathMedallaOrigen = string_new();
 	string_append(&pathMedallaOrigen, "/home/utnso/pokedex/Mapas/medalla.jpg");*/
 	arrayPath = string_split(pathMedallaOrigen, "/");
-	nombreArchivo = arrayPath[5];
+	int posArray = 0;
+	while (arrayPath[posArray] != NULL) {
+		posArray++;
+	}
+	posArray--;
+	nombreArchivo = arrayPath[posArray];
 
 	pathMedallaDestino = string_new();
 	string_append(&pathMedallaDestino, "/home/utnso/pokedex/Entrenadores/");

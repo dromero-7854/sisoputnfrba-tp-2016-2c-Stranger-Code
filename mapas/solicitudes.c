@@ -227,7 +227,10 @@ int atenderSolicitud(t_entrenador* entrenador){
 			return -1;
 		}
 		list_add(entrenador->pokemons, infopokemon);
+
+		pthread_mutex_lock(&mutex_lista_pokenest);
 		pokenest->cantidad--;
+		pthread_mutex_unlock(&mutex_lista_pokenest);
 		entrenador->objetivoActual++;
 
 		int len = strlen(infopokemon->pokemon->species);
