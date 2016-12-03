@@ -10,9 +10,11 @@
 #include <time.h>
 
 bool estaBloqueado(t_entrenador * entrenador);
+int hayAlguienParaAtender(int vectorAtendido[], int cantidad);
 
 void detectarDeadlock(t_combo * comboLista) {
 
+	getchar();
 	log_deadlock = crear_log("deadlock");
 
 	struct timespec retardo, opa;
@@ -70,9 +72,10 @@ void detectarDeadlock(t_combo * comboLista) {
 		int hayDeadlock = 0;
 		int tieneUnPedido = 0;
 
-		while(!hayDeadlock) {
+		while(!hayDeadlock && hayAlguienParaAtender(atendido, cantidadEntrenadores)) {
 
-			hayDeadlock = 1;
+			if(cantidadEntrenadores >= 2)
+				hayDeadlock = 1;
 
 			for(i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
 				for(i_pokenest = 0; i_pokenest < cantidadPokenest; i_pokenest++) {
@@ -97,11 +100,13 @@ void detectarDeadlock(t_combo * comboLista) {
 					}
 				}
 			}
+		}
+		if(list_size(deadlockeados) >= 2) {
+
 			log_trace(log_deadlock, "HAY DEADLOCK");
 
 			for(i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
 				t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
-
 				if(!atendido[i_entrenadores])
 					list_add(deadlockeados, entrenador);
 			}
@@ -119,12 +124,8 @@ void detectarDeadlock(t_combo * comboLista) {
 				}
 				matarEntrenador(entrenador1);
 			}
-
-
 		}
-
-
-	}
+}
 
 	/*while (1) {
 
@@ -272,8 +273,8 @@ void matarEntrenador(t_entrenador * entrenador) {
 	void * mandar;
 	uint8_t operation_code = OC_VICTIMA_DEADLOCK;
 
-	memcpy(mandar, &operation_code, sizeof(uint8_t));
-	send(entrenador->id, mandar, sizeof(uint8_t), 0);
+	//memcpy(mandar, &operation_code, sizeof(uint8_t));
+	send(entrenador->id, &operation_code, sizeof(uint8_t), 0);
 
 	for (i = 0; entrenador != list_get(entrenadores, i); i++);
 
@@ -281,4 +282,10 @@ void matarEntrenador(t_entrenador * entrenador) {
 
 	liberarRecursos(entrenador);
 }
-
+int hayAlguienParaAtender(int atendido[], int cantEntrenadores) {
+	int i;
+	for(i = 0; i < cantEntrenadores; i++){
+		if(atendido[i] == 0) return 1;
+	}
+	return 0;
+}
