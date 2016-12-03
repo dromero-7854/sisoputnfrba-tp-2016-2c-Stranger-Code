@@ -21,60 +21,63 @@ t_log* crear_log(char* nombreEntrenador, char* pathConfig) {
 	return logger;
 }
 
-t_coach* cargar_metadata(char* path, char* nombre_entrenador){
-	char *pathConfig = string_new();
-	string_append(&pathConfig, path);
-	string_append(&pathConfig, "Entrenadores/");
-	string_append(&pathConfig, nombre_entrenador);
-	string_append(&pathConfig, "/metadata");
+t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
+	char *pathConfigEntrenador;
+	char *pathConfigMapa;
+	t_config* configEntrenador;
+	t_config* configMapa;
 
-	t_config* configuracion = config_create(pathConfig);
-	char* name = config_get_string_value(configuracion, "nombre");
-	char* simbol = config_get_string_value(configuracion, "simbolo");
-	int life = config_get_int_value(configuracion, "vidas");
+	pathConfigEntrenador = string_from_format("%s/Entrenadores/%s/metadata", pathPokedex, nombre_entrenador);
+	configEntrenador = config_create(pathConfigEntrenador);
+	char* name = config_get_string_value(configEntrenador, "nombre");
+	char* simbol = config_get_string_value(configEntrenador, "simbolo");
+	int life = config_get_int_value(configEntrenador, "vidas");
 	t_coach* entrenador = coach_create(name, simbol, life);
 
 	// se obtienen los mapas de la hoja de viaje
-	char** hojaDeViaje = config_get_array_value(configuracion, "hojaDeViaje");
+	char** hojaDeViaje = config_get_array_value(configEntrenador, "hojaDeViaje");
 	char** objetivosDelMapa;
-	char** infoMapa;
-	char *mapa;
-	char *info;
+	char* ip;
+	char* port;
+	char* objMapa;
 	t_map* map;
-	char* ip = "127.0.0.1";
-	char* port = "6667";
+
 
 	int posObj;
 	int posMapa = 0;
 	while(hojaDeViaje[posMapa] != NULL){
-		mapa = string_new();
-		string_append(&mapa, "obj[");
-		string_append(&mapa, hojaDeViaje[posMapa]);
-		string_append(&mapa, "]");
+		objMapa = string_from_format("obj[%s]", hojaDeViaje[posMapa]);
 
-		info = string_new();
-		string_append(&info, "info[");
-		string_append(&info, hojaDeViaje[posMapa]);
-		string_append(&info, "]");
-
-		// se obtiene la información necesaria para conectarse al mapa
-		infoMapa = config_get_array_value(configuracion, info);
+		// se obtiene la información necesaria para conectarse al objMapa
+		pathConfigMapa = string_from_format("%s/Mapas/%s/metadata", pathPokedex, hojaDeViaje[posMapa]);
+		configMapa = config_create(pathConfigMapa);
+		ip = config_get_string_value(configMapa, "IP");
+		port = config_get_string_value(configMapa, "PUERTO");
 
 		// se obtienen los objetivos de un mapa
-		objetivosDelMapa = config_get_array_value(configuracion, mapa);
-		map = map_create(hojaDeViaje[posMapa], infoMapa[INFO_IP], infoMapa[INFO_PORT]);
+		objetivosDelMapa = config_get_array_value(configMapa, objMapa);
+		map = map_create(hojaDeViaje[posMapa], ip, port);
 		posObj = 0;
 		//TODO: se debe validar que no haya dos pokemones iguales sucesivamente
 		while(objetivosDelMapa[posObj] != NULL){
-			// se agregan los objetivos a un mapa
+			// se agregan los objetivos a un objMapa
 			list_add(map->pokemon_list, pokemon_create("desconocido", objetivosDelMapa[posObj]));
 		posObj++;
 		}
-		// se agrega el mapa a la hoja de viaje
+		// se agrega el objMapa a la hoja de viaje
 		list_add(entrenador->travel_sheet, map);
+
+		// libero memoria
+		free(objMapa);
+		free(pathConfigMapa);
+		free(ip);
+		free(port);
+		config_destroy(configMapa);
 	posMapa++;
 	}
 
+	free(pathConfigEntrenador);
+	config_destroy(configEntrenador);
 	return entrenador;
 }
 
@@ -105,9 +108,9 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 		log_info(logger, "Ubicacion de PokeNest '%s'. En la posición: X->%d, Y->%d", pokemon->simbol, pokemon->coor->x, pokemon->coor->y);
 		log_info(logger, "Moviendo a %s hasta PokeNest '%s'", entrenador->name, pokemon->simbol);
 		coach_move_to_pokemon(entrenador, pokemon);
-		log_info(logger, "Capturando a %s...", pokemon->name);
+		log_info(logger, "Capturando a %s...", pokemon->simbol);
 		coach_capture_pokemon(entrenador, pokemon);
-		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->name, pokemon->coor->x, pokemon->coor->y);
+		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->simbol, pokemon->coor->x, pokemon->coor->y);
 
 		pokemon = map_next_pokemon(mapa);
 	}
@@ -117,37 +120,12 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 	return 0;
 }
 
-/*int ubicar(){
-	//realizar pedido al mapa de la ubicacion del pokemon
-
-	return 0;
-}*/
-
 uint8_t move_to(uint8_t movement, t_coach* entrenador){
 	char move[10];
 	t_coor* coorEntrenador;
 	uint8_t operation_code;
 	uint8_t* mov = malloc( sizeof(uint8_t) );
 	*mov = movement;
-
-	switch (movement) {
-		case MOVE_UP:
-			sprintf(move, "ARRIBA");
-			//entrenador->coor.y--;
-			break;
-		case MOVE_DOWN:
-			sprintf(move, "ABAJO");
-			//entrenador->coor.y++;
-			break;
-		case MOVE_RIGHT:
-			sprintf(move, "DERECHA");
-			//entrenador->coor.x++;
-			break;
-		case MOVE_LEFT:
-			sprintf(move, "IZQUIERDA");
-			//entrenador->coor.x--;
-			break;
-	}
 
 	connection_send(entrenador->conn, OC_AVANZAR_POSICION, mov);
 	connection_recv(entrenador->conn, &operation_code, &coorEntrenador);
@@ -157,14 +135,13 @@ uint8_t move_to(uint8_t movement, t_coach* entrenador){
 	entrenador->coor->y = coorEntrenador->y;
 
 	return 0;
-	//log_info(logger, "Movimiento del Entrenador: %s", move);
 }
 
 uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coor* coor_pokemon){
 	uint8_t mover;
 
 	bool moverHorizontalmente = ((lastMovement == MOVE_UP || lastMovement == MOVE_DOWN) && coor_entrenador->x != coor_pokemon->x) || coor_entrenador->y == coor_pokemon->y;
-//bool moverVerticalmente = !moverHorizontalmente;coor_entrenador->x != coor_pokemon->x
+
 	if(moverHorizontalmente){
 		if(coor_entrenador->x < coor_pokemon->x) mover = MOVE_RIGHT; else mover = MOVE_LEFT;
 	}else{
@@ -200,7 +177,6 @@ int copy_file(char* f_origen,char* f_destino){
 	   /* y leer siguiente bloque */
 	   leidos = fread (buffer, 1, 1000, fp_org);
 	}
-	//while((c=fgetc(fp_org)) != EOF && !ferror(fp_org) && !ferror(fp_dest)) fputc(c, fp_dest);
 
 	if(ferror(fp_org) || ferror(fp_org)){
 		return 1;
