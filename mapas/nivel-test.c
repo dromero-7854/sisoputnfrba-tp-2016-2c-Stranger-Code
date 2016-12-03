@@ -35,9 +35,9 @@ void releerConfiguracion(int n){
 int main(int argc, char* argv[]) {
 
 	int len_nombre_mapa, len_pto_mnt;
-	//signal(SIGUSR1, releerConfiguracion);
+	signal(SIGUSR1, releerConfiguracion);
 	log_mapa = crear_log(argv[1]);
-
+	//getchar();
 	nombre_mapa = argv[1];
 	pto_montaje = argv[2];
 
@@ -58,8 +58,13 @@ int main(int argc, char* argv[]) {
 	leerConfiguracion(conf_metadata, rutaMetadata);
 	log_trace(log_mapa, "se cargo la metadata");
 	pthread_t planificador;
+	pthread_attr_t attr;
+
 	pthread_mutex_init(&mutex_cola_listos, NULL);
-	if(pthread_create(&planificador, NULL, (void *) planificar, NULL) != 0){
+	pthread_attr_init(&attr);
+
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if(pthread_create(&planificador, &attr, (void *) planificar, NULL) != 0){
 		log_error(log_mapa, "problemas al crear hilo planificador");
 	}
 
@@ -71,12 +76,12 @@ int main(int argc, char* argv[]) {
 
 	//getchar();
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
+	/*if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
 
-	}
+	}*/
 	log_trace(log_mapa, "se creo hilo deadlock");
 	//getchar();
 
@@ -89,26 +94,18 @@ int main(int argc, char* argv[]) {
 	t_pkmn_factory* fabrica = create_pkmn_factory();
 
 	cargarPokenests(rutaPokenests, fabrica);
+	pthread_attr_t attr2;
 
-	if(pthread_create(&guipth, NULL, (void *) dibujarNivel, &comboListas)) {
+	pthread_attr_init(&attr2);
+	pthread_attr_setdetachstate(&attr2, PTHREAD_CREATE_DETACHED);
+	if(pthread_create(&guipth, &attr2, (void *) dibujarNivel, &comboListas)) {
 				log_error(log_mapa, "Error creando el hilo de la GUI");
 				return 1;
 	}
 	log_trace(log_mapa, "se creo hilo de dibujo");
 	int listener;
-	listener = socket_servidor("33000", log_mapa);
+	listener = socket_servidor(conf_metadata->puerto, log_mapa);
 	manejar_select(listener, log_mapa);
-
-	/*if(pthread_join(planificador, NULL)){
-		log_error(log_mapa, "problema al terminar hilo planificador");
-	}
-	log_trace(log_mapa, "joing del planificador");*/
-	/*if(pthread_join(pth, NULL)) {
-
-	fprintf(stderr, "Error joining thread\n");
-	return 2;
-
-	}*/
 
 	//liberar conf_metadata
 	return EXIT_SUCCESS;

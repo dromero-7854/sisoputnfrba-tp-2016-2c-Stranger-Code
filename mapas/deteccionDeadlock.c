@@ -126,6 +126,8 @@ void detectarDeadlock(t_combo * comboLista) {
 
 	/*while (1) {
 
+		sleep(10);
+
 		t_list * entrenadores = comboLista->entrenadores;
 		t_list * pokenest = comboLista->pokenests;
 

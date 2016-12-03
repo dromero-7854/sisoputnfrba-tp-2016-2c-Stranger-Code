@@ -26,7 +26,7 @@ t_coach* cargar_metadata(char* path, char* nombre_entrenador){
 	string_append(&pathConfig, path);
 	string_append(&pathConfig, "Entrenadores/");
 	string_append(&pathConfig, nombre_entrenador);
-	string_append(&pathConfig, "/metadata.conf");
+	string_append(&pathConfig, "/metadata");
 
 	t_config* configuracion = config_create(pathConfig);
 	char* name = config_get_string_value(configuracion, "nombre");
