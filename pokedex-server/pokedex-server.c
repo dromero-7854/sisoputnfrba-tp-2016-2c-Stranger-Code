@@ -46,7 +46,6 @@ t_log * logger;
 t_log * semaphore_logger;
 pthread_rwlock_t * locks;
 
-int open_socket_connection(void);
 int close_socket_connection(void);
 int map_osada_fs(void);
 int unmap_osada_fs(void);
@@ -81,42 +80,35 @@ int main(int argc , char * argv[]) {
 	map_osada_fs();
 	read_and_set();
 	init_locks();
-	open_socket_connection();
+
+	int socket_desc, client_sock, c, * new_sock;
+	struct sockaddr_in server, client;
+	socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(config_get_int_value(conf, "port"));
+
+	bind(socket_desc, (struct sockaddr *) &server, sizeof(server));
+	listen(socket_desc, config_get_int_value(conf, "backlog"));
+	c = sizeof(struct sockaddr_in);
+
 	for (;;) {
 
-		struct sockaddr_in addr;
-		socklen_t addrlen = sizeof(addr);
-		int client_socket = accept(listenning_socket, (struct sockaddr *) &addr, &addrlen);
+		client_sock = accept(socket_desc, (struct sockaddr *) &client, (socklen_t *) &c);
+
+		new_sock = malloc(1);
+		* new_sock = client_sock;
 
 		pthread_attr_t attr;
 		pthread_t thread;
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		pthread_create(&thread, &attr, &process_request, &client_socket);
+		pthread_create(&thread, &attr, &process_request, (void *) new_sock);
 		pthread_attr_destroy(&attr);
 	}
 	close_socket_connection();
 	free(locks);
-	return EXIT_SUCCESS;
-}
-
-int open_socket_connection(void) {
-	struct addrinfo hints;
-	struct addrinfo * server_info;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_flags = AI_PASSIVE; //	localhost: 127.0.0.1
-	hints.ai_socktype = SOCK_STREAM;
-
-	getaddrinfo(NULL, config_get_string_value(conf, "port"), &hints, &server_info);
-
-	listenning_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-	bind(listenning_socket,server_info->ai_addr, server_info->ai_addrlen);
-	freeaddrinfo(server_info);
-
-	listen(listenning_socket, config_get_int_value(conf, "backlog")); // blocking syscall
-
 	return EXIT_SUCCESS;
 }
 
@@ -415,6 +407,7 @@ void process_request(int * client_socket) {
 	}
 	log_error(logger, "client %d disconnected...", * client_socket);
 	close(* client_socket);
+	free(client_socket);
 	return;
 }
 
