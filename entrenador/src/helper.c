@@ -120,7 +120,7 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 		log_info(logger, "Moviendo a %s hasta PokeNest '%s'", entrenador->name, pokemon->simbol);
 		coach_move_to_pokemon(entrenador, pokemon);
 		log_info(logger, "Capturando a %s...", pokemon->simbol);
-		coach_capture_pokemon(entrenador, pokemon);
+		coach_capture_pokemon(entrenador, pokemon, pathPokedex);
 		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->simbol, pokemon->coor->x, pokemon->coor->y);
 
 		pokemon = map_next_pokemon(mapa);
@@ -132,7 +132,6 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 }
 
 uint8_t move_to(uint8_t movement, t_coach* entrenador){
-	char move[10];
 	t_coor* coorEntrenador;
 	uint8_t operation_code;
 	uint8_t* mov = malloc( sizeof(uint8_t) );
@@ -164,7 +163,6 @@ uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coo
 
 int copy_file(char* f_origen,char* f_destino){
 	FILE *fp_org,*fp_dest;
-	char c;
 
 	if(!(fp_org=fopen(f_origen,"rb")) || !(fp_dest=fopen(f_destino,"wb")))
 	{

@@ -138,7 +138,6 @@ int main(int argc, char** argv){
 
 		mapa = coach_next_map(entrenador);
 	}
-	coach_medal_copy(entrenador, mapa, pathPokedex);
 	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.", entrenador->name);
 
 	game_over();
