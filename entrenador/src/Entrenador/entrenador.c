@@ -64,29 +64,30 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 	connection_send(entrenador->conn, OC_ATRAPAR_POKEMON, pokemon->simbol);
 	connection_recv(entrenador->conn, &operation_code, &pathDirDeBillOrigen);
 
-	arrayPath = string_split(pathDirDeBillOrigen, "/");
-	int posArray = 0;
-	while (arrayPath[posArray] != NULL) {
-		posArray++;
+	if(operation_code != OC_VICTIMA_DEADLOCK){
+		arrayPath = string_split(pathDirDeBillOrigen, "/");
+		int posArray = 0;
+		while (arrayPath[posArray] != NULL) {
+			posArray++;
+		}
+		posArray--;
+		nombreArchivo = arrayPath[posArray];
+
+		pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
+
+		int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
+		free(arrayPath);
+		free(pathDirDeBillOrigen);
+		free(pathDirDeBillDestino);
+
+		if(resultado){
+			printf("El archivo no se pudo copiar\n");
+			game_over();
+		} else {
+			printf("Archivo copiado exitosamente\n");
+		}
 	}
-	posArray--;
-	nombreArchivo = arrayPath[posArray];
-
-	pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
-
-	int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
-	free(arrayPath);
-	free(pathDirDeBillOrigen);
-	free(pathDirDeBillDestino);
-
-	if(resultado){
-		printf("El archivo no se pudo copiar\n");
-		game_over();
-	} else {
-		printf("Archivo copiado exitosamente\n");
-	}
-
-	return 0;
+	return operation_code;
 }
 
 void coach_connect_to_map(t_coach* entrenador, t_map* mapa){

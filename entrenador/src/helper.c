@@ -113,6 +113,7 @@ int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPokedex){
 	log_info(logger, "Comenzando a jugar en el mapa: %s\n", mapa->name);
 	t_pokemon* pokemon = map_next_pokemon(mapa);
+	int oc;
 	while(pokemon != NULL){
 		log_info(logger, "Pidiendo ubicacion de PokeNest: %s", pokemon->simbol);
 		map_locate_pokemon(mapa, pokemon, entrenador->conn);
@@ -120,7 +121,10 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 		log_info(logger, "Moviendo a %s hasta PokeNest '%s'", entrenador->name, pokemon->simbol);
 		coach_move_to_pokemon(entrenador, pokemon);
 		log_info(logger, "Capturando a %s...", pokemon->simbol);
-		coach_capture_pokemon(entrenador, pokemon, pathPokedex);
+		oc = coach_capture_pokemon(entrenador, pokemon, pathPokedex);
+		if(oc == OC_VICTIMA_DEADLOCK){
+			return oc;
+		}
 		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->simbol, pokemon->coor->x, pokemon->coor->y);
 
 		pokemon = map_next_pokemon(mapa);
@@ -128,7 +132,7 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 	coach_medal_copy(entrenador, mapa, pathPokedex);
 	log_info(logger, "Felicitaciones! completaste el mapa: %s.\n", mapa->name);
 
-	return 0;
+	return oc;
 }
 
 uint8_t move_to(uint8_t movement, t_coach* entrenador){

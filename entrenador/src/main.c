@@ -89,6 +89,7 @@ int zero_lives() {
 		log_info(logger, "Creando Directorio de Medallas...");
 		createDir(pathMedallas);
 
+		iniciar_ruta_de_viaje(entrenador);
 		return EXIT_SUCCESS;
 	} else {
 		game_over();
@@ -96,6 +97,32 @@ int zero_lives() {
 	}
 }
 
+int iniciar_ruta_de_viaje(t_map* mapa, t_coach* entrenador){
+	int oc;
+	while(mapa != NULL){
+		log_info(logger, "Conectando con el mapa: %s", mapa->name);
+		conectar_entrenador_mapa(entrenador, mapa);
+		log_info(logger, "Conexión establecida con el mapa: %s", mapa->name);
+		oc = completar_mapa(logger, mapa, entrenador, pathPokedex);
+		log_info(logger, "Desconectando al entrenador del mapa: %s", mapa->name);
+		desconectar_entrenador_mapa(entrenador, mapa);
+		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
+
+		if(oc == OC_VICTIMA_DEADLOCK){
+			log_info(logger, "El entrenador %s ha muerto por Deadlock\n", entrenador->name);
+			// si me quedan vidas borro los pokemones capturados y no avanzo el mapa para volver a intentar en el mismo
+			if(entrenador->life > 0){
+				deleteDir(pathDirDeBill);
+				createDir(pathDirDeBill);
+			}else{
+			// si no me quedan vidas salgo del while para preguntar por reintento?
+				break;
+			}
+		}else{
+			mapa = coach_next_map(entrenador);
+		}
+	}
+}
 int main(int argc, char** argv){
 	if(argc!=3) {
 		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./entrenador <nombre_entrenador> <ruta_punto_montaje>\n");
@@ -117,6 +144,7 @@ int main(int argc, char** argv){
 	pathMedallas = string_from_format("%s/Entrenadores/%s/medallas", pathPokedex, nombreEntrenador);
 	pathDirDeBill = string_from_format("%s/Entrenadores/%s/Dir de Bill/", pathPokedex, nombreEntrenador);
 
+
 	log_info(logger, "Creando Directorio de Bill...");
 	createDir(pathDirDeBill);
 	log_info(logger, "Creando Directorio de Medallas...");
@@ -126,19 +154,13 @@ int main(int argc, char** argv){
 	entrenador = cargar_metadata(logger, pathPokedex, nombreEntrenador);
 	log_info(logger, "Archivo de metadata cargado correctamente\n");
 
+
 	t_map* mapa = coach_next_map(entrenador);
-	while(mapa != NULL){
-		log_info(logger, "Conectando con el mapa: %s", mapa->name);
-		conectar_entrenador_mapa(entrenador, mapa);
-		log_info(logger, "Conexión establecida con el mapa: %s", mapa->name);
-		completar_mapa(logger, mapa, entrenador, pathPokedex);
-		log_info(logger, "Desconectando al entrenador del mapa: %s", mapa->name);
-		desconectar_entrenador_mapa(entrenador, mapa);
-		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
-
-		mapa = coach_next_map(entrenador);
+	iniciar_ruta_de_viaje(mapa, entrenador);
+	if(entrenador->life < 1){
+		entrenador->index_current_map = 0;
+		zero_lives();
 	}
-
 	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.", entrenador->name);
 
 	game_over();
