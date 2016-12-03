@@ -21,7 +21,8 @@ t_log* crear_log(char* nombreEntrenador, char* pathConfig) {
 	return logger;
 }
 
-t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
+t_coach* cargar_metadata(t_log* logger, char* pathPokedex, char* nombre_entrenador){
+	bool errorObjDelMapa = false;
 	char *pathConfigEntrenador;
 	char *pathConfigMapa;
 	t_config* configEntrenador;
@@ -42,7 +43,6 @@ t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
 	char* objMapa;
 	t_map* map;
 
-
 	int posObj;
 	int posMapa = 0;
 	while(hojaDeViaje[posMapa] != NULL){
@@ -59,9 +59,15 @@ t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
 		map = map_create(hojaDeViaje[posMapa], ip, port);
 		posObj = 0;
 		//TODO: se debe validar que no haya dos pokemones iguales sucesivamente
+		char* objAnterior = NULL;
 		while(objetivosDelMapa[posObj] != NULL){
 			// se agregan los objetivos a un objMapa
 			list_add(map->pokemon_list, pokemon_create("desconocido", objetivosDelMapa[posObj]));
+			if(objAnterior != NULL && *objAnterior == *objetivosDelMapa[posObj]){
+				errorObjDelMapa = true;
+			} else {
+				*objAnterior = *objetivosDelMapa[posObj];
+			}
 		posObj++;
 		}
 		// se agrega el objMapa a la hoja de viaje
@@ -78,6 +84,11 @@ t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
 
 	free(pathConfigEntrenador);
 	config_destroy(configEntrenador);
+
+	if(errorObjDelMapa){
+		log_error(logger, "Archivo de metadata incorrecto debido a objetivos de mapas.");
+		game_over();
+	}
 	return entrenador;
 }
 
@@ -99,7 +110,7 @@ int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	return 0;
 }
 
-int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
+int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPokedex){
 	log_info(logger, "Comenzando a jugar en el mapa: %s\n", mapa->name);
 	t_pokemon* pokemon = map_next_pokemon(mapa);
 	while(pokemon != NULL){
@@ -114,7 +125,7 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 
 		pokemon = map_next_pokemon(mapa);
 	}
-	coach_medal_copy(entrenador, mapa);
+	coach_medal_copy(entrenador, mapa, pathPokedex);
 	log_info(logger, "Felicitaciones! completaste el mapa: %s.\n", mapa->name);
 
 	return 0;
@@ -185,4 +196,34 @@ int copy_file(char* f_origen,char* f_destino){
 		fclose(fp_dest);
 		return 0;
 	}
+}
+
+void createDir(char* path) {
+	struct stat st = { 0 };
+	if (stat(path, &st) == -1) {
+		mkdir(path, 0700);
+	}
+}
+
+void deleteDir(char* path) {
+	DIR *d;
+	struct dirent *dir;
+	char file[256];
+
+	d = opendir(path);
+
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			if (strcmp(dir->d_name, ".") == 0|| strcmp(dir->d_name, "..") == 0) {
+				continue;
+			}
+			sprintf(file, "%s%s", path, dir->d_name);
+			if (remove(file) == -1) {
+				perror("Remove failed");
+
+			}
+		}
+	}
+
+	closedir(d);
 }

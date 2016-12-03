@@ -30,11 +30,14 @@ endif
 # All Target
 all: entrenador
 
+dependents:
+	-cd /home/utnso/workspace/commons/Debug && $(MAKE) all
+
 # Tool invocations
-entrenador: $(OBJS) $(USER_OBJS)
+entrenador: $(OBJS) $(USER_OBJS) /home/utnso/workspace/commons/Debug/libcommons.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -o "entrenador" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/workspace/commons/Debug" -o "entrenador" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -45,5 +48,6 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
+/home/utnso/workspace/commons/Debug/libcommons.so:
 
 -include ../makefile.targets

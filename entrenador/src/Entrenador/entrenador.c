@@ -20,6 +20,7 @@ t_coach *coach_create(char *name, char *simbol, int life){
 }
 
 void coach_destroy(t_coach *self){
+	if (self->conn->socket) connection_destroy(self->conn);
 	free(self->name);
 	free(self->simbol);
 	if(!list_is_empty(self->pokemons)) list_clean(self->pokemons);
@@ -69,7 +70,7 @@ void coach_connect_to_map(t_coach* entrenador, t_map* mapa){
 	connection_open(entrenador->conn);
 }
 
-void coach_medal_copy(t_coach* self, t_map* mapa){
+void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex){
 	//char* pathMedalla;
 	uint8_t operation_code;
 	char* pathMedallaOrigen;
@@ -77,23 +78,28 @@ void coach_medal_copy(t_coach* self, t_map* mapa){
 	char** arrayPath;
 	char* nombreArchivo;
 
-	//t_pokemon* current_pokemon = list_get(mapa->pokemon_list, mapa->index_current_pokemon);
 	connection_send(self->conn, OC_OBTENER_MEDALLA, "");
 	connection_recv(self->conn, &operation_code, &pathMedallaOrigen);
-	/*pathMedallaOrigen = string_new();
-	string_append(&pathMedallaOrigen, "/home/utnso/pokedex/Mapas/medalla.jpg");*/
+
 	arrayPath = string_split(pathMedallaOrigen, "/");
-	nombreArchivo = arrayPath[5];
+	int posArray = 0;
+	while (arrayPath[posArray] != NULL) {
+		posArray++;
+	}
+	posArray--;
+	nombreArchivo = arrayPath[posArray];
 
-	pathMedallaDestino = string_new();
-	string_append(&pathMedallaDestino, "/home/utnso/pokedex/Entrenadores/");
-	string_append(&pathMedallaDestino, self->name);
-	string_append(&pathMedallaDestino, "/medallas/");
-	string_append(&pathMedallaDestino, nombreArchivo);
+	pathMedallaDestino = string_from_format("%s/Entrenadores/%s/medallas/%s", pathPokedex, self->name, nombreArchivo);
 
-	if(copy_file(pathMedallaOrigen, pathMedallaDestino)){
-		printf("El fichero no se pudo copiar\n");
+	int resultado = copy_file(pathMedallaOrigen, pathMedallaDestino);
+	free(arrayPath);
+	free(pathMedallaOrigen);
+	free(pathMedallaDestino);
+
+	if(resultado){
+		printf("El archivo no se pudo copiar\n");
+		game_over();
 	} else {
-		printf("Fichero copiado exitosamente\n");
+		printf("Archivo copiado exitosamente\n");
 	}
 }
