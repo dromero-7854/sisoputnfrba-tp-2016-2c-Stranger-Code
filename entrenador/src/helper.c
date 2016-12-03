@@ -33,7 +33,7 @@ t_coach* cargar_metadata(t_log* logger, char* pathPokedex, char* nombre_entrenad
 	char* name = config_get_string_value(configEntrenador, "nombre");
 	char* simbol = config_get_string_value(configEntrenador, "simbolo");
 	int life = config_get_int_value(configEntrenador, "vidas");
-	t_coach* entrenador = coach_create(name, simbol, life);
+	t_coach* entrenador = coach_create(nombre_entrenador, simbol, life);
 
 	// se obtienen los mapas de la hoja de viaje
 	char** hojaDeViaje = config_get_array_value(configEntrenador, "hojaDeViaje");
@@ -74,11 +74,11 @@ t_coach* cargar_metadata(t_log* logger, char* pathPokedex, char* nombre_entrenad
 		list_add(entrenador->travel_sheet, map);
 
 		// libero memoria
-		free(objMapa);
+		/*free(objMapa);
 		free(pathConfigMapa);
 		free(ip);
 		free(port);
-		config_destroy(configMapa);
+		config_destroy(configMapa);*/
 	posMapa++;
 	}
 

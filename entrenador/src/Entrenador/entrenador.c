@@ -20,7 +20,7 @@ t_coach *coach_create(char *name, char *simbol, int life){
 }
 
 void coach_destroy(t_coach *self){
-	if (self->conn->socket) connection_destroy(self->conn);
+	//if (self->conn->socket) connection_destroy(self->conn);
 	free(self->name);
 	free(self->simbol);
 	if(!list_is_empty(self->pokemons)) list_clean(self->pokemons);

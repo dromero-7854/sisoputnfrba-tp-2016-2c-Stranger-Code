@@ -58,7 +58,7 @@ void game_over(){
 	deleteDir(pathMedallas);
 
 	free(pathDirDeBill);
-	free(pathMedallas);
+	//free(pathMedallas);
 	free(nombreEntrenador);
 	free(pathPokedex);
 	log_info(logger, "Juego finalizado.");
