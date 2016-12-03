@@ -19,7 +19,7 @@ void detectarDeadlock(t_combo * comboLista) {
 
 	struct timespec retardo, opa;
 	retardo.tv_sec = conf_metadata->tiempoChequeoDeadlock / 1000;
-	retardo.tv_nsec = (conf_metadata->tiempoChequeoDeadlock % 1000) * 1000;
+	retardo.tv_nsec = (conf_metadata->tiempoChequeoDeadlock % 1000) * 1000000;
 
 	log_trace(log_deadlock, "Se inicia el hilo de deteccion de deadlock");
 	log_trace(log_deadlock, "El retardo es de %i segundos, %i milisegundos", retardo.tv_sec, retardo.tv_nsec);
