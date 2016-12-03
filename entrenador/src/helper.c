@@ -106,7 +106,7 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 		log_info(logger, "Moviendo a %s hasta PokeNest '%s'", entrenador->name, pokemon->simbol);
 		coach_move_to_pokemon(entrenador, pokemon);
 		log_info(logger, "Capturando a %s...", pokemon->name);
-		coach_capture_pokemon(entrenador, pokemon);
+		coach_capture_pokemon(entrenador, pokemon, pathPokedex);
 		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->name, pokemon->coor->x, pokemon->coor->y);
 
 		pokemon = map_next_pokemon(mapa);

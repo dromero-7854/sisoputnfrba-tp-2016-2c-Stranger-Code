@@ -34,7 +34,7 @@ t_coach *coach_create(char* nombreEntrenador, char* simbol, int life);
 void coach_destroy(t_coach* self);
 t_map* coach_next_map(t_coach* self);
 int coach_move_to_pokemon(t_coach* self, t_pokemon* pokemon);
-int coach_capture_pokemon(t_coach* self, t_pokemon* pokemon);
+int coach_capture_pokemon(t_coach* self, t_pokemon* pokemon, char* pathPokedex);
 void coach_connect_to_map(t_coach* self, t_map* mapa);
 void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex);
 

@@ -53,14 +53,39 @@ int coach_move_to_pokemon(t_coach* entrenador, t_pokemon* pokemon){
 	return 0;
 }
 
-int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon){
+int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPokedex){
 	uint8_t operation_code;
 	void* message;
+	char* pathDirDeBillOrigen;
+	char* pathDirDeBillDestino;
+	char** arrayPath;
+	char* nombreArchivo;
 
-	connection_send(entrenador->conn, OC_ATRAPAR_POKEMON, pokemon->simbol);
-	connection_recv(entrenador->conn, &operation_code, &message);
+ 	connection_send(entrenador->conn, OC_ATRAPAR_POKEMON, pokemon->simbol);
+	connection_recv(entrenador->conn, &operation_code, &pathDirDeBillOrigen);
 
-	//printf("Pedido para capturar Pokemon: %s", (char*)message);
+	arrayPath = string_split(pathDirDeBillOrigen, "/");
+	int posArray = 0;
+	while (arrayPath[posArray] != NULL) {
+		posArray++;
+	}
+	posArray--;
+	nombreArchivo = arrayPath[posArray];
+
+	pathDirDeBillDestino = string_from_format("%sEntrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
+
+	int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
+	free(arrayPath);
+	free(pathDirDeBillOrigen);
+	free(pathDirDeBillDestino);
+
+	if(resultado){
+		printf("El archivo no se pudo copiar\n");
+		//game_over();
+	} else {
+		printf("Archivo copiado exitosamente\n");
+	}
+
 	return 0;
 }
 
