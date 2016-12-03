@@ -27,7 +27,7 @@ t_log* crear_log(char* nombreEntrenador, char* pathConfig);
 t_coach* cargar_metadata(char* path, char* nombre_entrenador);
 int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa);
 int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa);
-int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador);
+int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPokedex);
 uint8_t move_to(uint8_t movement, t_coach* entrenador);
 uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coor* coor_pokemon);
 int copy_file(char* f_origen, char* f_destino);

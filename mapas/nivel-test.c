@@ -34,10 +34,14 @@ void releerConfiguracion(int n){
 
 int main(int argc, char* argv[]) {
 
+	if(argc!=3) {
+		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./mapa <nombre_mapa> <punto_montaje>\n");
+		exit(1);
+	}
 	int len_nombre_mapa, len_pto_mnt;
 	signal(SIGUSR1, releerConfiguracion);
 	log_mapa = crear_log(argv[1]);
-	//getchar();
+
 	nombre_mapa = argv[1];
 	pto_montaje = argv[2];
 
@@ -77,20 +81,20 @@ int main(int argc, char* argv[]) {
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = listaPokenests;
 
-	//getchar();
+
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
+	/*if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
 
-	}
+	}*/
 	log_trace(log_mapa, "se creo hilo deadlock");
-	//getchar();
 
 
-	//colaListos = queue_create();
-	//colaBloqueados = queue_create();
+
+
+
 
 	char *rutaPokenests;
 	rutaPokenests = getRutaPokenests();
@@ -110,6 +114,7 @@ int main(int argc, char* argv[]) {
 	listener = socket_servidor(conf_metadata->ip, conf_metadata->puerto, log_mapa);
 	manejar_select(listener, log_mapa);
 
+	liberar_variables_globales();
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
 }
@@ -351,4 +356,10 @@ void destruir_config(metadata* config){
 	free(config->ip);
 	free(config->puerto);
 	free(config);
+}
+
+void liberar_variables_globales(){
+	free(ruta_mapa);
+	free(pto_montaje);
+	free(nombre_mapa);
 }

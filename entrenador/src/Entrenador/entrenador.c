@@ -69,7 +69,7 @@ void coach_connect_to_map(t_coach* entrenador, t_map* mapa){
 	connection_open(entrenador->conn);
 }
 
-void coach_medal_copy(t_coach* self, t_map* mapa){
+void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex){
 	//char* pathMedalla;
 	uint8_t operation_code;
 	char* pathMedallaOrigen;
@@ -90,15 +90,17 @@ void coach_medal_copy(t_coach* self, t_map* mapa){
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
-	pathMedallaDestino = string_new();
-	string_append(&pathMedallaDestino, "/home/utnso/pokedex/Entrenadores/");
-	string_append(&pathMedallaDestino, self->name);
-	string_append(&pathMedallaDestino, "/medallas/");
-	string_append(&pathMedallaDestino, nombreArchivo);
+	pathMedallaDestino = string_from_format("%sEntrenadores/%s/medallas/%s", pathPokedex, self->name, nombreArchivo);
 
-	if(copy_file(pathMedallaOrigen, pathMedallaDestino)){
-		printf("El fichero no se pudo copiar\n");
-	} else {
-		printf("Fichero copiado exitosamente\n");
-	}
+	int resultado = copy_file(pathMedallaOrigen, pathMedallaDestino);
+	free(arrayPath);
+	free(pathMedallaOrigen);
+	free(pathMedallaDestino);
+
+	if(resultado){
+		printf("El archivo no se pudo copiar\n");
+		//game_over();
+ 	} else {
+		printf("Archivo copiado exitosamente\n");
+ 	}
 }

@@ -96,7 +96,7 @@ int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	return 0;
 }
 
-int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
+int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPokedex){
 	log_info(logger, "Comenzando a jugar en el mapa: %s\n", mapa->name);
 	t_pokemon* pokemon = map_next_pokemon(mapa);
 	while(pokemon != NULL){
@@ -111,7 +111,7 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador){
 
 		pokemon = map_next_pokemon(mapa);
 	}
-	coach_medal_copy(entrenador, mapa);
+	coach_medal_copy(entrenador, mapa, pathPokedex);
 	log_info(logger, "Felicitaciones! completaste el mapa: %s.\n", mapa->name);
 
 	return 0;

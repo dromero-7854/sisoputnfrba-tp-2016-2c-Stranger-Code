@@ -102,5 +102,6 @@ void eliminarEntrenador(int fd_entrenador);
 t_log* crear_log(char* nombre);
 PokeNest* crearPokenest(char* rutaPokenest);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
+void liberar_variables_globales();
 
 #endif /* NIVEL_TEST_H_ */

@@ -36,6 +36,6 @@ t_map* coach_next_map(t_coach* self);
 int coach_move_to_pokemon(t_coach* self, t_pokemon* pokemon);
 int coach_capture_pokemon(t_coach* self, t_pokemon* pokemon);
 void coach_connect_to_map(t_coach* self, t_map* mapa);
-void coach_medal_copy(t_coach* self, t_map* mapa);
+void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex);
 
 #endif /* SRC_ENTRENADOR_ENTRENADOR_H_ */
