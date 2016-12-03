@@ -72,7 +72,7 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
-	pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/", pathPokedex, entrenador->name);
+	pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
 
 	int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
 	free(arrayPath);
