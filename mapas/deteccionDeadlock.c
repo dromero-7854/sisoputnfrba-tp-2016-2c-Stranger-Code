@@ -91,7 +91,7 @@ void detectarDeadlock(t_combo * comboLista) {
 					atendido[i_entrenadores] = 1;
 					hayDeadlock = 0;
 				}
-				else if(!tieneUnPedido && !atendido[i_entrenadores]) {
+				else if(!tieneUnPedido) {
 
 					for(i_pokenest = 0; i_pokenest < cantidadPokenest; i_pokenest++) {
 						pokemonsDisponibles[i_pokenest]+=matrizUtilizados[i_entrenadores][i_pokenest];
@@ -101,15 +101,16 @@ void detectarDeadlock(t_combo * comboLista) {
 				}
 			}
 		}
+		for(i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
+			t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
+			if(!atendido[i_entrenadores])
+					list_add(deadlockeados, entrenador);
+		}
 		if(list_size(deadlockeados) >= 2) {
 
 			log_trace(log_deadlock, "HAY DEADLOCK");
 
-			for(i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
-				t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
-				if(!atendido[i_entrenadores])
-					list_add(deadlockeados, entrenador);
-			}
+
 			if(conf_metadata->batalla) {
 
 				t_entrenador * entrenador1 = list_remove(deadlockeados, 0);
