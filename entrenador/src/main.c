@@ -52,14 +52,14 @@ int main(int argc, char** argv){
 		log_info(logger, "Conectando con el mapa: %s", mapa->name);
 		conectar_entrenador_mapa(entrenador, mapa);
 		log_info(logger, "Conexión establecida con el mapa: %s", mapa->name);
-		completar_mapa(logger, mapa, entrenador);
+		completar_mapa(logger, mapa, entrenador, pathConfig);
 		log_info(logger, "Desconectando al entrenador del mapa: %s", mapa->name);
 		desconectar_entrenador_mapa(entrenador, mapa);
 		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
 
 		mapa = coach_next_map(entrenador);
 	}
-	coach_medal_copy(entrenador, mapa);
+	//coach_medal_copy(entrenador, mapa, pathConfig);
 	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.", entrenador->name);
 
 	free_memory();

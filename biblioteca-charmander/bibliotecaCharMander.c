@@ -10,7 +10,7 @@
 
 #define MAX 1024
 
-int socket_servidor(char* puerto, t_log* log)
+int socket_servidor(char* ip, char* puerto, t_log* log)
 {
 	struct addrinfo addrAux, *res, *p;
 	int sockfd;
@@ -20,20 +20,20 @@ int socket_servidor(char* puerto, t_log* log)
 	memset(&addrAux, 0, sizeof addrAux);
 	addrAux.ai_family = AF_UNSPEC;
 	addrAux.ai_socktype = SOCK_STREAM;
-	addrAux.ai_flags = AI_PASSIVE;
+	//addrAux.ai_flags = AI_PASSIVE;
 	int yes = 1;
 
-	if(getaddrinfo(NULL, puerto, &addrAux, &res)!= 0)
+	if(getaddrinfo(ip, puerto, &addrAux, &res)!= 0)
 	{
 		log_error(log, "Hubo error en el getaddrinfo");
 	}
-	for(p= res; p->ai_next != NULL; p = p->ai_next)
-	{
+	//for(p= res; p->ai_next != NULL; p = p->ai_next)
+	//{
 
-		if((sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1)
-		{
-			continue;
-		}
+		/*if((*/sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);//) == -1)
+	//	{
+	//		continue;
+	//	}
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,sizeof(int)) == -1)
 		{
 		perror("setsockopt");
@@ -43,19 +43,19 @@ int socket_servidor(char* puerto, t_log* log)
 		if(bind(sockfd,res->ai_addr, res->ai_addrlen )== -1)
 		{
 			close(sockfd);
-			continue;
+		//	continue;
 		}
-		break;
+	//	break;
 
-	}
+	//}
 
 	freeaddrinfo(res);
 
-	if(p== NULL)
+/*	if(p== NULL)
 	{
 		log_error(log, "Hubo error al conseguir socket");
 		exit(1);
-	}
+	}*/
 	if(listen(sockfd, 15)== -1)
 		{
 			log_error(log, "Hubo error en el listen");

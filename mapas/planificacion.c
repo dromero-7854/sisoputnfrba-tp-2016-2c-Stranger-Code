@@ -151,9 +151,9 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 }
 
 void liberarRecursos(t_entrenador* entrenador){
-	int index_pokemon, index_entrenador, index_pokenest, nadieLoQuiso;
+	int index_entrenador, index_pokenest, nadieLoQuiso;
 	t_infoPokemon* infoPokemon;
-	t_entrenador* entrenadorBloqueado;
+	t_entrenador* entrenadorBloqueado = malloc(sizeof(t_entrenador));
 
 	while(!list_is_empty(entrenador->pokemons)) {
 		infoPokemon = list_get(entrenador->pokemons, 0);
@@ -197,7 +197,9 @@ void liberarRecursos(t_entrenador* entrenador){
 		for(i = 0; queue_size(colaListos); i++) {
 			t_entrenador * entrEnCola = list_get(colaListos->elements, i);
 			if(entrEnCola->simbolo == entrenador->simbolo){
+				pthread_mutex_lock(&mutex_cola_listos);
 				list_remove(colaListos->elements, i);
+				pthread_mutex_unlock(&mutex_cola_listos);
 				break;
 			}
 		}

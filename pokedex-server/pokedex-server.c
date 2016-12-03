@@ -45,8 +45,8 @@ t_bitarray * bitmap;
 t_log * logger;
 t_log * semaphore_logger;
 pthread_rwlock_t * locks;
+pthread_mutex_t m_lock;
 
-int open_socket_connection(void);
 int close_socket_connection(void);
 int map_osada_fs(void);
 int unmap_osada_fs(void);
@@ -81,42 +81,36 @@ int main(int argc , char * argv[]) {
 	map_osada_fs();
 	read_and_set();
 	init_locks();
-	open_socket_connection();
+
+	int client_sock, c, * new_sock;
+	struct sockaddr_in server, client;
+	listenning_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+	server.sin_family = AF_INET;
+	server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(config_get_int_value(conf, "port"));
+
+	bind(listenning_socket, (struct sockaddr *) &server, sizeof(server));
+	listen(listenning_socket, config_get_int_value(conf, "backlog"));
+	c = sizeof(struct sockaddr_in);
+
 	for (;;) {
 
-		struct sockaddr_in addr;
-		socklen_t addrlen = sizeof(addr);
-		int client_socket = accept(listenning_socket, (struct sockaddr *) &addr, &addrlen);
+		client_sock = accept(listenning_socket, (struct sockaddr *) &client, (socklen_t *) &c);
+
+		new_sock = malloc(1);
+		* new_sock = client_sock;
 
 		pthread_attr_t attr;
 		pthread_t thread;
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		pthread_create(&thread, &attr, &process_request, &client_socket);
+		pthread_create(&thread, &attr, &process_request, (void *) new_sock);
 		pthread_attr_destroy(&attr);
 	}
 	close_socket_connection();
 	free(locks);
-	return EXIT_SUCCESS;
-}
-
-int open_socket_connection(void) {
-	struct addrinfo hints;
-	struct addrinfo * server_info;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_flags = AI_PASSIVE; //	localhost: 127.0.0.1
-	hints.ai_socktype = SOCK_STREAM;
-
-	getaddrinfo(NULL, config_get_string_value(conf, "port"), &hints, &server_info);
-
-	listenning_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-	bind(listenning_socket,server_info->ai_addr, server_info->ai_addrlen);
-	freeaddrinfo(server_info);
-
-	listen(listenning_socket, config_get_int_value(conf, "backlog")); // blocking syscall
-
+	pthread_mutex_destroy(&m_lock);
 	return EXIT_SUCCESS;
 }
 
@@ -130,6 +124,9 @@ int init_locks() {
 			exit(1);
 		}
 	}
+
+	pthread_mutex_init(&m_lock, NULL);
+
 	return EXIT_SUCCESS;
 }
 int close_socket_connection(void) {
@@ -415,6 +412,7 @@ void process_request(int * client_socket) {
 	}
 	log_error(logger, "client %d disconnected...", * client_socket);
 	close(* client_socket);
+	free(client_socket);
 	return;
 }
 
@@ -1004,6 +1002,7 @@ void osada_write(int * client_socket) {
 			// empty file
 			//
 			// assign first block
+			pthread_mutex_lock(&m_lock);
 			while (free_db <= BM_DATA_1) {
 				pos = free_db - BM_DATA_0;
 				its_busy = bitarray_test_bit(bitmap, pos);
@@ -1016,6 +1015,7 @@ void osada_write(int * client_socket) {
 				}
 				free_db++;
 			}
+			pthread_mutex_unlock(&m_lock);
 			if (free_db > BM_DATA_1) {
 				node_ptr->file_size = fsize;
 				log_error(logger, "client %d, write '%s' : no space left on device", * client_socket, path);
@@ -1046,6 +1046,7 @@ void osada_write(int * client_socket) {
 		bytes_availables_in_block = OSADA_BLOCK_SIZE - last_free_byte_pos;
 		bytes_to_expand = bytes_to_expand - bytes_availables_in_block;
 		free_db = BM_DATA_0;
+		pthread_mutex_lock(&m_lock);
 		while (bytes_to_expand > 0 && free_db <= BM_DATA_1) {
 			//
 			// adding block
@@ -1061,6 +1062,7 @@ void osada_write(int * client_socket) {
 			}
 			free_db++;
 		}
+		pthread_mutex_unlock(&m_lock);
 		if (free_db > BM_DATA_1) {
 			log_error(logger, "client %d, write '%s' : no space left on device", * client_socket, path);
 			// no space left on device
@@ -1077,12 +1079,14 @@ void osada_write(int * client_socket) {
 			}
 
 			osada_block_pointer aux;
+			pthread_mutex_lock(&m_lock);
 			while ((* aux_map_ptr) != END_OF_FILE) {
 				aux = (* aux_map_ptr);
 				bitarray_clean_bit(bitmap, (* aux_map_ptr));
 				* aux_map_ptr = END_OF_FILE;
 				aux_map_ptr = map_ptr + aux;
 			}
+			pthread_mutex_unlock(&m_lock);
 			semaphore(UNLOCK, file_pos);
 			//
 			// << sending response >>
@@ -1409,6 +1413,7 @@ void osada_truncate(int * client_socket) {
 			int free_db = BM_DATA_0;
 			int pos;
 			bool its_busy;
+			pthread_mutex_lock(&m_lock);
 			while (necessary_blocks > 0 && (free_db <= BM_DATA_1)) {
 				pos = free_db - BM_DATA_0;
 				its_busy = bitarray_test_bit(bitmap, pos);
@@ -1421,6 +1426,7 @@ void osada_truncate(int * client_socket) {
 				}
 				free_db++;
 			}
+			pthread_mutex_unlock(&m_lock);
 			if (free_db > BM_DATA_1) {
 				log_error(logger, "client %d, truncate '%s' : no space left on device", * client_socket, path);
 				//
@@ -1439,12 +1445,14 @@ void osada_truncate(int * client_socket) {
 				}
 
 				osada_block_pointer aux;
+				pthread_mutex_lock(&m_lock);
 				while ((* aux_map_ptr) != END_OF_FILE) {
 					aux = (* aux_map_ptr);
 					bitarray_clean_bit(bitmap, (* aux_map_ptr));
 					* aux_map_ptr = END_OF_FILE;
 					aux_map_ptr = map_ptr + aux;
 				}
+				pthread_mutex_unlock(&m_lock);
 				semaphore (UNLOCK, file_pos);
 
 				//
@@ -1472,12 +1480,14 @@ void osada_truncate(int * client_socket) {
 			}
 
 			osada_block_pointer aux;
+			pthread_mutex_lock(&m_lock);
 			while ((* aux_map_ptr) != END_OF_FILE) {
 				aux = (* aux_map_ptr);
 				bitarray_clean_bit(bitmap, (* aux_map_ptr));
 				* aux_map_ptr = END_OF_FILE;
 				aux_map_ptr = map_ptr + aux;
 			}
+			pthread_mutex_unlock(&m_lock);
 		}
 	}
 	semaphore (UNLOCK, file_pos);
@@ -1590,12 +1600,14 @@ void osada_unlink(int * client_socket) {
 
 	// releasing blocks
 	uint32_t aux;
+	pthread_mutex_lock(&m_lock);
 	while ((* aux_map_ptr) != END_OF_FILE) {
 		aux = (* aux_map_ptr);
 		bitarray_clean_bit(bitmap, (* aux_map_ptr));
 		* aux_map_ptr = END_OF_FILE;
 		aux_map_ptr = map_ptr + aux;
 	}
+	pthread_mutex_unlock(&m_lock);
 
 	node_ptr->state = DELETED;
 	semaphore (UNLOCK, file_pos);

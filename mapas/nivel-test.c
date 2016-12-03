@@ -34,10 +34,14 @@ void releerConfiguracion(int n){
 
 int main(int argc, char* argv[]) {
 
+	if(argc!=3) {
+		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./mapa <nombre_mapa> <punto_montaje>\n");
+		exit(1);
+	}
 	int len_nombre_mapa, len_pto_mnt;
 	signal(SIGUSR1, releerConfiguracion);
 	log_mapa = crear_log(argv[1]);
-	//getchar();
+
 	nombre_mapa = argv[1];
 	pto_montaje = argv[2];
 
@@ -60,6 +64,9 @@ int main(int argc, char* argv[]) {
 	pthread_t planificador;
 	pthread_attr_t attr;
 
+	pthread_mutex_init(&mutex_lista_entrenador, NULL);
+	pthread_mutex_init(&mutex_lista_pokenest, NULL);
+
 	pthread_mutex_init(&mutex_cola_listos, NULL);
 	pthread_attr_init(&attr);
 
@@ -74,7 +81,7 @@ int main(int argc, char* argv[]) {
 	comboListas.entrenadores = entrenadores;
 	comboListas.pokenests = listaPokenests;
 
-	//getchar();
+
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
 	/*if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
@@ -83,11 +90,11 @@ int main(int argc, char* argv[]) {
 
 	}*/
 	log_trace(log_mapa, "se creo hilo deadlock");
-	//getchar();
 
 
-	//colaListos = queue_create();
-	//colaBloqueados = queue_create();
+
+
+
 
 	char *rutaPokenests;
 	rutaPokenests = getRutaPokenests();
@@ -104,9 +111,10 @@ int main(int argc, char* argv[]) {
 	}
 	log_trace(log_mapa, "se creo hilo de dibujo");
 	int listener;
-	listener = socket_servidor(conf_metadata->puerto, log_mapa);
+	listener = socket_servidor(conf_metadata->ip, conf_metadata->puerto, log_mapa);
 	manejar_select(listener, log_mapa);
 
+	liberar_variables_globales();
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
 }
@@ -300,6 +308,16 @@ void liberarEntrenador(t_entrenador* entrenador){
 	//free(entrenador->proximoMapa);
 	BorrarItem(items, entrenador->simbolo);
 	list_destroy(entrenador->pokemons);
+	int i = 0;
+	for(i; i < list_size(entrenadores); i++) {
+		t_entrenador *entr = list_get(entrenadores, i);
+		if(entr->simbolo == entrenador->simbolo) {
+			pthread_mutex_lock(&mutex_lista_entrenador);
+			list_remove(entrenadores, i);
+			pthread_mutex_unlock(&mutex_lista_entrenador);
+		}
+
+	}
 	free(entrenador);
 }
 
@@ -316,7 +334,10 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 
 		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
 		pokenest->cantidad = list_size(pokenest->listaPokemons);
+
+		pthread_mutex_lock(&mutex_lista_pokenest);
 		list_add(listaPokenests, pokenest);
+		pthread_mutex_unlock(&mutex_lista_pokenest);
 
 		CrearCaja(items, pokenest->id, pokenest->posx, pokenest->posy, pokenest->cantidad);
 		free(rutaPokemon);
@@ -335,4 +356,10 @@ void destruir_config(metadata* config){
 	free(config->ip);
 	free(config->puerto);
 	free(config);
+}
+
+void liberar_variables_globales(){
+	free(ruta_mapa);
+	free(pto_montaje);
+	free(nombre_mapa);
 }

@@ -18,7 +18,7 @@ void dibujarNivel(t_combo * comboLista) {
 	while(1) {
 
 		//pthread_mutex_lock(&mutex);
-		nivel_gui_dibujar(items, "Stranger Code");
+		nivel_gui_dibujar(items, nombre_mapa);
 
 		sleep(1);
 		//pthread_mutex_unlock(&mutex);
