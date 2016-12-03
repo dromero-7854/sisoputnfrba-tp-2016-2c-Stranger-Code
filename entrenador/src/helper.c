@@ -21,13 +21,14 @@ t_log* crear_log(char* nombreEntrenador, char* pathConfig) {
 	return logger;
 }
 
-t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
+t_coach* cargar_metadata(t_log* logger, char* pathPokedex, char* nombre_entrenador){
+	bool errorObjDelMapa = false;
 	char *pathConfigEntrenador;
 	char *pathConfigMapa;
 	t_config* configEntrenador;
 	t_config* configMapa;
 
-	pathConfigEntrenador = string_from_format("%s/Entrenadores/%s/metadata", pathPokedex, nombre_entrenador);
+	pathConfigEntrenador = string_from_format("%sEntrenadores/%s/metadata", pathPokedex, nombre_entrenador);
 	configEntrenador = config_create(pathConfigEntrenador);
 	char* name = config_get_string_value(configEntrenador, "nombre");
 	char* simbol = config_get_string_value(configEntrenador, "simbolo");
@@ -42,26 +43,31 @@ t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
 	char* objMapa;
 	t_map* map;
 
-
 	int posObj;
 	int posMapa = 0;
 	while(hojaDeViaje[posMapa] != NULL){
 		objMapa = string_from_format("obj[%s]", hojaDeViaje[posMapa]);
 
 		// se obtiene la información necesaria para conectarse al objMapa
-		pathConfigMapa = string_from_format("%s/Mapas/%s/metadata", pathPokedex, hojaDeViaje[posMapa]);
+		pathConfigMapa = string_from_format("%sMapas/%s/metadata", pathPokedex, hojaDeViaje[posMapa]);
 		configMapa = config_create(pathConfigMapa);
 		ip = config_get_string_value(configMapa, "IP");
-		port = config_get_string_value(configMapa, "PUERTO");
+		port = config_get_string_value(configMapa, "Puerto");
 
 		// se obtienen los objetivos de un mapa
-		objetivosDelMapa = config_get_array_value(configMapa, objMapa);
+		objetivosDelMapa = config_get_array_value(configEntrenador, objMapa);
 		map = map_create(hojaDeViaje[posMapa], ip, port);
 		posObj = 0;
 		//TODO: se debe validar que no haya dos pokemones iguales sucesivamente
+		char objAnterior = NULL;
 		while(objetivosDelMapa[posObj] != NULL){
 			// se agregan los objetivos a un objMapa
 			list_add(map->pokemon_list, pokemon_create("desconocido", objetivosDelMapa[posObj]));
+			if(objAnterior != NULL && objAnterior == *objetivosDelMapa[posObj]){
+				errorObjDelMapa = true;
+			} else {
+				objAnterior = *objetivosDelMapa[posObj];
+			}
 		posObj++;
 		}
 		// se agrega el objMapa a la hoja de viaje
@@ -78,6 +84,11 @@ t_coach* cargar_metadata(char* pathPokedex, char* nombre_entrenador){
 
 	free(pathConfigEntrenador);
 	config_destroy(configEntrenador);
+
+	if(errorObjDelMapa){
+		log_error(logger, "Archivo de metadata incorrecto debido a objetivos de mapas.");
+		game_over();
+	}
 	return entrenador;
 }
 
@@ -109,11 +120,8 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 		log_info(logger, "Moviendo a %s hasta PokeNest '%s'", entrenador->name, pokemon->simbol);
 		coach_move_to_pokemon(entrenador, pokemon);
 		log_info(logger, "Capturando a %s...", pokemon->simbol);
-		coach_capture_pokemon(entrenador, pokemon);
-		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->simbol, pokemon->coor->x, pokemon->coor->y);
-		log_info(logger, "Capturando a %s...", pokemon->name);
 		coach_capture_pokemon(entrenador, pokemon, pathPokedex);
-		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->name, pokemon->coor->x, pokemon->coor->y);
+		log_info(logger, "Capturaste a %s! En la posición: X->%d, Y->%d\n", pokemon->simbol, pokemon->coor->x, pokemon->coor->y);
 
 		pokemon = map_next_pokemon(mapa);
 	}
@@ -124,7 +132,6 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 }
 
 uint8_t move_to(uint8_t movement, t_coach* entrenador){
-	char move[10];
 	t_coor* coorEntrenador;
 	uint8_t operation_code;
 	uint8_t* mov = malloc( sizeof(uint8_t) );
@@ -156,7 +163,6 @@ uint8_t calcular_movimiento(uint8_t lastMovement, t_coor* coor_entrenador, t_coo
 
 int copy_file(char* f_origen,char* f_destino){
 	FILE *fp_org,*fp_dest;
-	char c;
 
 	if(!(fp_org=fopen(f_origen,"rb")) || !(fp_dest=fopen(f_destino,"wb")))
 	{
@@ -188,4 +194,34 @@ int copy_file(char* f_origen,char* f_destino){
 		fclose(fp_dest);
 		return 0;
 	}
+}
+
+void createDir(char* path) {
+	struct stat st = { 0 };
+	if (stat(path, &st) == -1) {
+		mkdir(path, 0700);
+	}
+}
+
+void deleteDir(char* path) {
+	DIR *d;
+	struct dirent *dir;
+	char file[256];
+
+	d = opendir(path);
+
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			if (strcmp(dir->d_name, ".") == 0|| strcmp(dir->d_name, "..") == 0) {
+				continue;
+			}
+			sprintf(file, "%s%s", path, dir->d_name);
+			if (remove(file) == -1) {
+				perror("Remove failed");
+
+			}
+		}
+	}
+
+	closedir(d);
 }
