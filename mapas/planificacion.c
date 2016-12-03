@@ -151,9 +151,9 @@ t_entrenador* buscarEntrenadorConMenorDistancia(){
 }
 
 void liberarRecursos(t_entrenador* entrenador){
-	int index_pokemon, index_entrenador, index_pokenest, nadieLoQuiso;
+	int index_entrenador, index_pokenest, nadieLoQuiso;
 	t_infoPokemon* infoPokemon;
-	t_entrenador* entrenadorBloqueado;
+	t_entrenador* entrenadorBloqueado = malloc(sizeof(t_entrenador));
 
 	while(!list_is_empty(entrenador->pokemons)) {
 		infoPokemon = list_get(entrenador->pokemons, 0);

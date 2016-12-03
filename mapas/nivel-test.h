@@ -27,6 +27,7 @@ char* getRutaMapa(char* ptoMnt, char* nombreMapa);
 
 
 t_log *log_mapa;
+t_log * log_deadlock;
 t_queue *colaListos, *colaBloqueados;
 t_list *listaPokenests;
 t_list *items;

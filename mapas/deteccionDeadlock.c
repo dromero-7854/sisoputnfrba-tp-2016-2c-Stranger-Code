@@ -13,18 +13,18 @@ bool estaBloqueado(t_entrenador * entrenador);
 
 void detectarDeadlock(t_combo * comboLista) {
 
-	t_log * log_deadlock = crear_log("deadlock");
+	log_deadlock = crear_log("deadlock");
 
 	struct timespec retardo, opa;
-	retardo.tv_sec = conf_metadata->retardo / 1000;
-	retardo.tv_nsec = (conf_metadata->retardo % 1000) * 1000;
+	retardo.tv_sec = conf_metadata->tiempoChequeoDeadlock / 1000;
+	retardo.tv_nsec = (conf_metadata->tiempoChequeoDeadlock % 1000) * 1000;
 
 	log_trace(log_deadlock, "Se inicia el hilo de deteccion de deadlock");
 	log_trace(log_deadlock, "El retardo es de %i segundos, %i milisegundos", retardo.tv_sec, retardo.tv_nsec);
 
 	while(1) {
 
-		nanosleep(retardo, opa);
+		nanosleep(&retardo, &opa);
 
 		t_list * entrenadores = comboLista->entrenadores;
 		t_list * pokenests = comboLista->pokenests;
@@ -100,7 +100,8 @@ void detectarDeadlock(t_combo * comboLista) {
 			log_trace(log_deadlock, "HAY DEADLOCK");
 
 			for(i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
-				t_entrenador * entrenador = list_get(entrenadores), i_entrenadores;
+				t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
+
 				if(!atendido[i_entrenadores])
 					list_add(deadlockeados, entrenador);
 			}
@@ -111,6 +112,7 @@ void detectarDeadlock(t_combo * comboLista) {
 				while(list_size(deadlockeados)) {
 					t_entrenador * entrenador2 = list_remove(deadlockeados, 0);
 
+					log_trace(log_deadlock, "Se realizara una battalla entre %c y %c", entrenador1->simbolo, entrenador2->simbolo);
 					t_entrenador * loser = mandarAPelear(entrenador1, entrenador2);
 
 					entrenador1 = loser;
@@ -249,12 +251,16 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1,
 	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
 	list_sort(entrenador2->pokemons, (void*) esDeMayorNivel);
 
-	t_pokemon * pokemon1 = list_get(entrenador1->pokemons, 0);
-	t_pokemon * pokemon2 = list_get(entrenador2->pokemons, 0);
+	t_infoPokemon * pokemon1 = list_get(entrenador1->pokemons, 0);
+	t_infoPokemon * pokemon2 = list_get(entrenador2->pokemons, 0);
+	t_pokemon * pok1 = pokemon1->pokemon;
+	t_pokemon * pok2 = pokemon2->pokemon;
 
+	log_trace(log_deadlock, "%c eligio a  %c (nivel &i)", entrenador1->simbolo, pok1->species, pok1->level);
+	log_trace(log_deadlock, "%c eligio a  %c (nivel &i)", entrenador2->simbolo, pok2->species, pok2->level);
 	t_pokemon * loser = pkmn_battle(pokemon1, pokemon2);
 
-	if (loser == pokemon1)
+	if (loser == pok1)
 		return entrenador1;
 	else
 		return entrenador2;
@@ -269,8 +275,7 @@ void matarEntrenador(t_entrenador * entrenador) {
 	memcpy(mandar, &operation_code, sizeof(uint8_t));
 	send(entrenador->id, mandar, sizeof(uint8_t), 0);
 
-	for (i = 0; entrenador != list_get(entrenadores, i); i++)
-		;
+	for (i = 0; entrenador != list_get(entrenadores, i); i++);
 
 	list_remove(entrenadores, i);
 
