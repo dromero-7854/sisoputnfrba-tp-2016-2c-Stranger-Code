@@ -16,10 +16,6 @@
 void planificar(){
 
 
-
-
-	//int q, quantum;
-
 	while(1){
 		if(!strcmp(conf_metadata->algoritmo, "RR")){
 			//log_trace(log_mapa, "Planificacion RR");

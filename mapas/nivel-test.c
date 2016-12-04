@@ -136,34 +136,17 @@ void manejar_select(int socket, t_log* log){
 			if(FD_ISSET(a, &lectura)){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
-						//simbolo = handshake(nuevaConexion, objetivos);
-						simbolo = handshake(nuevaConexion, objetivos);
+						simbolo = handshake(nuevaConexion);
 						FD_SET(nuevaConexion, &master);
 						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
-						//t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo, objetivos);
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
-						nuevoEntrenador->objetivos = objetivos;
 
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
 						pthread_mutex_lock(&mutex_cola_listos);
 						queue_push(colaListos, nuevoEntrenador);
 						pthread_mutex_unlock(&mutex_cola_listos);
-					}/*else {
-						recibido = recv(a,  (void*) buf, 512, 0);
-						if(recibido <= 0){
-							if(recibido < 0){
-								log_error(log, "Error al recibir de %d", a);
-								printf("error");
-								} else {
-								eliminarEntrenador(a);
-								log_error(log, "Se desconecto %d", a);
-								printf("Se desconecto alguien\n");
-								}
-							close(a);
-							FD_CLR(a, &master);
-							}
-						}*/
+					}
 				}
 		}
 	}

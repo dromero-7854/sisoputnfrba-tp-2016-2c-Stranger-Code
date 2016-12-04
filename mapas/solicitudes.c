@@ -115,17 +115,7 @@ char handshake(int socketCliente){
 
 	operation_code = OC_OBTENER_OBJETIVOS;
 	tam_msg = 0;
-/*
-	memset(paquete_a_mandar, 0, sizeof(paquete_a_mandar));
-	memcpy(paquete_a_mandar, &operation_code, sizeof(uint8_t));					// LE PIDE LOS OBJETIVOS //
-	memcpy(paquete_a_mandar, &tam_msg, sizeof(uint8_t));
-	send(socketCliente, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t), 0);
 
-	connection_recv(socketCliente, &operation_code, &buffer);
-	objetivos = buffer;*/
-
-	//printf("FUNCIONOO\n");
-	//printf("%s", buffer);
 	//free(buffer);
 	free(coordenadas);
 
@@ -276,8 +266,6 @@ int atenderSolicitud(t_entrenador* entrenador){
 
 		uint8_t tamanio_mensaje = strlen("/home/utnso/pokedex/Mapas/Pueblo Paleta/medalla.jpg");
 
-		//char* mensaje  = malloc(tamanio_mensaje + 1);
-		//mensaje = strdup("/home/utnso/git/tp-2016-2c-Stranger-Code/mapas/PuebloPaleta/PokeNests/Picachu/pikachu001.dat");
 		paquete_a_mandar = malloc(tamanio + sizeof(uint8_t) * 2);
 		memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
 		//int offset = len;
