@@ -38,6 +38,8 @@ const uint8_t REQ_UNLINK = 8;
 const uint8_t REQ_RMDIR = 9;
 
 t_config * conf;
+char* pokedex_server_ip;
+char* pokedex_server_port;
 struct addrinfo hints;
 struct addrinfo * server_info;
 
@@ -566,7 +568,7 @@ static struct fuse_opt fuse_options[] = {
 };
 
 int main(int argc, char* argv[]) {
-	load_properties_file();
+	//load_properties_file();
 	open_connection();
 
 	struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
@@ -588,7 +590,16 @@ void open_connection() {
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
-	getaddrinfo(config_get_string_value(conf, "pokedex.server.ip"), config_get_string_value(conf, "pokedex.server.port"), &hints, &server_info);
+	char * server_ip;
+	char * server_port;
+
+	server_ip =   getenv("POKEDEX_SERVER_IP");
+	server_port = getenv("POKEDEX_SERVER_PORT");
+
+	pokedex_server_ip =	string_duplicate(server_ip);
+	pokedex_server_port = string_duplicate(server_port);
+
+	getaddrinfo(pokedex_server_ip, pokedex_server_port, &hints, &server_info);
 	server_socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	connect(server_socket, server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
