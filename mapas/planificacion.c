@@ -15,6 +15,8 @@
 
 void planificar(){
 
+	FD_ZERO(&set_bloq_master);
+	FD_ZERO(&set_bloqueados);
 
 	while(1){
 		if(!strcmp(conf_metadata->algoritmo, "RR")){
@@ -24,6 +26,8 @@ void planificar(){
 			//log_trace(log_mapa, "Planificacion SRDF");
 			ejecutarRafagaSRDF();
 		}
+		/*set_bloqueados = set_bloq_master;
+		select(fd_bloq_max, &set_bloqueados, NULL, NULL, 0);*/
 	}
 }
 
@@ -43,15 +47,15 @@ int atender(t_entrenador* entrenador){
 
 void ejecutarRafagaSRDF(){
 	t_entrenador* entrenador;
-	int capturo_pokemon;
+	int respuesta;
 	int _no_tiene_objetivo_asignado(t_entrenador* entrenador){
 		return (entrenador-> pokenest_buscada == NULL);
 	}
 	//if((entrenador = list_find(colaListos->elements, (void*) _no_tiene_objetivo_asignado)) != NULL){
 	if ((entrenador = buscarEntrenadorSinDistanciaDefinida()) != NULL){
 		nanosleep(&tim, NULL);
-		capturo_pokemon = atenderSolicitud(entrenador);
-		if(capturo_pokemon){
+		respuesta = atenderSolicitud(entrenador);
+		if(respuesta == DESCONEXION){
 			liberarEntrenador(entrenador);
 			return;
 		}
@@ -61,31 +65,41 @@ void ejecutarRafagaSRDF(){
 		return;
 	}
 	//}
+	//sem_wait(&sem_turno);
 	if(!queue_is_empty(colaListos)){
 		//atenderEntrenadoresSinDistanciaDefinida();
 
 		entrenador = buscarEntrenadorConMenorDistancia();
 		while(1){
+			pthread_mutex_lock(&dibujo);
 			nanosleep(&tim, NULL);
-			capturo_pokemon = atenderSolicitud(entrenador);
-			if(capturo_pokemon){
-				if(capturo_pokemon == 1){
-					break;
-				} else {
-					liberarEntrenador(entrenador);
-					return;
-				}
+			respuesta = atenderSolicitud(entrenador);
+			switch(respuesta){
+			case TURNO_NORMAL:
+				continue;
+			case NO_ENCONTRO_POKEMON:
+				queue_push(colaBloqueados, entrenador);
+				continue;
+			case DESCONEXION:
+				liberarRecursos(entrenador);
+				break;
+			case CAPTURO_POKEMON:
+				queue_push(colaListos, entrenador);
+				break;
 			}
+			pthread_mutex_unlock(&dibujo);
 		}
 		pthread_mutex_lock(&mutex_cola_listos);
 		queue_push(colaListos, entrenador);
 		pthread_mutex_unlock(&mutex_cola_listos);
 	}
+	//sem_post(&sem_dibujo);
 }
 
 void ejecutarRafagaRR(){
 	int respuesta, q, capturo_pokemon;
 	t_entrenador* entrenador;
+	//sem_wait(&sem_turno);
 	if(!queue_is_empty(colaListos)){
 		log_trace(log_mapa, "atendiendo cola Listos");
 		pthread_mutex_lock(&mutex_cola_listos);
@@ -93,17 +107,18 @@ void ejecutarRafagaRR(){
 		pthread_mutex_unlock(&mutex_cola_listos);
 		for(q = 0; q < conf_metadata->quantum; q++){
 			log_trace(log_mapa, "quantum del entrenador: %d", q);
+			//pthread_mutex_lock(&dibujo);
 			nanosleep(&tim, NULL);
 			respuesta = atenderSolicitud(entrenador);
-
-
+			//pthread_mutex_unlock(&dibujo);
+			sem_post(&sem_dibujo);
 			if(respuesta != TURNO_NORMAL) break;
 
 		}
 		//respuesta = atender(entrenador);
 		switch(respuesta){
 		case DESCONEXION:
-			liberarEntrenador(entrenador);
+			liberarRecursos(entrenador);
 			break;
 		case NO_ENCONTRO_POKEMON:
 			queue_push(colaBloqueados, entrenador);
@@ -114,6 +129,7 @@ void ejecutarRafagaRR(){
 			pthread_mutex_unlock(&mutex_cola_listos);
 			break;
 		}
+
 		//queue_push(colaListos, entrenador);
 	}
 }
@@ -233,4 +249,22 @@ t_entrenador* buscarEntrenador(int socket, t_list* lista){
 	t_entrenador * encontrado = list_find(lista, (void*) _mismo_id);
 	list_remove_by_condition(lista, (void*)_mismo_id);
 	return encontrado;
+}
+
+void bloquearEntrenador(t_entrenador* entrenador){
+	//pthread_mutex_lock(&mutex_cola_bloqueados);
+	queue_push(colaBloqueados, entrenador);
+	FD_SET(entrenador->id, &set_bloq_master);
+	if(entrenador->id > fd_bloq_max) fd_bloq_max = entrenador->id;
+
+	//pthread_mutex_unlock(&mutex_cola_bloqueados);
+}
+
+void desbloquearEntrenador(t_entrenador* entrenador){
+	//pthread_mutex_lock(&mutex_cola_bloqueados);
+	int fd_aux;
+	t_entrenador* trainer = buscarEntrenador(entrenador->id, colaBloqueados->elements);
+	queue_push(colaListos, trainer);
+	FD_CLR(entrenador->id, &set_bloq_master);
+	//pthread_mutex_unlock(&mutex_cola_bloqueados);
 }

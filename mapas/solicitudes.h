@@ -11,9 +11,10 @@
 #include "nivel-test.h"
 #include <bibliotecaCharMander.h>
 
-#define SOLICITA_UBICACION_POKENEST 0
-#define NOTIFICA_MOVIMIENTO 1
-#define CAPTURA_POKEMON 2
+#define TURNO_NORMAL 1
+#define DESCONEXION -1
+#define CAPTURO_POKEMON 2
+#define NO_ENCONTRO_POKEMON -2
 
 
 extern t_list* listaPokenests;

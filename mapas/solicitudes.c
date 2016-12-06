@@ -126,13 +126,13 @@ int atenderSolicitud(t_entrenador* entrenador){
 	int recibido;
 	uint8_t operation_code, tam_msg;
 	t_coor* coor;
-	int capturo_pokemon, offset;
+	int respuesta, offset;
 	void *buffer, *paquete_a_mandar;
 	log_trace(log_mapa, "atendiendo solicitud");
 	recibido = connection_recv(entrenador->id, &operation_code, &buffer);
 
 	if(recibido == 0){
-		return 2;
+		return DESCONEXION;
 	}
 	switch(operation_code){
 	case OC_UBICAR_POKENEST:
@@ -162,7 +162,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		free(paquete_a_mandar);
 		free(buffer);
 
-		capturo_pokemon = 0;
+		respuesta = TURNO_NORMAL;
 		break;
 	}
 	case OC_AVANZAR_POSICION:
@@ -202,7 +202,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		free(paquete_a_mandar);
 		free(buffer);
 		MoverPersonaje(items, entrenador->simbolo, entrenador->posx, entrenador->posy);
-		capturo_pokemon = 0;
+		respuesta = TURNO_NORMAL;
 		break;
 	}
 		// volver a dibujar ??????
@@ -215,7 +215,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
 		if(infopokemon == NULL){
-			return -1;
+			return NO_ENCONTRO_POKEMON;
 		}
 		list_add(entrenador->pokemons, infopokemon);
 
@@ -253,7 +253,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		//free(mensaje);
 		free(paquete_a_mandar);
 		free(buffer);
-		capturo_pokemon = 1;
+		respuesta = CAPTURO_POKEMON;
 		break;
 	}
 	case OC_OBTENER_MEDALLA:
@@ -276,15 +276,15 @@ int atenderSolicitud(t_entrenador* entrenador){
 		//offset += sizeof(t_pokemon_type);
 		//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
 		send(entrenador->id, paquete_a_mandar, tamanio + sizeof(uint8_t) * 2, 0);
-		capturo_pokemon = 2;
+		respuesta = DESCONEXION;
 		break;
 	}
 	default:
-		capturo_pokemon = 2;
+		respuesta = TURNO_NORMAL;
 		break;
 	}
 
-	return capturo_pokemon;
+	return respuesta;
 }
 
 PokeNest* buscarPokenest(t_list* lista, char id){

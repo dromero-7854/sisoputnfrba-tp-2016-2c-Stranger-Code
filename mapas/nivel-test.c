@@ -64,8 +64,12 @@ int main(int argc, char* argv[]) {
 	pthread_t planificador;
 	pthread_attr_t attr;
 
+	sem_init(&sem_dibujo, 0, 1);
+	sem_init(&sem_turno, 0, 1);
+
 	pthread_mutex_init(&mutex_lista_entrenador, NULL);
 	pthread_mutex_init(&mutex_lista_pokenest, NULL);
+	pthread_mutex_init(&dibujo, NULL);
 
 	pthread_mutex_init(&mutex_cola_listos, NULL);
 	pthread_attr_init(&attr);
@@ -138,6 +142,7 @@ void manejar_select(int socket, t_log* log){
 
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
+						sem_post(&sem_dibujo);
 						pthread_mutex_lock(&mutex_cola_listos);
 						queue_push(colaListos, nuevoEntrenador);
 						pthread_mutex_unlock(&mutex_cola_listos);

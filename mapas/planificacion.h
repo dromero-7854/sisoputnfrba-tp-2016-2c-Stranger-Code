@@ -21,6 +21,9 @@ typedef struct pcb{
 	int posy;
 }t_pcb;
 
+int fd_bloq_max;
+fd_set set_bloqueados, set_bloq_master;
+
 void planificar();
 void verificarBloqueados();
 int atender(t_entrenador* entrenador);

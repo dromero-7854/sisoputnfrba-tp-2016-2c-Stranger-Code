@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include <pkmn/factory.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #define DIRECCION_METADATA "/home/utnso/workspace/tp-2016-2c-Stranger-Code/mapas/Debug/metadata"
 
@@ -87,6 +88,10 @@ char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
 pthread_mutex_t mutex_lista_entrenador;
 pthread_mutex_t mutex_lista_pokenest;
+pthread_mutex_t dibujo;
+sem_t sem_dibujo;
+sem_t sem_turno;
+
 char* pto_montaje;
 char* nombre_mapa;
 char* ruta_mapa;
