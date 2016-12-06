@@ -155,20 +155,38 @@ void liberarRecursos(t_entrenador* entrenador){
 		infoPokemon = list_get(entrenador->pokemons, 0);
 		nadieLoQuiso = 1;
 
-		for(index_entrenador = 0; index_entrenador < list_size(colaBloqueados->elements); index_entrenador++){
-			entrenadorBloqueado = list_get(colaBloqueados, index_entrenador);
+		pthread_mutex_lock(&mutex_cola_listos);
+		index_entrenador =0;
+		//while(index_entrenador < queue_size(colaBloqueados))
+
+		int _buscaEsePokemon(t_entrenador * entr) {
+			return infoPokemon->id_pokenest == entr->pokenest_buscada;
+		}
+		entrenadorBloqueado = list_find(colaBloqueados->elements, (void *) _buscaEsePokemon);
+
+		queue_push(colaListos, buscarEntrenador(entrenadorBloqueado->id, colaBloqueados->elements));
+
+		/*for(index_entrenador = 0; index_entrenador < queue_size(colaBloqueados); index_entrenador++){
+			entrenadorBloqueado = list_get(colaBloqueados->elements, index_entrenador);
 			if(entrenadorBloqueado->pokenest_buscada == infoPokemon->id_pokenest){
-				list_add(entrenadorBloqueado->pokemons, infoPokemon);
+				//list_add(entrenadorBloqueado->pokemons, infoPokemon);
 				nadieLoQuiso = 0;
 				//entrenadorBloqueado->objetivoActual = NULL;
 				queue_push(colaListos, buscarEntrenador(entrenadorBloqueado->id, colaBloqueados->elements));
-				/**
-				 * VER QUE PASA CON EL ENTRENADOR SIGUIENTE EN LA COLA RECORRIDA
-				 */
+
 				break;
 			}
+		}*/
+
+		pthread_mutex_unlock(&mutex_cola_listos);
+		int _mismo_id(PokeNest * pokenest) {
+			return (infoPokemon->id_pokenest == pokenest->id);
 		}
-		if(nadieLoQuiso) {
+		PokeNest * pokenest = list_find(listaPokenests, (void *) _mismo_id);
+
+		list_add(pokenest->listaPokemons, infoPokemon);
+		pokenest->cantidad++;
+		/*if(nadieLoQuiso) {
 			for(index_pokenest = 0; index_pokenest < list_size(listaPokenests); index_pokenest++) {
 
 				PokeNest *pokenest = list_get(listaPokenests, index_pokenest);
@@ -178,10 +196,11 @@ void liberarRecursos(t_entrenador* entrenador){
 					break;
 				}
 			}
-		}
+		}*/
 		list_remove(entrenador->pokemons, 0);
 	}
 	int i;
+	pthread_mutex_lock(&mutex_cola_listos);
 	for(i = 0; i < queue_size(colaBloqueados); i++) {
 		t_entrenador * entrEnCola = list_get(colaBloqueados->elements, i);
 		if(entrEnCola->simbolo == entrenador->simbolo) {
@@ -190,7 +209,7 @@ void liberarRecursos(t_entrenador* entrenador){
 		}
 	}
 	if(i == queue_size(colaBloqueados)) {
-		for(i = 0; queue_size(colaListos); i++) {
+		for(i = 0; i < queue_size(colaListos); i++) {
 			t_entrenador * entrEnCola = list_get(colaListos->elements, i);
 			if(entrEnCola->simbolo == entrenador->simbolo){
 				pthread_mutex_lock(&mutex_cola_listos);
@@ -200,6 +219,7 @@ void liberarRecursos(t_entrenador* entrenador){
 			}
 		}
 	}
+	pthread_mutex_unlock(&mutex_cola_listos);
 
 	list_destroy(entrenador->pokemons);
 	liberarEntrenador(entrenador);
@@ -209,5 +229,8 @@ t_entrenador* buscarEntrenador(int socket, t_list* lista){
 	int _mismo_id(t_entrenador* e){
 		return (e->id == socket);
 	}
-	return list_remove_by_condition(lista, (void*)_mismo_id);
+
+	t_entrenador * encontrado = list_find(lista, (void*) _mismo_id);
+	list_remove_by_condition(lista, (void*)_mismo_id);
+	return encontrado;
 }

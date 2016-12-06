@@ -138,6 +138,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 	case OC_UBICAR_POKENEST:
 	{
 		char pokenest_id = *((char*)buffer);
+		//entrenador->pokenest_buscada = pokenest_id;
 		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		//void *buffer;
 		//recibidos = recv(entrenador->id, buffer, 1, 0);
@@ -224,7 +225,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		entrenador->objetivoActual++;
 
 		int len = strlen(infopokemon->pokemon->species);
-
+		restarRecurso(items, infopokemon->id_pokenest);
 
 		uint8_t oc_send = OC_MENSAJE;
 

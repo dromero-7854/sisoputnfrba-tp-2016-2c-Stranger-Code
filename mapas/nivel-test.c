@@ -83,18 +83,13 @@ int main(int argc, char* argv[]) {
 
 
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	/*if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
+	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
 
-	}*/
+	}
 	log_trace(log_mapa, "se creo hilo deadlock");
-
-
-
-
-
 
 	char *rutaPokenests;
 	rutaPokenests = getRutaPokenests();
@@ -248,6 +243,7 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 
 		t_infoPokemon* infoPokemon = malloc(sizeof(t_infoPokemon));
 		infoPokemon->pokemon = create_pokemon(fabrica, nombrePokemon, lvl);
+		infoPokemon->id_pokenest = *(infoPokemon->pokemon->species);
 		meterStringEnEstructura(&(infoPokemon->nombre), directorio->d_name);
 
 		list_add(listaPokemons, infoPokemon);
@@ -290,9 +286,10 @@ void liberarEntrenador(t_entrenador* entrenador){
 	//free(entrenador->objetivos);
 	//free(entrenador->proximoMapa);
 	BorrarItem(items, entrenador->simbolo);
-	list_destroy(entrenador->pokemons);
-	int i = 0;
-	for(i; i < list_size(entrenadores); i++) {
+	//list_clean(entrenador->pokemons);
+	//list_destroy(entrenador->pokemons);
+	int i;
+	for(i = 0; i < list_size(entrenadores); i++) {
 		t_entrenador *entr = list_get(entrenadores, i);
 		if(entr->simbolo == entrenador->simbolo) {
 			pthread_mutex_lock(&mutex_lista_entrenador);
@@ -301,7 +298,7 @@ void liberarEntrenador(t_entrenador* entrenador){
 		}
 
 	}
-	free(entrenador);
+	//free(entrenador);
 }
 
 void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
