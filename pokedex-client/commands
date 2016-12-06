@@ -1,11 +1,13 @@
 
-1 - compilar
+1 - Crear variables de entorno por consola 
+	utnso@utnso40:~$ export POKEDEX_SERVER_IP=127.0.0.1
+	utnso@utnso40:~$ export POKEDEX_SERVER_PORT=33000
+
+2 - compilar
       utnso@utnso40:~$ gcc pokedex-client.c -o pokedex-client -DFUSE_USE_VERSION=27 -D_FILE_OFFSET_BITS=64 -lpthread -lfuse -lcommons -w
 
-2 - crear un drectorio que será nuestrp punto de montaje (a este diretorio se le haran todos los pedidos de lectura de archivos, escritura, etc.)
+3 - crear un drectorio que será nuestrp punto de montaje (a este diretorio se le haran todos los pedidos de lectura de archivos, escritura, etc.)
       /mnt/pokedex
-
-3 - en el directorio donde se encuentra el ejecutable, crear un subdirectorio "conf" donde se encuentra el archivo de propiedades con los datos de conexión al servidor (ver ejemplo repositorio git)
 
 4 - montar: se manda como parámetro el directorio que creamos como nuestro punto de montaje (en este ejemplo estoy ejecutando el proceso desde un directorio que contiene el punto de montaje)
       se debe ejecutar previamente el proceso pokedex-server
