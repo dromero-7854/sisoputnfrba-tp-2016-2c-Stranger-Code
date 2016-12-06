@@ -118,10 +118,12 @@ void ejecutarRafagaRR(){
 		//respuesta = atender(entrenador);
 		switch(respuesta){
 		case DESCONEXION:
-			liberarRecursos(entrenador);
+			liberarEntrenador(entrenador);
+			sem_post(&sem_dibujo);
 			break;
 		case NO_ENCONTRO_POKEMON:
-			queue_push(colaBloqueados, entrenador);
+			//queue_push(colaBloqueados, entrenador);
+			bloquearEntrenador(entrenador);
 			break;
 		default:
 			pthread_mutex_lock(&mutex_cola_listos);
@@ -252,19 +254,18 @@ t_entrenador* buscarEntrenador(int socket, t_list* lista){
 }
 
 void bloquearEntrenador(t_entrenador* entrenador){
-	//pthread_mutex_lock(&mutex_cola_bloqueados);
+	pthread_mutex_lock(&mutex_cola_bloqueados);
 	queue_push(colaBloqueados, entrenador);
-	FD_SET(entrenador->id, &set_bloq_master);
-	if(entrenador->id > fd_bloq_max) fd_bloq_max = entrenador->id;
+	FD_SET(entrenador->id, &master);
+	if(entrenador->id > set_fd_max) set_fd_max = entrenador->id;
 
-	//pthread_mutex_unlock(&mutex_cola_bloqueados);
+	pthread_mutex_unlock(&mutex_cola_bloqueados);
 }
 
 void desbloquearEntrenador(t_entrenador* entrenador){
-	//pthread_mutex_lock(&mutex_cola_bloqueados);
-	int fd_aux;
+	pthread_mutex_lock(&mutex_cola_bloqueados);
 	t_entrenador* trainer = buscarEntrenador(entrenador->id, colaBloqueados->elements);
 	queue_push(colaListos, trainer);
-	FD_CLR(entrenador->id, &set_bloq_master);
-	//pthread_mutex_unlock(&mutex_cola_bloqueados);
+	FD_CLR(entrenador->id, &master);
+	pthread_mutex_unlock(&mutex_cola_bloqueados);
 }

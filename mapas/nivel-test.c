@@ -72,6 +72,7 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&dibujo, NULL);
 
 	pthread_mutex_init(&mutex_cola_listos, NULL);
+	pthread_mutex_init(&mutex_cola_bloqueados, NULL);
 	pthread_attr_init(&attr);
 
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -109,6 +110,8 @@ int main(int argc, char* argv[]) {
 				return 1;
 	}
 	log_trace(log_mapa, "se creo hilo de dibujo");
+	tv.tv_sec = 10;
+	tv.tv_usec = 0;
 	int listener;
 	listener = socket_servidor(conf_metadata->ip, conf_metadata->puerto, log_mapa);
 	manejar_select(listener, log_mapa);
@@ -119,25 +122,27 @@ int main(int argc, char* argv[]) {
 }
 
 void manejar_select(int socket, t_log* log){
-	fd_set lectura, master;
+	//fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
 	char* objetivos;
 	char simbolo;
-	fdMax = socket;
+	t_entrenador* entrenador;
+	//fdMax = socket;
+	set_fd_max = socket;
 	FD_ZERO(&lectura);
 	FD_ZERO(&master);
 	FD_SET(socket, &master);
 	while(1){
 		lectura = master;
-		select(fdMax +1, &lectura, NULL, NULL, NULL);
-		for(a = 0 ; a <= fdMax ; a++){
+		select(set_fd_max +1, &lectura, NULL, NULL, &tv);
+		for(a = 0 ; a <= set_fd_max ; a++){
 			if(FD_ISSET(a, &lectura)){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
 						simbolo = handshake(nuevaConexion);
-						FD_SET(nuevaConexion, &master);
-						if(nuevaConexion > fdMax) fdMax = nuevaConexion;
+						//FD_SET(nuevaConexion, &master);
+						//if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
 
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
@@ -146,6 +151,14 @@ void manejar_select(int socket, t_log* log){
 						pthread_mutex_lock(&mutex_cola_listos);
 						queue_push(colaListos, nuevoEntrenador);
 						pthread_mutex_unlock(&mutex_cola_listos);
+					} else {
+						recibido = recv(a, buf, 512, 0);
+						if(recibido == 0){
+							entrenador = buscarEntrenador(a, colaBloqueados->elements);
+							liberarEntrenador(entrenador);
+							FD_CLR(entrenador->id, &master);
+							sem_post(&sem_dibujo);
+						}
 					}
 				}
 		}

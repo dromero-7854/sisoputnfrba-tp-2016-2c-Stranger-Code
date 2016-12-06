@@ -17,6 +17,8 @@
 #include <pkmn/factory.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #define DIRECCION_METADATA "/home/utnso/workspace/tp-2016-2c-Stranger-Code/mapas/Debug/metadata"
 
@@ -34,7 +36,8 @@ t_list *listaPokenests;
 t_list *items;
 t_list *entrenadores;
 int quantum;
-int rows, cols;
+int rows, cols, set_fd_max;
+fd_set master, lectura;
 
 typedef struct {
 
@@ -86,6 +89,7 @@ typedef struct PokeNest {
 metadata* conf_metadata;
 char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
+pthread_mutex_t mutex_cola_bloqueados;
 pthread_mutex_t mutex_lista_entrenador;
 pthread_mutex_t mutex_lista_pokenest;
 pthread_mutex_t dibujo;
@@ -96,6 +100,7 @@ char* pto_montaje;
 char* nombre_mapa;
 char* ruta_mapa;
 struct timespec tim;
+struct timeval tv;
 
 void manejar_select(int socket, t_log* log);
 //t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* objetivos);
