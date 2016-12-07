@@ -155,8 +155,8 @@ void manejar_select(int socket, t_log* log){
 						recibido = recv(a, buf, 512, 0);
 						if(recibido == 0){
 							entrenador = buscarEntrenador(a, colaBloqueados->elements);
-							liberarEntrenador(entrenador);
 							FD_CLR(entrenador->id, &master);
+							liberarEntrenador(entrenador);
 							sem_post(&sem_dibujo);
 						}
 					}
@@ -281,6 +281,8 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	entrenador->posy = 1;
 	//entrenador->objetivos = objetivos;
 	entrenador->pokemons = list_create();
+	entrenador->tiempos = malloc(sizeof(t_tiempos));
+	entrenador->tiempos->inicio = time(NULL);
 	entrenador->simbolo = simbolo;
 	return entrenador;
 }

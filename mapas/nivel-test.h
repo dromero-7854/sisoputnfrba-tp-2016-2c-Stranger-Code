@@ -40,6 +40,13 @@ int rows, cols, set_fd_max;
 fd_set master, lectura;
 
 typedef struct {
+	time_t inicio;
+	time_t finalizacion;
+	time_t bloqueo_acumulado;
+	time_t inicia_bloqueo;
+	time_t fin_bloqueo;
+}t_tiempos;
+typedef struct {
 
 	int posx;
 	int posy;
@@ -47,8 +54,7 @@ typedef struct {
 	char simbolo;
 	char pokenest_buscada;
 
-	char *objetivos;
-	char objetivoActual;
+	t_tiempos* tiempos;
 
 	t_list * pokemons;
 

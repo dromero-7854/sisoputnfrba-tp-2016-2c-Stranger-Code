@@ -224,10 +224,11 @@ int atenderSolicitud(t_entrenador* entrenador){
 		pthread_mutex_unlock(&mutex_lista_pokenest);
 		entrenador->objetivoActual++;
 
-		int len = strlen(infopokemon->pokemon->species);
+		notificar_captura_pokemon(infopokemon, entrenador);
+//		int len = strlen(infopokemon->pokemon->species);
 		restarRecurso(items, infopokemon->id_pokenest);
 
-		uint8_t oc_send = OC_MENSAJE;
+/*		uint8_t oc_send = OC_MENSAJE;
 
 		rutaPokenests = getRutaPokenests();
 		rutaPokemon = getRutaPokemon(rutaPokenests, infopokemon->pokemon->species);
@@ -251,7 +252,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		send(entrenador->id, paquete_a_mandar, bytes_a_mandar, 0);
 		entrenador->pokenest_buscada = NULL;
 		//free(mensaje);
-		free(paquete_a_mandar);
+		free(paquete_a_mandar);*/
 		free(buffer);
 		respuesta = CAPTURO_POKEMON;
 		break;
@@ -304,4 +305,38 @@ t_infoPokemon* buscarPrimerPokemon(t_list* listaDePokemons){
 	list_sort(listaDePokemons, (void*) _pokemon_de_menor_nombre);
 	//infoPokemon = list_get(listaAux)
 	return list_remove(listaDePokemons, 0);
+}
+
+void notificar_captura_pokemon(t_infoPokemon* infopokemon, t_entrenador* entrenador){
+	char *rutaPokenests, *rutaPokemon, *rutaArchivoPokemon;
+	int lenArchivo, len;
+	void* paquete_a_mandar;
+	len = strlen(infopokemon->pokemon->species);
+	restarRecurso(items, infopokemon->id_pokenest);
+
+	uint8_t oc_send = OC_MENSAJE;
+
+	rutaPokenests = getRutaPokenests();
+	rutaPokemon = getRutaPokemon(rutaPokenests, infopokemon->pokemon->species);
+	len = strlen(rutaPokemon);
+	lenArchivo = strlen(infopokemon->nombre);
+	rutaArchivoPokemon = malloc(len + lenArchivo + 1 + 1);
+	snprintf(rutaArchivoPokemon, len + lenArchivo + 1 + 1, "%s/%s", rutaPokemon, infopokemon->nombre);
+
+	uint8_t tamanio_mensaje = strlen(rutaArchivoPokemon);
+	int bytes_a_mandar = sizeof(uint8_t) * 2 + tamanio_mensaje;
+	//char* mensaje ;
+	//mensaje = strdup("/home/utnso/git/tp-2016-2c-Stranger-Code/mapas/PuebloPaleta/PokeNests/Picachu/pikachu001.dat");
+	paquete_a_mandar = malloc(tamanio_mensaje + sizeof(uint8_t) * 2);
+	memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
+	//int offset = len;
+	memcpy(paquete_a_mandar + sizeof(uint8_t), &tamanio_mensaje, sizeof(uint8_t));
+	//offset += sizeof(t_pokemon_type);
+	memcpy(paquete_a_mandar + sizeof(uint8_t) * 2, rutaArchivoPokemon, tamanio_mensaje);
+	//offset += sizeof(t_pokemon_type);
+	//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
+	send(entrenador->id, paquete_a_mandar, bytes_a_mandar, 0);
+	entrenador->pokenest_buscada = NULL;
+	//free(mensaje);
+	free(paquete_a_mandar);
 }
