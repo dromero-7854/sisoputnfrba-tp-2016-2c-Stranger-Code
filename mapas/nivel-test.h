@@ -96,6 +96,7 @@ metadata* conf_metadata;
 char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
 pthread_mutex_t mutex_cola_bloqueados;
+pthread_mutex_t mutex_cola_bloqueados2;
 pthread_mutex_t mutex_lista_entrenador;
 pthread_mutex_t mutex_lista_pokenest;
 pthread_mutex_t dibujo;

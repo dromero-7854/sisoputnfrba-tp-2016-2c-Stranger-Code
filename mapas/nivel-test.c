@@ -156,7 +156,7 @@ void manejar_select(int socket, t_log* log){
 						if(recibido == 0){
 							entrenador = buscarEntrenador(a, colaBloqueados->elements);
 							FD_CLR(entrenador->id, &master);
-							liberarEntrenador(entrenador);
+							liberarRecursos2(entrenador);
 							sem_post(&sem_dibujo);
 						}
 					}

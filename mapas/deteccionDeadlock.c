@@ -194,9 +194,10 @@ void matarEntrenador(t_entrenador * entrenador) {
 
 	for (i = 0; entrenador != list_get(entrenadores, i); i++);
 
+	FD_CLR(entrenador->id, &master);
 	list_remove(entrenadores, i);
 
-	liberarRecursos(entrenador);
+	liberarRecursos2(entrenador);
 }
 int hayAlguienParaAtender(int atendido[], int cantEntrenadores) {
 	int i;

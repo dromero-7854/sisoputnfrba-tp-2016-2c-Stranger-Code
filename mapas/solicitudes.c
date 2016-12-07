@@ -222,7 +222,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		pthread_mutex_lock(&mutex_lista_pokenest);
 		pokenest->cantidad--;
 		pthread_mutex_unlock(&mutex_lista_pokenest);
-		entrenador->objetivoActual++;
+		//entrenador->objetivoActual++;
 
 		notificar_captura_pokemon(infopokemon, entrenador);
 //		int len = strlen(infopokemon->pokemon->species);
