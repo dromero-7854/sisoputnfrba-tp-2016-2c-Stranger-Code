@@ -25,13 +25,13 @@ endif
 all: mapas
 
 dependents:
-	-cd /home/utnso/git/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug && $(MAKE) all
+	-cd /home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug && $(MAKE) clean all
 
 # Tool invocations
-mapas: $(OBJS) $(USER_OBJS) /home/utnso/git/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug/libBibliotecaCharMander.so
+mapas: $(OBJS) $(USER_OBJS) /home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug/libBibliotecaCharMander.so
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -L"/home/utnso/git/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug" -o "mapas" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L"/home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug" -o "mapas" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -42,6 +42,6 @@ clean:
 
 .PHONY: all clean dependents
 .SECONDARY:
-/home/utnso/git/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug/libBibliotecaCharMander.so:
+/home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug/libBibliotecaCharMander.so:
 
 -include ../makefile.targets
