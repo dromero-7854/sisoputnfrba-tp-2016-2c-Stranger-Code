@@ -188,15 +188,17 @@ void matarEntrenador(t_entrenador * entrenador) {
 
 	int i;
 	uint8_t operation_code = OC_VICTIMA_DEADLOCK;
-
+	uint8_t tamanio = 0;
 	//memcpy(mandar, &operation_code, sizeof(uint8_t));
 	send(entrenador->id, &operation_code, sizeof(uint8_t), 0);
+	send(entrenador->id, &tamanio, sizeof(uint8_t), 0);
 
 	for (i = 0; entrenador != list_get(entrenadores, i); i++);
 
 	FD_CLR(entrenador->id, &master);
 	list_remove(entrenadores, i);
 
+	buscarEntrenador(entrenador->id, colaBloqueados->elements);
 	liberarRecursos2(entrenador);
 }
 int hayAlguienParaAtender(int atendido[], int cantEntrenadores) {

@@ -88,6 +88,7 @@ void ejecutarRafagaSRDF(){
 				continue;
 			case DESCONEXION:
 				liberarRecursos2(entrenador);
+				sem_post(&sem_dibujo);
 				break;
 			case CAPTURO_POKEMON:
 				pthread_mutex_lock(&mutex_cola_listos);
@@ -255,13 +256,15 @@ void liberarRecursos(t_entrenador* entrenador){
 }
 
 void liberarRecursos2(t_entrenador* entrenadorLiberado){
-	int index_entrenador;
+	int index_entrenador, pokemon_asignado = 0;
 	t_infoPokemon* infoPokemon;
 	t_entrenador* entrenadorBloqueado;
 	while((infoPokemon = list_remove(entrenadorLiberado->pokemons, 0)) != NULL){
 		//infoPokemon = list_get(entrenadorLiberado->pokemons, index_pokemon);
 
-		pthread_mutex_lock(&mutex_cola_bloqueados2);
+
+		pthread_mutex_lock(&mutex_turno_desbloqueo);
+		pthread_mutex_lock(&mutex_cola_bloqueados);
 		for(index_entrenador = 0; index_entrenador < list_size(colaBloqueados->elements); index_entrenador++){
 			entrenadorBloqueado = list_get(colaBloqueados->elements, index_entrenador);
 			if(entrenadorBloqueado->pokenest_buscada == infoPokemon->id_pokenest){
@@ -269,14 +272,17 @@ void liberarRecursos2(t_entrenador* entrenadorLiberado){
 				notificar_captura_pokemon(infoPokemon, entrenadorBloqueado);
 				//entrenadorBloqueado->objetivoActual = NULL;
 				desbloquearEntrenador(entrenadorBloqueado);
+				pokemon_asignado = 1;
+				break;
 			}
 		}
-		if(index_entrenador == list_size(colaBloqueados->elements)){
+		pthread_mutex_unlock(&mutex_cola_bloqueados);
+		pthread_mutex_unlock(&mutex_turno_desbloqueo);
+		if(!pokemon_asignado){
 			int _mismo_id_pokenest(PokeNest * pokenest) {
 				return (infoPokemon->id_pokenest == pokenest->id);
 			}
 			PokeNest * pokenest = list_find(listaPokenests, (void *) _mismo_id_pokenest);
-			pthread_mutex_unlock(&mutex_cola_bloqueados2);
 
 			list_add(pokenest->listaPokemons, infoPokemon);
 			pokenest->cantidad++;
@@ -308,9 +314,9 @@ void bloquearEntrenador(t_entrenador* entrenador){
 }
 
 void desbloquearEntrenador(t_entrenador* entrenador){
-	pthread_mutex_lock(&mutex_cola_bloqueados);
+	//pthread_mutex_lock(&mutex_cola_bloqueados);
 	t_entrenador* trainer = buscarEntrenador(entrenador->id, colaBloqueados->elements);
 	queue_push(colaListos, trainer);
 	FD_CLR(entrenador->id, &master);
-	pthread_mutex_unlock(&mutex_cola_bloqueados);
+	//pthread_mutex_unlock(&mutex_cola_bloqueados);
 }
