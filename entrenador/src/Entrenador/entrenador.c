@@ -15,6 +15,7 @@ t_coach *coach_create(char *name, char *simbol, int life){
 	new->pokemons = list_create();
 	new->travel_sheet = list_create();
 	new->index_current_map = -1;
+	new->pokenest_time = 0;
 
 	return new;
 }
@@ -60,10 +61,15 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 	char* pathDirDeBillDestino;
 	char** arrayPath;
 	char* nombreArchivo;
+	time_t beginTime;
+	time_t endTime;
 
+	time(&beginTime);
 	connection_send(entrenador->conn, OC_ATRAPAR_POKEMON, pokemon->simbol);
 	connection_recv(entrenador->conn, &operation_code, &pathDirDeBillOrigen);
+	time(&endTime);
 
+	entrenador->pokenest_time = entrenador->pokenest_time + difftime(endTime, beginTime);
 	if(operation_code != OC_VICTIMA_DEADLOCK){
 		arrayPath = string_split(pathDirDeBillOrigen, "/");
 		int posArray = 0;
