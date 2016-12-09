@@ -73,7 +73,7 @@ void game_over(){
 
 int zero_lives() {
 	char respuesta[2];
-	printf("El entrenador se ha quedado sin vidas. Desea reiniciar el juego? Ya se han realizado %d reintentos. (y/n)\n", reintentos);
+	printf("El entrenador se ha quedado sin vidas. Ya se han realizado %d reintentos. Desea reiniciar el juego? (y/n) ", reintentos);
 	fgets(respuesta, 2, stdin);
 
 	while( strcmp(respuesta,"y\n") && strcmp(respuesta,"n\n")){

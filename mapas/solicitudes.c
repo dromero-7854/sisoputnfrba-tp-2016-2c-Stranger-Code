@@ -112,6 +112,13 @@ char handshake(int socketCliente){
 	offset += sizeof(uint8_t);
 	memcpy(paquete_a_mandar + offset, coordenadas, sizeof(t_coor));
 	send(socketCliente, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
+
+	connection_recv(socketCliente, &operation_code, &buffer);
+	if(operation_code != OC_OBTENER_MEDALLA){
+		log_error(log_mapa, "codigo de operacion incorrecto en handshake");
+		exit(1);
+	}
+
 	enviar_ruta_medalla(socketCliente);
 
 

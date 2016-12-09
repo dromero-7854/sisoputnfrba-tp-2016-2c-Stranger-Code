@@ -105,6 +105,7 @@ int handshake(t_coach* entrenador, t_map* mapa){
 
 	connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->simbol);
 	connection_recv(entrenador->conn, &operation_code, &coor);
+	connection_send(entrenador->conn, OC_OBTENER_MEDALLA, entrenador->simbol);
 	connection_recv(entrenador->conn, &operation_code, &mapa->medal_path);
 	entrenador->coor = coor;
 
