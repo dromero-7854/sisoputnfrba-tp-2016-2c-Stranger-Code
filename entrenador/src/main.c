@@ -115,7 +115,10 @@ void iniciar_ruta_de_viaje(t_coach* entrenador){
 		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
 
 		if(oc == OC_VICTIMA_DEADLOCK){
+			//se incrementa la cantidad de veces que murió
 			death_count++;
+			// se reinician los objetivos del mapa
+			mapa->index_current_pokemon = -1;
 			log_info(logger, "El entrenador %s ha muerto por Deadlock\n", entrenador->name);
 			// si me quedan vidas borro los pokemones capturados y no avanzo el mapa para volver a intentar en el mismo
 			if(entrenador->life > 0){
@@ -133,7 +136,7 @@ void iniciar_ruta_de_viaje(t_coach* entrenador){
 
 int main(int argc, char** argv){
 	if(argc!=3) {
-		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./entrenador <nombre_entrenador> <ruta_punto_montaje>\n");
+		printf("Faltan ingresar parámetos. Se debe ejecutar de la sig. manera:\n ./entrenador <nombre_entrenador> <ruta_punto_montaje>\n");
 		exit(1);
 	}
 
