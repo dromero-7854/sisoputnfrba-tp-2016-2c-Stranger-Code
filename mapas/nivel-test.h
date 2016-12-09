@@ -40,15 +40,22 @@ int rows, cols, set_fd_max;
 fd_set master, lectura;
 
 typedef struct {
+	time_t inicio;
+	time_t finalizacion;
+	time_t bloqueo_acumulado;
+	time_t inicia_bloqueo;
+	time_t fin_bloqueo;
+}t_tiempos;
+typedef struct {
 
 	int posx;
 	int posy;
 	int id;
 	char simbolo;
 	char pokenest_buscada;
+	int cantDeadlocks;
 
-	char *objetivos;
-	char objetivoActual;
+	t_tiempos* tiempos;
 
 	t_list * pokemons;
 
@@ -90,6 +97,8 @@ metadata* conf_metadata;
 char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
 pthread_mutex_t mutex_cola_bloqueados;
+pthread_mutex_t mutex_cola_bloqueados2;
+pthread_mutex_t mutex_turno_desbloqueo;
 pthread_mutex_t mutex_lista_entrenador;
 pthread_mutex_t mutex_lista_pokenest;
 pthread_mutex_t dibujo;

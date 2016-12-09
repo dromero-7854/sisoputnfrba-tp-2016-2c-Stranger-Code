@@ -73,6 +73,7 @@ int main(int argc, char* argv[]) {
 
 	pthread_mutex_init(&mutex_cola_listos, NULL);
 	pthread_mutex_init(&mutex_cola_bloqueados, NULL);
+	pthread_mutex_init(&mutex_turno_desbloqueo, NULL);
 	pthread_attr_init(&attr);
 
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -152,13 +153,17 @@ void manejar_select(int socket, t_log* log){
 						queue_push(colaListos, nuevoEntrenador);
 						pthread_mutex_unlock(&mutex_cola_listos);
 					} else {
+						pthread_mutex_lock(&mutex_turno_desbloqueo);
+						entrenador = buscarEntrenador(a, colaBloqueados->elements);
+						pthread_mutex_unlock(&mutex_turno_desbloqueo);
+						if(entrenador == NULL)continue;
 						recibido = recv(a, buf, 512, 0);
 						if(recibido == 0){
-							entrenador = buscarEntrenador(a, colaBloqueados->elements);
-							liberarEntrenador(entrenador);
 							FD_CLR(entrenador->id, &master);
+							liberarRecursos2(entrenador);
 							sem_post(&sem_dibujo);
 						}
+
 					}
 				}
 		}
@@ -281,7 +286,10 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	entrenador->posy = 1;
 	//entrenador->objetivos = objetivos;
 	entrenador->pokemons = list_create();
+	entrenador->tiempos = malloc(sizeof(t_tiempos));
+	entrenador->tiempos->inicio = time(NULL);
 	entrenador->simbolo = simbolo;
+	entrenador->cantDeadlocks = 0;
 	return entrenador;
 }
 

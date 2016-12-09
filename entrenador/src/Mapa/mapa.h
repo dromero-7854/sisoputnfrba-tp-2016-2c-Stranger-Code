@@ -17,12 +17,13 @@ typedef struct {
 	char *name;
 	char *ip;
 	char *port;
+	char *medal_path;
 	t_list *pokemon_list;
 	int index_current_pokemon;
 } t_map;
 
-t_map* map_create(char *name, char *ip, char *port);
 void map_destroy(t_map *self);
+t_map* map_create(char *name, char *ip, char *port);
 void destroy_maps_list(t_list* maps_list);
 t_map* find_map_by_name(t_list *maps_list, char *name);
 t_pokemon* map_next_pokemon(t_map* self);

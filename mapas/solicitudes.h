@@ -24,5 +24,6 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message);
 PokeNest* buscarPokenest(t_list* lista, char id);
 t_infoPokemon* buscarPrimerPokemon(t_list* listaPokemons);
 int atenderSolicitud(t_entrenador* entrenador);
+void enviar_ruta_medalla(int socket);
 
 #endif /* SOLICITUDES_H_ */

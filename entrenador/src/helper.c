@@ -94,15 +94,22 @@ t_coach* cargar_metadata(t_log* logger, char* pathPokedex, char* nombre_entrenad
 
 int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	coach_connect_to_map(entrenador, mapa);
+	handshake(entrenador, mapa);
+
+	return EXIT_SUCCESS;
+}
+
+int handshake(t_coach* entrenador, t_map* mapa){
 	uint8_t operation_code;
 	t_coor* coor;
-	//connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->name);
+
 	connection_send(entrenador->conn, OC_UBICAR_ENTRENADOR, entrenador->simbol);
 	connection_recv(entrenador->conn, &operation_code, &coor);
-
+	connection_send(entrenador->conn, OC_OBTENER_MEDALLA, entrenador->simbol);
+	connection_recv(entrenador->conn, &operation_code, &mapa->medal_path);
 	entrenador->coor = coor;
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){

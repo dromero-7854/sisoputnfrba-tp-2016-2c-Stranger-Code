@@ -24,9 +24,14 @@ t_log* logger;
 t_coach* entrenador;
 int reintentos;
 char* nombreEntrenador;
+int life;
 char* pathPokedex;
 char* pathMedallas;
 char* pathDirDeBill;
+time_t begin_time;
+time_t end_time;
+double adventure_time;
+int death_count;
 
 void signal_handler(int signal) {
 	switch (signal) {
@@ -67,16 +72,15 @@ void game_over(){
 }
 
 int zero_lives() {
-	printf("El entrenador se ha quedado sin vidas. Desea reiniciar el juego? Ya se han realizado %d reintentos. (y/n)\n", reintentos);
-	char respuesta=0;
-	fflush(stdin);
-	respuesta = fgetc(stdin);
-	while(respuesta!='y' && respuesta != 'n'){
+	char respuesta[2];
+	printf("El entrenador se ha quedado sin vidas. Ya se han realizado %d reintentos. Desea reiniciar el juego? (y/n) ", reintentos);
+	fgets(respuesta, 2, stdin);
+
+	while( strcmp(respuesta,"y\n") && strcmp(respuesta,"n\n")){
 		printf("Por favor, ingrese 'y' o 'n'\n");
-		fflush(stdin);
-		respuesta = fgetc(stdin);
+		fgets(respuesta, 2, stdin);
 	}
-	if (respuesta == 'y') {
+	if (!strcmp(respuesta,"y\n")) {
 		reintentos++;
 		deleteDir(pathDirDeBill);
 		deleteDir(pathMedallas);
@@ -97,8 +101,9 @@ int zero_lives() {
 	}
 }
 
-int iniciar_ruta_de_viaje(t_map* mapa, t_coach* entrenador){
+void iniciar_ruta_de_viaje(t_coach* entrenador){
 	int oc;
+	t_map* mapa = list_get(entrenador->travel_sheet, entrenador->index_current_map);
 	while(mapa != NULL){
 		log_info(logger, "Conectando con el mapa: %s", mapa->name);
 		conectar_entrenador_mapa(entrenador, mapa);
@@ -109,6 +114,10 @@ int iniciar_ruta_de_viaje(t_map* mapa, t_coach* entrenador){
 		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
 
 		if(oc == OC_VICTIMA_DEADLOCK){
+			//se incrementa la cantidad de veces que murió
+			death_count++;
+			// se reinician los objetivos del mapa
+			mapa->index_current_pokemon = -1;
 			log_info(logger, "El entrenador %s ha muerto por Deadlock\n", entrenador->name);
 			// si me quedan vidas borro los pokemones capturados y no avanzo el mapa para volver a intentar en el mismo
 			if(entrenador->life > 0){
@@ -123,9 +132,10 @@ int iniciar_ruta_de_viaje(t_map* mapa, t_coach* entrenador){
 		}
 	}
 }
+
 int main(int argc, char** argv){
 	if(argc!=3) {
-		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./entrenador <nombre_entrenador> <ruta_punto_montaje>\n");
+		printf("Faltan ingresar parámetos. Se debe ejecutar de la sig. manera:\n ./entrenador <nombre_entrenador> <ruta_punto_montaje>\n");
 		exit(1);
 	}
 
@@ -137,13 +147,13 @@ int main(int argc, char** argv){
 	nombreEntrenador = argv[1];
 	pathPokedex = argv[2];
 	reintentos = 0;
+	death_count = 0;
 
 	string_capitalized(nombreEntrenador);
 	logger = crear_log(nombreEntrenador, pathPokedex);
 
 	pathMedallas = string_from_format("%s/Entrenadores/%s/medallas", pathPokedex, nombreEntrenador);
 	pathDirDeBill = string_from_format("%s/Entrenadores/%s/Dir de Bill/", pathPokedex, nombreEntrenador);
-
 
 	log_info(logger, "Creando Directorio de Bill...");
 	createDir(pathDirDeBill);
@@ -152,16 +162,29 @@ int main(int argc, char** argv){
 
 	log_info(logger, "Cargando archivo de metadata: %s", pathPokedex);
 	entrenador = cargar_metadata(logger, pathPokedex, nombreEntrenador);
+	life = entrenador->life;
 	log_info(logger, "Archivo de metadata cargado correctamente\n");
 
-
-	t_map* mapa = coach_next_map(entrenador);
-	iniciar_ruta_de_viaje(mapa, entrenador);
+	coach_next_map(entrenador);
+	time(&begin_time);
+	log_info(logger, "Comenzando la aventura :)");
+	iniciar_ruta_de_viaje(entrenador);
 	if(entrenador->life < 1){
 		entrenador->index_current_map = 0;
+		entrenador->life = life;
 		zero_lives();
 	}
-	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.", entrenador->name);
+
+	time(&end_time);
+	adventure_time = difftime(end_time, begin_time);
+
+	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.\n", entrenador->name);
+
+	log_info(logger, "El Entrenador %s se ha convertido en Maestro Pokémon!", entrenador->name);
+	log_info(logger, "Tiempo total del viaje: %.2lf segundos", adventure_time);
+	log_info(logger, "Tiempo bloqueado en las PokeNests: %d segundos", entrenador->pokenest_time);
+	log_info(logger, "Cantidad de deadlocks: %d", death_count);
+	log_info(logger, "Cantidad de veces muerto: %d", death_count);
 
 	game_over();
 

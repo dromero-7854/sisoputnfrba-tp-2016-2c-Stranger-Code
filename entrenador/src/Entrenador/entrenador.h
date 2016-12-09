@@ -23,6 +23,7 @@ typedef struct {
 	char* name ;
 	char *simbol;
 	int life;
+	double pokenest_time;
 	t_coor* coor;
 	t_list* pokemons;
 	t_list* travel_sheet;
