@@ -36,6 +36,7 @@ const uint8_t REQ_READ = 6;
 const uint8_t REQ_TRUNCATE = 7;
 const uint8_t REQ_UNLINK = 8;
 const uint8_t REQ_RMDIR = 9;
+const uint8_t REQ_RENAME = 10;
 
 t_config * conf;
 char* pokedex_server_ip;
@@ -539,6 +540,51 @@ static int pk_rmdir(const char* path) {
 	return 0;
 }
 
+static int pk_rename(const char * from, const char* to) {
+
+	// << sending message >>
+	// operation code
+	uint8_t prot_ope_code_size = 1;
+	uint8_t req_ope_code = REQ_RENAME;
+	// from
+	uint8_t prot_from_size = 4;
+	uint32_t req_from_size = strlen(from);
+	// to
+	uint8_t prot_to_size = 4;
+	uint32_t req_to_size = strlen(to);
+
+	int buffer_size = sizeof(char) * (prot_ope_code_size + prot_from_size + req_from_size + prot_to_size + req_to_size);
+	void * buffer = malloc(buffer_size);
+	memcpy(buffer, &req_ope_code, prot_ope_code_size);
+	memcpy(buffer + prot_ope_code_size, &req_from_size, prot_from_size);
+	memcpy(buffer + prot_ope_code_size + prot_from_size, from, req_from_size);
+	memcpy(buffer + prot_ope_code_size + prot_from_size + req_from_size, &req_to_size, prot_to_size);
+	memcpy(buffer + prot_ope_code_size + prot_from_size + req_from_size + prot_to_size, to, req_to_size);
+	send(server_socket, buffer, buffer_size, 0);
+	free(buffer);
+
+	// << receiving message >>
+	// response code
+	uint8_t prot_resp_code_size = 1;
+	uint8_t resp_code = 0;
+	int received_bytes = recv(server_socket, &resp_code, prot_resp_code_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		printf("pokedex client: server %d disconnected...\n", server_socket);
+		return -EIO;
+	}
+
+	if (resp_code == OSADA_ENOENT)
+		return -ENOENT;
+	if (resp_code == OSADA_ENOSPC)
+		return -ENOSPC;
+	if (resp_code == OSADA_ENAMETOOLONG)
+		return -EINVAL;
+
+	return 0;
+}
+
+
+
 static struct fuse_operations pk_oper = {
 	.getattr = pk_getattr,
 	.mkdir = pk_mkdir,
@@ -549,7 +595,8 @@ static struct fuse_operations pk_oper = {
 	.read = pk_read,
 	.truncate = pk_truncate,
 	.unlink = pk_unlink,
-	.rmdir = pk_rmdir
+	.rmdir = pk_rmdir,
+	.rename = pk_rename
 };
 
 enum {
