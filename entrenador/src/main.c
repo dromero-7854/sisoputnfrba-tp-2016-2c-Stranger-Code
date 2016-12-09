@@ -153,7 +153,6 @@ int main(int argc, char** argv){
 	pathMedallas = string_from_format("%s/Entrenadores/%s/medallas", pathPokedex, nombreEntrenador);
 	pathDirDeBill = string_from_format("%s/Entrenadores/%s/Dir de Bill/", pathPokedex, nombreEntrenador);
 
-
 	log_info(logger, "Creando Directorio de Bill...");
 	createDir(pathDirDeBill);
 	log_info(logger, "Creando Directorio de Medallas...");
@@ -163,7 +162,6 @@ int main(int argc, char** argv){
 	entrenador = cargar_metadata(logger, pathPokedex, nombreEntrenador);
 	life = entrenador->life;
 	log_info(logger, "Archivo de metadata cargado correctamente\n");
-
 
 	coach_next_map(entrenador);
 	time(&begin_time);

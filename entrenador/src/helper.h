@@ -28,6 +28,7 @@
 t_log* crear_log(char* nombreEntrenador, char* pathConfig);
 t_coach* cargar_metadata(t_log* logger, char* path, char* nombre_entrenador);
 int conectar_entrenador_mapa(t_coach* entrenador, t_map* mapa);
+int handshake(t_coach* entrenador, t_map* mapa);
 int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa);
 int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPokedex);
 uint8_t move_to(uint8_t movement, t_coach* entrenador);
