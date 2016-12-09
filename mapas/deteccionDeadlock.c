@@ -11,6 +11,7 @@
 
 bool estaBloqueado(t_entrenador * entrenador);
 int hayAlguienParaAtender(int vectorAtendido[], int cantidad);
+void mostrarMatriz(int entrenadores, int pokenests, int matriz[entrenadores][pokenests]);
 
 void detectarDeadlock(t_combo * comboLista) {
 
@@ -76,6 +77,7 @@ void detectarDeadlock(t_combo * comboLista) {
 				i_pokenest++;
 			}
 		}
+		mostrarMatriz(cantidadEntrenadores, cantidadPokenest, matrizUtilizados);
 		int hayDeadlock = 0;
 		int tieneUnPedido = 0;
 
@@ -85,8 +87,7 @@ void detectarDeadlock(t_combo * comboLista) {
 			if (cantidadEntrenadores >= 2)
 				hayDeadlock = 1;
 
-			for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores;
-					i_entrenadores++) {
+			for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
 				for (i_pokenest = 0; i_pokenest < cantidadPokenest;
 						i_pokenest++) {
 					if (matrizPedidos[i_entrenadores][i_pokenest]) {
@@ -102,8 +103,7 @@ void detectarDeadlock(t_combo * comboLista) {
 					hayDeadlock = 0;
 				} else if (!tieneUnPedido) {
 
-					for (i_pokenest = 0; i_pokenest < cantidadPokenest;
-							i_pokenest++) {
+					for (i_pokenest = 0; i_pokenest < cantidadPokenest; i_pokenest++) {
 						pokemonsDisponibles[i_pokenest] +=
 								matrizUtilizados[i_entrenadores][i_pokenest];
 						matrizUtilizados[i_entrenadores][i_pokenest] = 0;
@@ -115,8 +115,10 @@ void detectarDeadlock(t_combo * comboLista) {
 		for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores;
 				i_entrenadores++) {
 			t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
-			if (!atendido[i_entrenadores])
+			if (!atendido[i_entrenadores]) {
+				entrenador->cantDeadlocks++;
 				list_add(deadlockeados, entrenador);
+			}
 		}
 
 		if (list_size(deadlockeados) >= 2) {
@@ -162,8 +164,12 @@ bool estaBloqueado(t_entrenador * entrenador) {
 bool esDeMayorNivel(t_infoPokemon * pokemon1, t_infoPokemon * pokemon2) {
 	return pokemon1->pokemon->level > pokemon2->pokemon->level;
 }
-t_entrenador * mandarAPelear(t_entrenador* entrenador1,
-		t_entrenador* entrenador2) {
+t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2) {
+
+	uint8_t operation_code_loser;
+	uint8_t operation_code_winner;
+	uint8_t size = 0;
+
 	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
 	list_sort(entrenador2->pokemons, (void*) esDeMayorNivel);
 
@@ -178,10 +184,24 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1,
 			pok2->species, pok2->level);
 	t_pokemon * loser = pkmn_battle(pok1, pok2);
 
-	if (loser == pok1)
+	if (loser == pok1) {
+
+		send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador2->id, &size, sizeof(uint8_t), 0);
+
+		send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
+		send(entrenador1->id, &size, sizeof(uint8_t), 0);
+
 		return entrenador1;
-	else
+	}
+	else {
+		send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador1->id, &size, sizeof(uint8_t), 0);
+
+		send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
+		send(entrenador2->id, &size, sizeof(uint8_t), 0);
 		return entrenador2;
+	}
 
 }
 void matarEntrenador(t_entrenador * entrenador) {
@@ -208,4 +228,19 @@ int hayAlguienParaAtender(int atendido[], int cantEntrenadores) {
 			return 1;
 	}
 	return 0;
+}
+void mostrarMatriz(int entrenadores, int pokenests, int matriz[entrenadores][pokenests]) {
+
+	int i, j;
+
+	for(i = 0; i < entrenadores; i++) {
+
+		int mensaje[2*pokenests];
+
+		for(j = 0; j < 2*pokenests; j += 2) {
+			mensaje[j] = matriz[i][j/2];
+			mensaje[j+1] = ' ';
+		}
+		log_info(log_deadlock, mensaje);
+	}
 }

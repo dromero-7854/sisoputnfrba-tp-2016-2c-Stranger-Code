@@ -53,6 +53,7 @@ typedef struct {
 	int id;
 	char simbolo;
 	char pokenest_buscada;
+	int cantDeadlocks;
 
 	t_tiempos* tiempos;
 

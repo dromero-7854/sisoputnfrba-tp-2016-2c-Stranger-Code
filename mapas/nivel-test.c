@@ -289,6 +289,7 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	entrenador->tiempos = malloc(sizeof(t_tiempos));
 	entrenador->tiempos->inicio = time(NULL);
 	entrenador->simbolo = simbolo;
+	entrenador->cantDeadlocks = 0;
 	return entrenador;
 }
 
