@@ -72,16 +72,15 @@ void game_over(){
 }
 
 int zero_lives() {
+	char respuesta[2];
 	printf("El entrenador se ha quedado sin vidas. Desea reiniciar el juego? Ya se han realizado %d reintentos. (y/n)\n", reintentos);
-	char respuesta=0;
-	fflush(stdin);
-	respuesta = fgetc(stdin);
-	while(respuesta!='y' && respuesta != 'n'){
+	fgets(respuesta, 2, stdin);
+
+	while( strcmp(respuesta,"y\n") && strcmp(respuesta,"n\n")){
 		printf("Por favor, ingrese 'y' o 'n'\n");
-		fflush(stdin);
-		respuesta = fgetc(stdin);
+		fgets(respuesta, 2, stdin);
 	}
-	if (respuesta == 'y') {
+	if (!strcmp(respuesta,"y\n")) {
 		reintentos++;
 		deleteDir(pathDirDeBill);
 		deleteDir(pathMedallas);
