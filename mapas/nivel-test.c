@@ -246,7 +246,7 @@ PokeNest* crearPokenest(char* rutaPokenest){
 	return pokeNest;
 }
 
-t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePokemon){
+t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePokemon, char pokenest_id){
 	DIR* dir;
 	struct dirent* directorio;
 	dir = opendir(rutaPokemon);
@@ -266,7 +266,7 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 
 		t_infoPokemon* infoPokemon = malloc(sizeof(t_infoPokemon));
 		infoPokemon->pokemon = create_pokemon(fabrica, nombrePokemon, lvl);
-		infoPokemon->id_pokenest = *(infoPokemon->pokemon->species);
+		infoPokemon->id_pokenest = pokenest_id;
 		meterStringEnEstructura(&(infoPokemon->nombre), directorio->d_name);
 
 		list_add(listaPokemons, infoPokemon);
@@ -339,7 +339,7 @@ void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
 
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
-		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name);
+		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name, pokenest->id);
 		pokenest->cantidad = list_size(pokenest->listaPokemons);
 
 		pthread_mutex_lock(&mutex_lista_pokenest);
@@ -382,4 +382,12 @@ void informar_contenido_cola(t_queue* cola){
 	string_append(&contenido_cola, "]");
 	log_trace(log_mapa, "%s", contenido_cola);
 	free(contenido_cola);
+}
+
+void enviar_oc(int socket, uint8_t* oc_send){
+	uint8_t tamanio = 0;
+	void* buffer = malloc(sizeof(uint8_t) * 2);
+	memcpy(buffer, oc_send, sizeof(uint8_t));
+	memcpy(buffer + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
+	send(socket, buffer, sizeof(uint8_t) * 2, 0);
 }

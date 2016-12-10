@@ -25,7 +25,7 @@
 
 char* getRutaPokenests();
 char* getRutaPokemon(char* rutaPokenests, char* pokemon);
-t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePokemon);
+t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePokemon, char pokenest_id);
 char* getRutaMetadata();
 char* getRutaMapa(char* ptoMnt, char* nombreMapa);
 
