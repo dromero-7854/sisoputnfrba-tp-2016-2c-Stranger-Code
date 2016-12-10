@@ -128,7 +128,11 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 		log_info(logger, "Moviendo a %s hasta PokeNest '%s'", entrenador->name, pokemon->simbol);
 		coach_move_to_pokemon(entrenador, pokemon);
 		log_info(logger, "Capturando a %s...", pokemon->simbol);
-		oc = coach_capture_pokemon(entrenador, pokemon, pathPokedex);
+		if(map_is_last_pokemon(mapa)){
+			oc = coach_capture_last_pokemon(entrenador, pokemon, pathPokedex);
+		}else{
+			oc = coach_capture_pokemon(entrenador, pokemon, pathPokedex);
+		}
 		if(oc == OC_VICTIMA_DEADLOCK){
 			return oc;
 		}

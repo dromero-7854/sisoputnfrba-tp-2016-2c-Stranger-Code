@@ -116,6 +116,7 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 				case OC_UBICAR_POKENEST:
 				case OC_UBICAR_ENTRENADOR:
 				case OC_AVANZAR_POSICION:
+				case OC_CANTIDAD_DEADLOCK:
 				case OC_ATRAPAR_POKEMON:
 				case OC_OBTENER_MEDALLA:
 				case OC_MEDALLA:
