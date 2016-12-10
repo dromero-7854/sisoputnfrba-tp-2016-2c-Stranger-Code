@@ -369,3 +369,16 @@ void liberar_variables_globales(){
 	free(pto_montaje);
 	free(nombre_mapa);
 }
+
+void informar_contenido_cola(t_queue* cola){
+	int index;
+	char* contenido_cola = string_new();
+	string_append(&contenido_cola, "cola: [");
+	void _append_to_queue(t_entrenador* e){
+		string_append_with_format(&contenido_cola, "%c,", e->simbolo);
+	}
+	list_iterate(cola->elements, (void*)_append_to_queue);
+	string_append(&contenido_cola, "]");
+	log_trace(log_mapa, "%s", contenido_cola);
+	free(contenido_cola);
+}

@@ -68,35 +68,38 @@ void ejecutarRafagaSRDF(){
 		queue_push(colaListos, entrenador);
 		pthread_mutex_unlock(&mutex_cola_listos);
 		return;
-	}
-	//}
-	//sem_wait(&sem_turno);
-	if(!queue_is_empty(colaListos)){
+	}else if(!queue_is_empty(colaListos)){
 		//atenderEntrenadoresSinDistanciaDefinida();
 
 		entrenador = buscarEntrenadorConMenorDistancia();
-		while(respuesta == TURNO_NORMAL){
+		do {
 			//pthread_mutex_lock(&dibujo);
 			nanosleep(&tim, NULL);
 			respuesta = atenderSolicitud(entrenador);
 			sem_post(&sem_dibujo);
-			switch(respuesta){
-			case TURNO_NORMAL:
-				continue;
-			case NO_ENCONTRO_POKEMON:
-				bloquearEntrenador(entrenador);
-				continue;
-			case DESCONEXION:
-				liberarRecursos2(entrenador);
-				sem_post(&sem_dibujo);
-				break;
-			case CAPTURO_POKEMON:
-				pthread_mutex_lock(&mutex_cola_listos);
-				queue_push(colaListos, entrenador);
-				pthread_mutex_unlock(&mutex_cola_listos);
-				break;
-			}
+
 			//pthread_mutex_unlock(&dibujo);
+		} while(respuesta == TURNO_NORMAL);
+
+		switch(respuesta){
+		//case TURNO_NORMAL:
+		//	continue;
+		case NO_ENCONTRO_POKEMON:
+			bloquearEntrenador(entrenador);
+			break;
+		//	continue;
+		case DESCONEXION:
+			liberarRecursos2(entrenador);
+			sem_post(&sem_dibujo);
+			break;
+		case CAPTURO_POKEMON:
+			pthread_mutex_lock(&mutex_cola_listos);
+			queue_push(colaListos, entrenador);
+			pthread_mutex_unlock(&mutex_cola_listos);
+			break;
+		default:
+			log_error(log_mapa, "Hubo un problema luego de atender solicitud. Respuesta no correcta");
+			break;
 		}
 		/*
 		pthread_mutex_lock(&mutex_cola_listos);

@@ -220,7 +220,8 @@ int atenderSolicitud(t_entrenador* entrenador){
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
 		if(infopokemon == NULL){
-			return NO_ENCONTRO_POKEMON;
+			respuesta = NO_ENCONTRO_POKEMON;
+			break;
 		}
 		list_add(entrenador->pokemons, infopokemon);
 
@@ -236,33 +237,15 @@ int atenderSolicitud(t_entrenador* entrenador){
 		respuesta = CAPTURO_POKEMON;
 		break;
 	}
-	case OC_OBTENER_MEDALLA:
+	case OC_ATRAPAR_ULTIMO_POKEMON:
 	{
-		uint8_t oc_send = OC_MEDALLA;
-		char* medalla = strdup("medalla-");
-		char* extension_archivo_medalla = strdup(".jpg");
-		uint8_t tamanio = strlen(ruta_mapa) + 1 + strlen(medalla) + strlen(nombre_mapa) + strlen(extension_archivo_medalla);
-		char* ruta_medalla = malloc(tamanio + 1);
-		snprintf(ruta_medalla, tamanio + 1, "%s/%s%s%s", ruta_mapa, medalla, nombre_mapa, extension_archivo_medalla);
-
-		paquete_a_mandar = malloc(tamanio + sizeof(uint8_t) * 2);
-		memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
-		//int offset = len;
-		memcpy(paquete_a_mandar + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
-		//offset += sizeof(t_pokemon_type);
-		memcpy(paquete_a_mandar + sizeof(uint8_t) * 2, ruta_medalla, tamanio);
-		//offset += sizeof(t_pokemon_type);
-		send(entrenador->id, paquete_a_mandar, tamanio + sizeof(uint8_t) * 2, 0);
-		respuesta = DESCONEXION;
-		break;
-	}/*
-	case OC_ULTIMO_POKEMON:
 		char pokenest_id = *((char*)buffer);
 		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
 		if(infopokemon == NULL){
-			return NO_ENCONTRO_POKEMON;
+			respuesta = NO_ENCONTRO_POKEMON;
+			break;
 		}
 		list_add(entrenador->pokemons, infopokemon);
 
@@ -273,8 +256,18 @@ int atenderSolicitud(t_entrenador* entrenador){
 		notificar_captura_pokemon(infopokemon, entrenador);
 		restarRecurso(items, infopokemon->id_pokenest);
 
-		enviar_ruta_medalla(entrenador);
-		free(buffer);*/
+		connection_recv(entrenador->id, &operation_code, &buffer);
+		if(operation_code != OC_OBTENER_CANTIDAD_DEADLOCK){
+			log_error(log_mapa, "error durante solicitud de deadlocks");
+			exit(1);
+		}
+
+		enviar_cant_deadlocks(entrenador);
+		//enviar_ruta_medalla(entrenador);
+		respuesta = DESCONEXION;
+		free(buffer);
+		break;
+	}
 	default:
 		respuesta = TURNO_NORMAL;
 		break;
@@ -358,4 +351,19 @@ void enviar_ruta_medalla(int socket){
 	free(extension_archivo_medalla);
 	free(ruta_medalla);
 	free(paquete_a_mandar);
+}
+
+void enviar_cant_deadlocks(t_entrenador* entrenador){
+	void* paquete_a_mandar;
+	uint8_t oc_send = OC_CANTIDAD_DEADLOCK;
+	uint8_t tamanio = sizeof(char);
+	int offset;
+	memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
+	offset = sizeof(uint8_t);
+	memcpy(paquete_a_mandar + offset, &tamanio, sizeof(uint8_t));
+	offset += sizeof(uint8_t);
+	memcpy(paquete_a_mandar + offset, (char*)(entrenador->cantDeadlocks), sizeof(int));
+	offset += sizeof(char);
+
+	send(entrenador->id, paquete_a_mandar, offset, 0);
 }

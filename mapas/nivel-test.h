@@ -13,6 +13,7 @@
 #include <commons/collections/queue.h>
 #include <commons/config.h>
 #include <commons/log.h>
+#include <commons/string.h>
 #include <dirent.h>
 #include <pkmn/factory.h>
 #include <pthread.h>
