@@ -263,6 +263,8 @@ void liberarRecursos2(t_entrenador* entrenadorLiberado){
 	int index_entrenador, pokemon_asignado = 0;
 	t_infoPokemon* infoPokemon;
 	t_entrenador* entrenadorBloqueado;
+	uint8_t operation_code;
+	void* buffer;
 	while((infoPokemon = list_remove(entrenadorLiberado->pokemons, 0)) != NULL){
 		//infoPokemon = list_get(entrenadorLiberado->pokemons, index_pokemon);
 
@@ -274,10 +276,21 @@ void liberarRecursos2(t_entrenador* entrenadorLiberado){
 			if(entrenadorBloqueado->pokenest_buscada == infoPokemon->id_pokenest){
 				list_add(entrenadorBloqueado->pokemons, infoPokemon);
 				notificar_captura_pokemon(infoPokemon, entrenadorBloqueado);
-				//entrenadorBloqueado->objetivoActual = NULL;
-				desbloquearEntrenador(entrenadorBloqueado);
-				pokemon_asignado = 1;
-				break;
+				if(entrenadorBloqueado->ultimo_pokemon){
+					connection_recv(entrenadorBloqueado->id, &operation_code, &buffer);
+					if(operation_code != OC_OBTENER_CANTIDAD_DEADLOCK){
+						log_error(log_mapa, "error durante solicitud de deadlocks");
+						exit(1);
+					}
+
+					enviar_cant_deadlocks(entrenadorBloqueado);
+					liberarRecursos2(entrenadorBloqueado);
+					sem_post(&sem_dibujo);
+				} else {
+					desbloquearEntrenador(entrenadorBloqueado);
+					pokemon_asignado = 1;
+					break;
+				}
 			}
 		}
 		pthread_mutex_unlock(&mutex_cola_bloqueados);

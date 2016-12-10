@@ -55,6 +55,7 @@ typedef struct {
 	char simbolo;
 	char pokenest_buscada;
 	int cantDeadlocks;
+	int ultimo_pokemon;
 
 	t_tiempos* tiempos;
 
