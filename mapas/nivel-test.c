@@ -284,7 +284,7 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
-	//entrenador->objetivos = objetivos;
+	entrenador->pokenest_buscada = NULL;
 	entrenador->pokemons = list_create();
 	entrenador->tiempos = malloc(sizeof(t_tiempos));
 	entrenador->tiempos->inicio = time(NULL);

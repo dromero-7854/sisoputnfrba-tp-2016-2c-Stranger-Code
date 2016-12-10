@@ -56,7 +56,8 @@ void ejecutarRafagaSRDF(){
 		nanosleep(&tim, NULL);
 		respuesta = atenderSolicitud(entrenador);
 		if(respuesta == DESCONEXION){
-			liberarEntrenador(entrenador);
+			liberarRecursos2(entrenador);
+			sem_post(&sem_dibujo);
 			return;
 		}
 		if(respuesta == NO_ENCONTRO_POKEMON){
@@ -74,17 +75,16 @@ void ejecutarRafagaSRDF(){
 		//atenderEntrenadoresSinDistanciaDefinida();
 
 		entrenador = buscarEntrenadorConMenorDistancia();
-		while(1){
-			pthread_mutex_lock(&dibujo);
+		while(respuesta == TURNO_NORMAL){
+			//pthread_mutex_lock(&dibujo);
 			nanosleep(&tim, NULL);
 			respuesta = atenderSolicitud(entrenador);
+			sem_post(&sem_dibujo);
 			switch(respuesta){
 			case TURNO_NORMAL:
 				continue;
 			case NO_ENCONTRO_POKEMON:
-				pthread_mutex_lock(&mutex_cola_listos);
-				queue_push(colaBloqueados, entrenador);
-				pthread_mutex_unlock(&mutex_cola_listos);
+				bloquearEntrenador(entrenador);
 				continue;
 			case DESCONEXION:
 				liberarRecursos2(entrenador);
@@ -96,11 +96,12 @@ void ejecutarRafagaSRDF(){
 				pthread_mutex_unlock(&mutex_cola_listos);
 				break;
 			}
-			pthread_mutex_unlock(&dibujo);
+			//pthread_mutex_unlock(&dibujo);
 		}
+		/*
 		pthread_mutex_lock(&mutex_cola_listos);
 		queue_push(colaListos, entrenador);
-		pthread_mutex_unlock(&mutex_cola_listos);
+		pthread_mutex_unlock(&mutex_cola_listos);*/
 	}
 	//sem_post(&sem_dibujo);
 }
