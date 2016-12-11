@@ -81,8 +81,7 @@ void detectarDeadlock(t_combo * comboLista) {
 		int hayDeadlock = 0;
 		int tieneUnPedido = 0;
 
-		while (!hayDeadlock
-				&& hayAlguienParaAtender(atendido, cantidadEntrenadores)) {
+		while (!hayDeadlock && hayAlguienParaAtender(atendido, cantidadEntrenadores)) {
 
 			if (cantidadEntrenadores >= 2)
 				hayDeadlock = 1;
@@ -112,14 +111,38 @@ void detectarDeadlock(t_combo * comboLista) {
 				}
 			}
 		}
-		for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores;
-				i_entrenadores++) {
+		for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
 			t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
 			if (!atendido[i_entrenadores]) {
 				entrenador->cantDeadlocks++;
 				list_add(deadlockeados, entrenador);
 			}
 		}
+
+
+		char _map_objetivosDelEntrenador(t_entrenador * entrenadorMapeado) {
+			return entrenadorMapeado->pokenest_buscada;
+		}
+		t_list * listaDeObjetivos = list_map(deadlockeados, (void *) _map_objetivosDelEntrenador);
+
+		int retieneAlgunObjetivo(t_entrenador * entrenador) {
+
+			char _map_IDPOKENEST(t_infoPokemon * infoPokemon) {
+				return infoPokemon->id_pokenest;
+			}
+
+			t_list * listaIdPokemonsRetenidos = list_map(entrenador->pokemons, (void *) _map_IDPOKENEST);
+
+			int _esUnPokemonBuscadoPorAlguien(char retenido) {
+				int _esIgual(char objetivo) {
+					return objetivo == retenido;
+				}
+				return list_any_satisfy(listaDeObjetivos, (void *) _esIgual);
+			}
+
+			return list_any_satisfy(listaIdPokemonsRetenidos, (void *) _esUnPokemonBuscadoPorAlguien);
+		}
+		deadlockeados = list_filter(deadlockeados, (void *) retieneAlgunObjetivo);
 
 		if (list_size(deadlockeados) >= 2) {
 
@@ -136,11 +159,8 @@ void detectarDeadlock(t_combo * comboLista) {
 				while (list_size(deadlockeados)) {
 					t_entrenador * entrenador2 = list_remove(deadlockeados, 0);
 
-					log_trace(log_deadlock,
-							"Se realizara una battalla entre %c y %c",
-							entrenador1->simbolo, entrenador2->simbolo);
-					t_entrenador * loser = mandarAPelear(entrenador1,
-							entrenador2);
+					log_trace(log_deadlock, "Se realizara una battalla entre %c y %c", entrenador1->simbolo, entrenador2->simbolo);
+					t_entrenador * loser = mandarAPelear(entrenador1, entrenador2);
 
 					entrenador1 = loser;
 				}
@@ -178,28 +198,32 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 	t_pokemon * pok1 = pokemon1->pokemon;
 	t_pokemon * pok2 = pokemon2->pokemon;
 
-	log_trace(log_deadlock, "%c eligio a  %c (nivel %d)", entrenador1->simbolo,
-			pok1->species, pok1->level);
-	log_trace(log_deadlock, "%c eligio a  %c (nivel %d)", entrenador2->simbolo,
-			pok2->species, pok2->level);
+	log_info(log_deadlock, "%c eligio a  %s (nivel %d)", entrenador1->simbolo, pok1->species, pok1->level);
+	log_info(log_deadlock, "%c eligio a  %s (nivel %d)", entrenador2->simbolo, pok2->species, pok2->level);
+
 	t_pokemon * loser = pkmn_battle(pok1, pok2);
 
 	if (loser == pok1) {
 
-		send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
+		/*send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
 		send(entrenador2->id, &size, sizeof(uint8_t), 0);
 
 		send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
-		send(entrenador1->id, &size, sizeof(uint8_t), 0);
+		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
+
+		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador2->simbolo, entrenador1->simbolo);
 
 		return entrenador1;
 	}
 	else {
-		send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
+		/*send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
 		send(entrenador1->id, &size, sizeof(uint8_t), 0);
 
 		send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
-		send(entrenador2->id, &size, sizeof(uint8_t), 0);
+		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
+
+		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador1->simbolo, entrenador2->simbolo);
+
 		return entrenador2;
 	}
 
