@@ -77,7 +77,13 @@ void detectarDeadlock(t_combo * comboLista) {
 				i_pokenest++;
 			}
 		}
+
+		log_info(log_deadlock, "MATRIZ DE POKEMONS RETENIDOS");
 		mostrarMatriz(cantidadEntrenadores, cantidadPokenest, matrizUtilizados);
+
+		log_info(log_deadlock, "MATRIZ DE POKEMONS BUSCADOS");
+		mostrarMatriz(cantidadEntrenadores, cantidadPokenest, matrizPedidos);
+
 		int hayDeadlock = 0;
 		int tieneUnPedido = 0;
 
@@ -150,9 +156,11 @@ void detectarDeadlock(t_combo * comboLista) {
 
 			coinciden = list_all_satisfy(deadlockeados, (void *) estaBloqueado);
 
-			log_trace(log_deadlock, "HAY DEADLOCK");
+			log_info(log_deadlock, "HAY DEADLOCK");
 
 			if (conf_metadata->batalla && coinciden) {
+
+				log_info(log_deadlock, "HAY BATALLA");
 
 				t_entrenador * entrenador1 = list_remove(deadlockeados, 0);
 
@@ -257,14 +265,22 @@ void mostrarMatriz(int entrenadores, int pokenests, int matriz[entrenadores][pok
 
 	int i, j;
 
+	char borde[2*pokenests+1];
+	borde[2*pokenests]=0;
+	for(j = 0; j < 2*pokenests; j++) {
+		borde[j]='_';
+	}
+	log_info(log_deadlock, borde);
 	for(i = 0; i < entrenadores; i++) {
 
-		int mensaje[2*pokenests];
+		char fila[2*pokenests+1];
 
 		for(j = 0; j < 2*pokenests; j += 2) {
-			mensaje[j] = matriz[i][j/2];
-			mensaje[j+1] = ' ';
+			fila[j] = matriz[i][j/2] + '0';
+			fila[j+1] = '|';
 		}
-		log_info(log_deadlock, mensaje);
+		fila[2*pokenests] = 0;
+		log_info(log_deadlock, "| %s", fila);
 	}
+	log_info(log_deadlock, borde);
 }
