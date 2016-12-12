@@ -310,7 +310,7 @@ void notificar_captura_pokemon(t_infoPokemon* infopokemon, t_entrenador* entrena
 	lenArchivo = strlen(infopokemon->nombre);
 	rutaArchivoPokemon = malloc(len + lenArchivo + 1 + 1);
 	snprintf(rutaArchivoPokemon, len + lenArchivo + 1 + 1, "%s/%s", rutaPokemon, infopokemon->nombre);
-
+	log_debug(log_mapa,"rutaPokemon: %s",rutaPokemon);
 	uint8_t tamanio_mensaje = strlen(rutaArchivoPokemon);
 	int bytes_a_mandar = sizeof(uint8_t) * 2 + tamanio_mensaje;
 	//char* mensaje ;

@@ -38,6 +38,7 @@ int main(int argc, char* argv[]) {
 		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./mapa <nombre_mapa> <punto_montaje>\n");
 		exit(1);
 	}
+	getchar();
 	int len_nombre_mapa, len_pto_mnt;
 	signal(SIGUSR1, releerConfiguracion);
 	log_mapa = crear_log(argv[1]);
@@ -160,7 +161,11 @@ void manejar_select(int socket, t_log* log){
 						recibido = recv(a, buf, 512, 0);
 						if(recibido == 0){
 							FD_CLR(entrenador->id, &master);
+							pthread_mutex_lock(&mutex_turno_desbloqueo);
+							pthread_mutex_lock(&mutex_cola_bloqueados);
 							liberarRecursos2(entrenador);
+							pthread_mutex_unlock(&mutex_cola_bloqueados);
+							pthread_mutex_unlock(&mutex_turno_desbloqueo);
 							sem_post(&sem_dibujo);
 						}
 
@@ -177,10 +182,12 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta){
 	meterStringEnEstructura(&(conf_metadata->algoritmo), config_get_string_value(configuracion, "algoritmo"));
 	meterStringEnEstructura(&(conf_metadata->ip), config_get_string_value(configuracion, "IP"));
 	meterStringEnEstructura(&(conf_metadata->puerto), config_get_string_value(configuracion, "Puerto"));
-	conf_metadata->retardo = config_get_long_value(configuracion, "retardo");
+	conf_metadata->retardo = config_get_int_value(configuracion, "retardo");
+	conf_metadata->retardo = conf_metadata->retardo * 1000;
 	conf_metadata->quantum = config_get_int_value(configuracion, "quantum");
 	tim.tv_sec = 0;
 	tim.tv_nsec = (conf_metadata->retardo) * 1000000;
+
 	config_destroy(configuracion);
 }
 
