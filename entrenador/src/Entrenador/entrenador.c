@@ -80,6 +80,7 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
+	pathDirDeBillOrigen = string_from_format("%s/%s", pathPokedex, pathDirDeBillOrigen);
 	pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
 
 	int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
@@ -130,6 +131,7 @@ int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pa
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
+	pathDirDeBillOrigen = string_from_format("%s/%s", pathPokedex, pathDirDeBillOrigen);
 	pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
 
 	int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
@@ -154,6 +156,7 @@ void coach_connect_to_map(t_coach* entrenador, t_map* mapa){
 
 void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex){
 	uint8_t operation_code;
+	char* pathMedallaOrigen;
 	char* pathMedallaDestino;
 	char** arrayPath;
 	char* nombreArchivo;
@@ -169,9 +172,10 @@ void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex){
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
+	pathMedallaOrigen = string_from_format("%s/%s", pathPokedex, mapa->medal_path);
 	pathMedallaDestino = string_from_format("%s/Entrenadores/%s/medallas/%s", pathPokedex, self->name, nombreArchivo);
 
-	int resultado = copy_file(mapa->medal_path, pathMedallaDestino);
+	int resultado = copy_file(pathMedallaOrigen, pathMedallaDestino);
 	/*free(arrayPath);
 	free(mapa->medal_path);
 	free(pathMedallaDestino);*/
