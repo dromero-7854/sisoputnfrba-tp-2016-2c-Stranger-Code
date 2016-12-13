@@ -67,7 +67,11 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 
 	time(&beginTime);
 	connection_send(entrenador->conn, OC_ATRAPAR_POKEMON, pokemon->simbol);
-	connection_recv(entrenador->conn, &operation_code, &pathDirDeBillOrigen);
+	do {
+		connection_recv(entrenador->conn, &operation_code, &pathDirDeBillOrigen);
+		if(operation_code == OC_GANO_BATALLA) entrenador->count_deadlock++;
+	} while (operation_code != OC_POKEMON && operation_code != OC_VICTIMA_DEADLOCK);
+
 	time(&endTime);
 	entrenador->pokenest_time = entrenador->pokenest_time + difftime(endTime, beginTime);
 	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
@@ -100,7 +104,7 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 
 int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPokedex){
 	uint8_t operation_code;
-	uint8_t* cant_deadlock = malloc( sizeof(uint8_t) );
+	//uint8_t* cant_deadlock = malloc( sizeof(uint8_t) );
 	char* pathDirDeBillOrigen;
 	char* pathDirDeBillDestino;
 	char** arrayPath;
@@ -116,13 +120,13 @@ int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pa
 	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
 	// como se envió el pedido de capturar al ultimo pokemon, ahora se envia la petición
 	// para saber los deadlocks en los que estuvo involucrado este entrenador
-	connection_send(entrenador->conn, OC_OBTENER_CANTIDAD_DEADLOCK, "");
+	/*connection_send(entrenador->conn, OC_OBTENER_CANTIDAD_DEADLOCK, "");
 	connection_recv(entrenador->conn, &operation_code, &cant_deadlock);
 	entrenador->count_deadlock = entrenador->count_deadlock + *cant_deadlock;
 	free(cant_deadlock);
-	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
+	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;*/
 
-	//TODO extraer en una funcion ya que se llama tambien en "coach_capture_last_pokemon()"
+	//TODO extraer en una funcion ya que se llama tambien en "coach_capture_pokemon()"
 	arrayPath = string_split(pathDirDeBillOrigen, "/");
 	int posArray = 0;
 	while (arrayPath[posArray] != NULL) {
