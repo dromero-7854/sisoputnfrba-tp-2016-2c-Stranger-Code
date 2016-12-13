@@ -280,6 +280,7 @@ void liberarRecursos2(t_entrenador* entrenadorLiberado){
 	t_entrenador* entrenadorBloqueado;
 	uint8_t operation_code;
 	void* buffer;
+	log_trace(log_mapa, "Arranca a matar a entrenador");
 	while((infoPokemon = list_remove(entrenadorLiberado->pokemons, 0)) != NULL){
 		//infoPokemon = list_get(entrenadorLiberado->pokemons, index_pokemon);
 		pokemon_asignado = 0;
@@ -290,6 +291,7 @@ void liberarRecursos2(t_entrenador* entrenadorLiberado){
 			entrenadorBloqueado = list_get(colaBloqueados->elements, index_entrenador);
 			if(entrenadorBloqueado->pokenest_buscada == infoPokemon->id_pokenest){
 				list_add(entrenadorBloqueado->pokemons, infoPokemon);
+				log_trace(log_mapa, "notificando a bloqueado que obtuvo pokemon");
 				notificar_captura_pokemon(infoPokemon, entrenadorBloqueado);
 				if(entrenadorBloqueado->ultimo_pokemon){
 					connection_recv(entrenadorBloqueado->id, &operation_code, &buffer);

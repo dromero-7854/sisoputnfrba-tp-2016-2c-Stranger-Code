@@ -208,7 +208,8 @@ char* getRutaPokenests(){
 
 char* getRutaPokemon(char* rutaPokenests, char* pokemon){
 	char* ruta2 = string_new();
-	string_append_with_format(&ruta2, "%s/%s", rutaPokenests, pokemon);
+	char* nombre_pokemon = string_duplicate(pokemon);
+	string_append_with_format(&ruta2, "%s/%s", rutaPokenests, nombre_pokemon);
 	return ruta2;
 }
 
@@ -386,3 +387,9 @@ char* getRutaAbsoluta(char* rutaRelativa){
 	string_append(&rutaAbsoluta, rutaRelativa);
 	return rutaAbsoluta;
 }
+
+/*t_infoPokemon* crear_infopokemon(){
+	t_infoPokemon* infopokemon = malloc(sizeof(t_infoPokemon));
+	infopokemon->pokemon = malloc(sizeof(t_pokemon));
+	infopokemon->nombre = malloc
+}*/
