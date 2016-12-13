@@ -251,7 +251,7 @@ void matarEntrenador(t_entrenador * entrenador) {
 	send(entrenador->id, &operation_code, sizeof(uint8_t), 0);
 	send(entrenador->id, &tamanio, sizeof(uint8_t), 0);
 
-	for (i = 0; entrenador != list_get(entrenadores, i); i++);
+	//for (i = 0; entrenador != list_get(entrenadores, i); i++);
 
 	FD_CLR(entrenador->id, &master);
 	//list_remove(entrenadores, i);

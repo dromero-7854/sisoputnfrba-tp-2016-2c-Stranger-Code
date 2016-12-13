@@ -310,10 +310,10 @@ void notificar_captura_pokemon(t_infoPokemon* infopokemon, t_entrenador* entrena
 	len = strlen(rutaPokemon);
 	lenArchivo = strlen(infopokemon->nombre);
 	rutaArchivoPokemon = malloc(len + lenArchivo + 1 + 1);
-	rutaPokemon = getRutaAbsoluta(rutaPokemon);
+	//rutaPokemon = getRutaAbsoluta(rutaPokemon);
 	string_append_with_format(&rutaPokemon, "/%s", infopokemon->nombre);
 //	snprintf(rutaArchivoPokemon, len + lenArchivo + 1 + 1, "%s/%s", rutaPokemon, infopokemon->nombre);
-	log_debug(log_mapa,"rutaPokemon: %s",rutaPokemon);
+	log_trace(log_mapa,"rutaPokemon: %s",rutaPokemon);
 	uint8_t tamanio_mensaje = strlen(rutaPokemon);
 	int bytes_a_mandar = sizeof(uint8_t) * 2 + tamanio_mensaje;
 	//char* mensaje ;
@@ -342,7 +342,7 @@ void enviar_ruta_medalla(int socket){
 //	snprintf(ruta_medalla, tamanio + 1, "%s/%s%s%s", ruta_mapa, medalla, nombre_mapa, extension_archivo_medalla);
 	ruta_medalla = getRutaMapa(pto_montaje, nombre_mapa);
 	string_append_with_format(&ruta_medalla, "/medalla-%s.jpg", nombre_mapa);
-	ruta_medalla = getRutaAbsoluta(ruta_medalla);
+//	ruta_medalla = getRutaAbsoluta(ruta_medalla);
 	uint8_t tamanio = strlen(ruta_medalla);
 	paquete_a_mandar = malloc(tamanio + sizeof(uint8_t) * 2);
 	memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
