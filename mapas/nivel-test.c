@@ -38,7 +38,6 @@ int main(int argc, char* argv[]) {
 		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./mapa <nombre_mapa> <punto_montaje>\n");
 		exit(1);
 	}
-	getchar();
 	int len_nombre_mapa, len_pto_mnt;
 	signal(SIGUSR1, releerConfiguracion);
 	log_mapa = crear_log(argv[1]);
@@ -185,57 +184,38 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta){
 	conf_metadata->retardo = config_get_int_value(configuracion, "retardo");
 	conf_metadata->retardo = conf_metadata->retardo * 1000;
 	conf_metadata->quantum = config_get_int_value(configuracion, "quantum");
-	tim.tv_sec = 0;
-	tim.tv_nsec = (conf_metadata->retardo) * 1000000;
-
 	config_destroy(configuracion);
 }
 
 char* getRutaMapa(char* ptoMnt, char* nombreMapa){
-	int letrasPto, letrasNombre, len;
-	char *ruta, *directorio;
-	letrasPto = strlen(ptoMnt);
-	letrasNombre = strlen(nombreMapa);
-	directorio = strdup("Mapas");
-	len = strlen(directorio);
-	ruta = malloc(letrasPto + letrasNombre + len + 2);
-	snprintf(ruta, letrasPto + letrasNombre + len + 2, "%s%s/%s", ptoMnt, directorio, nombreMapa);
-	free(directorio);
+	char* ruta = string_new();
+	string_append_with_format(&ruta, "Mapas/%s", nombreMapa);
 	return ruta;
 }
 char* getRutaMetadata(){
-	char* directorio = strdup("/metadata");
-	int x = strlen(directorio);
-	int len_ruta_mapa = strlen(ruta_mapa);
-	char* ruta = malloc(len_ruta_mapa + x + 1);
-	snprintf(ruta, len_ruta_mapa + x + 1, "%s%s", ruta_mapa, directorio);
-	free(directorio);
-	return ruta;
+	char* directorio = string_duplicate("metadata");
+	char* ruta = string_new();
+	string_append_with_format(&ruta, "%s/%s", ruta_mapa, directorio);
+	char* rutaAbsoluta = getRutaAbsoluta(ruta);
+	return rutaAbsoluta;
 }
 
 char* getRutaPokenests(){
-	char* directorio = strdup("/PokeNests");
-	int x = strlen(directorio);
-	char* ruta = malloc(strlen(ruta_mapa) + x + 1);
-	snprintf(ruta, strlen(ruta_mapa) + x + 1, "%s%s", ruta_mapa, directorio);
-	free(directorio);
-	return ruta;
+	char* ruta2 = string_new();
+	string_append_with_format(&ruta2, "%s/PokeNests", ruta_mapa);
+	return ruta2;
 }
 
 char* getRutaPokemon(char* rutaPokenests, char* pokemon){
-	int cantLetras = strlen(rutaPokenests) + strlen(pokemon) + 2;
-	char* ruta = malloc(cantLetras);
-	snprintf(ruta, cantLetras, "%s/%s", rutaPokenests, pokemon);
-	return ruta;
+	char* ruta2 = string_new();
+	string_append_with_format(&ruta2, "%s/%s", rutaPokenests, pokemon);
+	return ruta2;
 }
 
 PokeNest* crearPokenest(char* rutaPokenest){
-	char* metadata;
 	PokeNest* pokeNest = malloc(sizeof(PokeNest));
-	char* aux = strdup("/metadata");
-	int len = strlen(aux);
-	metadata = malloc(strlen(rutaPokenest) + len + 1);
-	snprintf(metadata, strlen(rutaPokenest) + len + 1, "%s%s", rutaPokenest, aux);
+	char* metadata = string_duplicate(rutaPokenest);
+	string_append(&metadata, "/metadata");
 	t_config* config = config_create(metadata);
 	pokeNest->id = *(config_get_string_value(config, "Identificador"));
 	char *posiciones, *posicion;
@@ -247,7 +227,6 @@ PokeNest* crearPokenest(char* rutaPokenest){
 	pokeNest->posy = atoi(posicion);
 	//free(posiciones);
 	//free(posicion);
-	free(aux);
 	free(metadata);
 	config_destroy(config);
 	return pokeNest;
@@ -265,9 +244,9 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 		if(!strcmp(directorio->d_name, ".") || !strcmp(directorio->d_name, "..")) continue;
 		if(!strcmp(directorio->d_name, "metadata")) continue;
 
-		len = strlen(directorio->d_name);
-		metadataPokemon = malloc( strlen(rutaPokemon) + len + 2);
-		snprintf(metadataPokemon, strlen(rutaPokemon) + len + 2, "%s/%s", rutaPokemon, directorio->d_name);
+		char* metadataPokemon = string_duplicate(rutaPokemon);
+		string_append_with_format(&metadataPokemon, "/%s", directorio->d_name);
+
 		t_config* config = config_create(metadataPokemon);
 		lvl = config_get_int_value(config, "Nivel");
 
@@ -335,14 +314,16 @@ void liberarEntrenador(t_entrenador* entrenador){
 	//free(entrenador);
 }
 
-void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
+void cargarPokenests(char* rutaPokenests_relativa, t_pkmn_factory* fabrica){
 	DIR* d;
+	char* rutaPokemon, *rutaPokenests_absoluta;
+	rutaPokenests_absoluta = getRutaAbsoluta(rutaPokenests_relativa);
 	struct dirent *directorio;
-	d = opendir(rutaPokenests);
-	char* rutaPokemon;
+	d = opendir(rutaPokenests_absoluta);
+
 	while((directorio = readdir(d)) != NULL){
 		if((!strcmp(directorio->d_name, ".")) || (!strcmp(directorio->d_name, ".."))) continue;
-		rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
+		rutaPokemon = getRutaPokemon(rutaPokenests_absoluta, directorio->d_name);
 
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
@@ -397,4 +378,11 @@ void enviar_oc(int socket, uint8_t* oc_send){
 	memcpy(buffer, oc_send, sizeof(uint8_t));
 	memcpy(buffer + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
 	send(socket, buffer, sizeof(uint8_t) * 2, 0);
+}
+
+char* getRutaAbsoluta(char* rutaRelativa){
+	char* rutaAbsoluta = string_new;
+	rutaAbsoluta = string_duplicate(pto_montaje);
+	string_append(&rutaAbsoluta, rutaRelativa);
+	return rutaAbsoluta;
 }
