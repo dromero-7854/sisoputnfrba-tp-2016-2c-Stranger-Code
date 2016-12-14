@@ -36,6 +36,7 @@
 #define OC_POKEMON 14
 #define OC_PERDIO_BATALLA 15
 #define OC_GANO_BATALLA 16
+#define OC_POKEMON_BATALLA 17
 
 #define MOVE_UP 72
 #define MOVE_RIGHT 77

@@ -208,9 +208,18 @@ bool esDeMayorNivel(t_infoPokemon * pokemon1, t_infoPokemon * pokemon2) {
 }
 t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2) {
 
+	uint8_t operation_code;
+	char *nombrePokemon;
+	t_pokemon pokemon1;
 	uint8_t operation_code_loser = OC_PERDIO_BATALLA;
 	uint8_t operation_code_winner = OC_GANO_BATALLA;
 	uint8_t size = 0;
+
+	enviar_oc(entrenador1->id, OC_POKEMON_BATALLA);
+	connection_recv(entrenador1->id, &operation_code, &nombrePokemon);
+
+	enviar_oc(entrenador2->id, OC_POKEMON_BATALLA);
+	connection_recv(entrenador2->id, &operation_code, &nombrePokemon);
 
 	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
 	list_sort(entrenador2->pokemons, (void*) esDeMayorNivel);
