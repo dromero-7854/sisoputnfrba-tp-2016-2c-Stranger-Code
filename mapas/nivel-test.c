@@ -151,6 +151,7 @@ void manejar_select(int socket, t_log* log){
 						sem_post(&sem_dibujo);
 						pthread_mutex_lock(&mutex_cola_listos);
 						queue_push(colaListos, nuevoEntrenador);
+						informar_contenido_cola(colaListos);
 						pthread_mutex_unlock(&mutex_cola_listos);
 					} else {
 						pthread_mutex_lock(&mutex_turno_desbloqueo);
@@ -364,9 +365,11 @@ void liberar_variables_globales(){
 void informar_contenido_cola(t_queue* cola){
 	int index;
 	char* contenido_cola = string_new();
-	string_append(&contenido_cola, "cola: [");
+	if(cola == colaListos){
+		string_append(&contenido_cola, "cola Listos: [");
+	} else string_append(&contenido_cola, "cola Bloqueados [");
 	void _append_to_queue(t_entrenador* e){
-		string_append_with_format(&contenido_cola, "%c,", e->simbolo);
+		string_append_with_format(&contenido_cola, "%s,", e->nombre);
 	}
 	list_iterate(cola->elements, (void*)_append_to_queue);
 	string_append(&contenido_cola, "]");

@@ -342,7 +342,7 @@ void bloquearEntrenador(t_entrenador* entrenador){
 	queue_push(colaBloqueados, entrenador);
 	FD_SET(entrenador->id, &master);
 	if(entrenador->id > set_fd_max) set_fd_max = entrenador->id;
-
+	informar_contenido_cola(colaBloqueados);
 	pthread_mutex_unlock(&mutex_cola_bloqueados);
 }
 
@@ -351,5 +351,6 @@ void desbloquearEntrenador(t_entrenador* entrenador){
 	t_entrenador* trainer = buscarEntrenador(entrenador->id, colaBloqueados->elements);
 	queue_push(colaListos, trainer);
 	FD_CLR(entrenador->id, &master);
+	informar_contenido_cola(colaListos);
 	//pthread_mutex_unlock(&mutex_cola_bloqueados);
 }
