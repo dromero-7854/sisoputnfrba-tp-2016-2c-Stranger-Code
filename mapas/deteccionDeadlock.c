@@ -12,7 +12,7 @@
 bool estaBloqueado(t_entrenador * entrenador);
 int hayAlguienParaAtender(int vectorAtendido[], int cantidad);
 void mostrarMatriz(int entrenadores, int pokenests, int matriz[entrenadores][pokenests]);
-
+t_list* duplicar_lista(t_list*);
 void detectarDeadlock(t_combo * comboLista) {
 
 	//getchar();
@@ -30,12 +30,14 @@ void detectarDeadlock(t_combo * comboLista) {
 
 		nanosleep(&retardo, &opa);
 
-		t_list * entrenadores = comboLista->entrenadores;
+		t_list * entrenadores = duplicar_lista(comboLista->entrenadores);
+		//comboLista->entrenadores);
 		t_list * pokenests = comboLista->pokenests;
 		t_list * deadlockeados = list_create();
 
 		int cantidadPokenest = list_size(pokenests);
 		int cantidadEntrenadores = list_size(entrenadores);
+		log_trace(log_deadlock, "cant. de lista Entrenadores: %d", list_size(entrenadores));
 
 		int pokemonsDisponibles[cantidadPokenest];
 		int atendido[cantidadEntrenadores];
@@ -87,6 +89,7 @@ void detectarDeadlock(t_combo * comboLista) {
 		int hayDeadlock = 0;
 		int tieneUnPedido = 0;
 
+		log_trace(log_deadlock, "cant. de lista Entrenadores: %d", list_size(entrenadores));
 		while (!hayDeadlock && hayAlguienParaAtender(atendido, cantidadEntrenadores)) {
 
 			if (cantidadEntrenadores >= 2)
@@ -117,6 +120,7 @@ void detectarDeadlock(t_combo * comboLista) {
 				}
 			}
 		}
+		log_trace(log_deadlock, "cant. de lista Entrenadores: %d", list_size(entrenadores));
 		for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
 			t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
 			if (!atendido[i_entrenadores]) {
@@ -175,6 +179,8 @@ void detectarDeadlock(t_combo * comboLista) {
 				matarEntrenador(entrenador1);
 			}
 		}
+		list_clean(entrenadores);
+		free(entrenadores);
 	}
 
 }
@@ -194,8 +200,8 @@ bool esDeMayorNivel(t_infoPokemon * pokemon1, t_infoPokemon * pokemon2) {
 }
 t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2) {
 
-	uint8_t operation_code_loser;
-	uint8_t operation_code_winner;
+	uint8_t operation_code_loser = OC_PERDIO_BATALLA;
+	uint8_t operation_code_winner = OC_GANO_BATALLA;
 	uint8_t size = 0;
 
 	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
@@ -213,22 +219,30 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	if (loser == pok1) {
 
-		/*send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador2->id, &size, sizeof(uint8_t), 0);
+	/*	send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
 
-		send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
+		enviar_oc(entrenador2->id, &operation_code_winner);
+
+	/*	send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
 		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
+
+		enviar_oc(entrenador1->id, &operation_code_loser);
 
 		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador2->simbolo, entrenador1->simbolo);
 
 		return entrenador1;
 	}
 	else {
-		/*send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador1->id, &size, sizeof(uint8_t), 0);
+	/*	send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
 
-		send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
+		enviar_oc(entrenador1->id, &operation_code_winner);
+
+	/*	send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
 		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
+
+		enviar_oc(entrenador2->id, &operation_code_loser);
 
 		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador1->simbolo, entrenador2->simbolo);
 
@@ -245,10 +259,10 @@ void matarEntrenador(t_entrenador * entrenador) {
 	send(entrenador->id, &operation_code, sizeof(uint8_t), 0);
 	send(entrenador->id, &tamanio, sizeof(uint8_t), 0);
 
-	for (i = 0; entrenador != list_get(entrenadores, i); i++);
+	//for (i = 0; entrenador != list_get(entrenadores, i); i++);
 
 	FD_CLR(entrenador->id, &master);
-	list_remove(entrenadores, i);
+	//list_remove(entrenadores, i);
 
 	buscarEntrenador(entrenador->id, colaBloqueados->elements);
 	liberarRecursos2(entrenador);
@@ -295,4 +309,23 @@ void mostrarMatriz(int cantEntrenadores, int pokenests, int matriz[cantEntrenado
 		log_info(log_deadlock, "%c | %s", entr->simbolo , fila);
 	}
 	log_info(log_deadlock, borde);
+}
+
+t_list* duplicar_lista(t_list* lista_original){
+	t_list* lista_nueva = list_create();
+	void _duplicar_entrenador(t_entrenador* e){
+		t_entrenador* e_nuevo = malloc(sizeof(t_entrenador));
+		e_nuevo->cantDeadlocks = e->cantDeadlocks;
+		e_nuevo->id = e->id;
+		e_nuevo->pokemons = e->pokemons;
+		e_nuevo->pokenest_buscada = e->pokenest_buscada;
+		e_nuevo->posx = e->posx;
+		e_nuevo->posy = e->posy;
+		e_nuevo->simbolo = e->simbolo;
+		e_nuevo->tiempos = e->tiempos;
+		e_nuevo->ultimo_pokemon = e->ultimo_pokemon;
+		list_add(lista_nueva, e_nuevo);
+	}
+	list_iterate(lista_original, (void*) _duplicar_entrenador);
+	return lista_nueva;
 }

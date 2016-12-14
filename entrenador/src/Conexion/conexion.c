@@ -121,6 +121,9 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 				case OC_OBTENER_MEDALLA:
 				case OC_MEDALLA:
 				case OC_MENSAJE:
+				case OC_GANO_BATALLA:
+				case OC_PERDIO_BATALLA:
+				case OC_POKEMON:
 					buffer = malloc(message_size + 1);
 					if(message_size > 0){
 						status = recv(connection->socket, buffer, message_size, 0);

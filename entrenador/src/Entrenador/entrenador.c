@@ -67,7 +67,11 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 
 	time(&beginTime);
 	connection_send(entrenador->conn, OC_ATRAPAR_POKEMON, pokemon->simbol);
-	connection_recv(entrenador->conn, &operation_code, &pathDirDeBillOrigen);
+	do {
+		connection_recv(entrenador->conn, &operation_code, &pathDirDeBillOrigen);
+		if(operation_code == OC_GANO_BATALLA) entrenador->count_deadlock++;
+	} while (operation_code != OC_POKEMON && operation_code != OC_VICTIMA_DEADLOCK);
+
 	time(&endTime);
 	entrenador->pokenest_time = entrenador->pokenest_time + difftime(endTime, beginTime);
 	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
@@ -80,7 +84,8 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
-	pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
+	pathDirDeBillOrigen = string_from_format("%s%s", pathPokedex, pathDirDeBillOrigen);
+	pathDirDeBillDestino = string_from_format("%sEntrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
 
 	int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
 	free(arrayPath);
@@ -99,7 +104,7 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 
 int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPokedex){
 	uint8_t operation_code;
-	uint8_t* cant_deadlock = malloc( sizeof(uint8_t) );
+	//uint8_t* cant_deadlock = malloc( sizeof(uint8_t) );
 	char* pathDirDeBillOrigen;
 	char* pathDirDeBillDestino;
 	char** arrayPath;
@@ -115,13 +120,13 @@ int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pa
 	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
 	// como se envió el pedido de capturar al ultimo pokemon, ahora se envia la petición
 	// para saber los deadlocks en los que estuvo involucrado este entrenador
-	connection_send(entrenador->conn, OC_OBTENER_CANTIDAD_DEADLOCK, "");
+	/*connection_send(entrenador->conn, OC_OBTENER_CANTIDAD_DEADLOCK, "");
 	connection_recv(entrenador->conn, &operation_code, &cant_deadlock);
 	entrenador->count_deadlock = entrenador->count_deadlock + *cant_deadlock;
 	free(cant_deadlock);
-	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
+	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;*/
 
-	//TODO extraer en una funcion ya que se llama tambien en "coach_capture_last_pokemon()"
+	//TODO extraer en una funcion ya que se llama tambien en "coach_capture_pokemon()"
 	arrayPath = string_split(pathDirDeBillOrigen, "/");
 	int posArray = 0;
 	while (arrayPath[posArray] != NULL) {
@@ -130,7 +135,8 @@ int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pa
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
-	pathDirDeBillDestino = string_from_format("%s/Entrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
+	pathDirDeBillOrigen = string_from_format("%s%s", pathPokedex, pathDirDeBillOrigen);
+	pathDirDeBillDestino = string_from_format("%sEntrenadores/%s/Dir de Bill/%s", pathPokedex, entrenador->name, nombreArchivo);
 
 	int resultado = copy_file(pathDirDeBillOrigen, pathDirDeBillDestino);
 	free(arrayPath);
@@ -154,6 +160,7 @@ void coach_connect_to_map(t_coach* entrenador, t_map* mapa){
 
 void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex){
 	uint8_t operation_code;
+	char* pathMedallaOrigen;
 	char* pathMedallaDestino;
 	char** arrayPath;
 	char* nombreArchivo;
@@ -169,9 +176,10 @@ void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex){
 	posArray--;
 	nombreArchivo = arrayPath[posArray];
 
-	pathMedallaDestino = string_from_format("%s/Entrenadores/%s/medallas/%s", pathPokedex, self->name, nombreArchivo);
+	pathMedallaOrigen = string_from_format("%s%s", pathPokedex, mapa->medal_path);
+	pathMedallaDestino = string_from_format("%sEntrenadores/%s/medallas/%s", pathPokedex, self->name, nombreArchivo);
 
-	int resultado = copy_file(mapa->medal_path, pathMedallaDestino);
+	int resultado = copy_file(pathMedallaOrigen, pathMedallaDestino);
 	/*free(arrayPath);
 	free(mapa->medal_path);
 	free(pathMedallaDestino);*/

@@ -49,6 +49,7 @@ typedef struct {
 }t_tiempos;
 typedef struct {
 
+	char* nombre;
 	int posx;
 	int posy;
 	int id;
@@ -68,7 +69,7 @@ typedef struct {
 	int batalla;
 	char* algoritmo;
 	int quantum;
-	long retardo;
+	int retardo;
 	char* ip;
 	char* puerto;
 }metadata;
@@ -115,7 +116,7 @@ struct timeval tv;
 
 void manejar_select(int socket, t_log* log);
 //t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* objetivos);
-t_entrenador* crearEntrenador(int file_descriptor, char simbolo);
+t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* nombre);
 void liberarEntrenador();
 void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica);
 void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor);
@@ -124,5 +125,6 @@ t_log* crear_log(char* nombre);
 PokeNest* crearPokenest(char* rutaPokenest);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
 void liberar_variables_globales();
+char* getRutaAbsoluta(char* rutaRelativa);
 
 #endif /* NIVEL_TEST_H_ */

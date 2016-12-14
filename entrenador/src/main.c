@@ -152,8 +152,8 @@ int main(int argc, char** argv){
 	string_capitalized(nombreEntrenador);
 	logger = crear_log(nombreEntrenador, pathPokedex);
 
-	pathMedallas = string_from_format("%s/Entrenadores/%s/medallas", pathPokedex, nombreEntrenador);
-	pathDirDeBill = string_from_format("%s/Entrenadores/%s/Dir de Bill/", pathPokedex, nombreEntrenador);
+	pathMedallas = string_from_format("%sEntrenadores/%s/medallas", pathPokedex, nombreEntrenador);
+	pathDirDeBill = string_from_format("%sEntrenadores/%s/Dir de Bill/", pathPokedex, nombreEntrenador);
 
 	log_info(logger, "Creando Directorio de Bill...");
 	createDir(pathDirDeBill);
@@ -181,9 +181,9 @@ int main(int argc, char** argv){
 	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.\n", entrenador->name);
 
 	log_info(logger, "El Entrenador %s se ha convertido en Maestro Pokémon!", entrenador->name);
-	log_info(logger, "Tiempo total del viaje: %.2lf segundos", adventure_time);
+	log_info(logger, "Tiempo total del viaje: %d segundos", adventure_time);
 	log_info(logger, "Tiempo bloqueado en las PokeNests: %d segundos", entrenador->pokenest_time);
-	log_info(logger, "Cantidad de deadlocks: %d", death_count);
+	log_info(logger, "Cantidad de deadlocks: %d", entrenador->count_deadlock);
 	log_info(logger, "Cantidad de veces muerto: %d", death_count);
 
 	game_over();

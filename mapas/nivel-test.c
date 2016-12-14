@@ -126,7 +126,7 @@ void manejar_select(int socket, t_log* log){
 	//fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
-	char* objetivos;
+	char* objetivos, *nombre_entrenador;
 	char simbolo;
 	t_entrenador* entrenador;
 	//fdMax = socket;
@@ -141,16 +141,17 @@ void manejar_select(int socket, t_log* log){
 			if(FD_ISSET(a, &lectura)){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
-						simbolo = handshake(nuevaConexion);
+						handshake(nuevaConexion, &simbolo, &nombre_entrenador);
 						//FD_SET(nuevaConexion, &master);
 						//if(nuevaConexion > fdMax) fdMax = nuevaConexion;
-						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
+						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo, nombre_entrenador);
 
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
 						sem_post(&sem_dibujo);
 						pthread_mutex_lock(&mutex_cola_listos);
 						queue_push(colaListos, nuevoEntrenador);
+						informar_contenido_cola(colaListos);
 						pthread_mutex_unlock(&mutex_cola_listos);
 					} else {
 						pthread_mutex_lock(&mutex_turno_desbloqueo);
@@ -160,7 +161,11 @@ void manejar_select(int socket, t_log* log){
 						recibido = recv(a, buf, 512, 0);
 						if(recibido == 0){
 							FD_CLR(entrenador->id, &master);
+							pthread_mutex_lock(&mutex_turno_desbloqueo);
+							pthread_mutex_lock(&mutex_cola_bloqueados);
 							liberarRecursos2(entrenador);
+							pthread_mutex_unlock(&mutex_cola_bloqueados);
+							pthread_mutex_unlock(&mutex_turno_desbloqueo);
 							sem_post(&sem_dibujo);
 						}
 
@@ -177,58 +182,42 @@ void leerConfiguracion(metadata* conf_metadata, char* ruta){
 	meterStringEnEstructura(&(conf_metadata->algoritmo), config_get_string_value(configuracion, "algoritmo"));
 	meterStringEnEstructura(&(conf_metadata->ip), config_get_string_value(configuracion, "IP"));
 	meterStringEnEstructura(&(conf_metadata->puerto), config_get_string_value(configuracion, "Puerto"));
-	conf_metadata->retardo = config_get_long_value(configuracion, "retardo");
+	conf_metadata->retardo = config_get_int_value(configuracion, "retardo");
+	conf_metadata->retardo = conf_metadata->retardo * 1000;
 	conf_metadata->quantum = config_get_int_value(configuracion, "quantum");
-	tim.tv_sec = 0;
-	tim.tv_nsec = (conf_metadata->retardo) * 1000000;
 	config_destroy(configuracion);
 }
 
 char* getRutaMapa(char* ptoMnt, char* nombreMapa){
-	int letrasPto, letrasNombre, len;
-	char *ruta, *directorio;
-	letrasPto = strlen(ptoMnt);
-	letrasNombre = strlen(nombreMapa);
-	directorio = strdup("Mapas");
-	len = strlen(directorio);
-	ruta = malloc(letrasPto + letrasNombre + len + 2);
-	snprintf(ruta, letrasPto + letrasNombre + len + 2, "%s%s/%s", ptoMnt, directorio, nombreMapa);
-	free(directorio);
+	char* ruta = string_new();
+	string_append_with_format(&ruta, "Mapas/%s", nombreMapa);
 	return ruta;
 }
 char* getRutaMetadata(){
-	char* directorio = strdup("/metadata");
-	int x = strlen(directorio);
-	int len_ruta_mapa = strlen(ruta_mapa);
-	char* ruta = malloc(len_ruta_mapa + x + 1);
-	snprintf(ruta, len_ruta_mapa + x + 1, "%s%s", ruta_mapa, directorio);
-	free(directorio);
-	return ruta;
+	char* directorio = string_duplicate("metadata");
+	char* ruta = string_new();
+	string_append_with_format(&ruta, "%s/%s", ruta_mapa, directorio);
+	char* rutaAbsoluta = getRutaAbsoluta(ruta);
+	return rutaAbsoluta;
 }
 
 char* getRutaPokenests(){
-	char* directorio = strdup("/PokeNests");
-	int x = strlen(directorio);
-	char* ruta = malloc(strlen(ruta_mapa) + x + 1);
-	snprintf(ruta, strlen(ruta_mapa) + x + 1, "%s%s", ruta_mapa, directorio);
-	free(directorio);
-	return ruta;
+	char* ruta2 = string_new();
+	string_append_with_format(&ruta2, "%s/PokeNests", ruta_mapa);
+	return ruta2;
 }
 
 char* getRutaPokemon(char* rutaPokenests, char* pokemon){
-	int cantLetras = strlen(rutaPokenests) + strlen(pokemon) + 2;
-	char* ruta = malloc(cantLetras);
-	snprintf(ruta, cantLetras, "%s/%s", rutaPokenests, pokemon);
-	return ruta;
+	char* ruta2 = string_new();
+	char* nombre_pokemon = string_duplicate(pokemon);
+	string_append_with_format(&ruta2, "%s/%s", rutaPokenests, nombre_pokemon);
+	return ruta2;
 }
 
 PokeNest* crearPokenest(char* rutaPokenest){
-	char* metadata;
 	PokeNest* pokeNest = malloc(sizeof(PokeNest));
-	char* aux = strdup("/metadata");
-	int len = strlen(aux);
-	metadata = malloc(strlen(rutaPokenest) + len + 1);
-	snprintf(metadata, strlen(rutaPokenest) + len + 1, "%s%s", rutaPokenest, aux);
+	char* metadata = string_duplicate(rutaPokenest);
+	string_append(&metadata, "/metadata");
 	t_config* config = config_create(metadata);
 	pokeNest->id = *(config_get_string_value(config, "Identificador"));
 	char *posiciones, *posicion;
@@ -240,7 +229,6 @@ PokeNest* crearPokenest(char* rutaPokenest){
 	pokeNest->posy = atoi(posicion);
 	//free(posiciones);
 	//free(posicion);
-	free(aux);
 	free(metadata);
 	config_destroy(config);
 	return pokeNest;
@@ -258,9 +246,9 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 		if(!strcmp(directorio->d_name, ".") || !strcmp(directorio->d_name, "..")) continue;
 		if(!strcmp(directorio->d_name, "metadata")) continue;
 
-		len = strlen(directorio->d_name);
-		metadataPokemon = malloc( strlen(rutaPokemon) + len + 2);
-		snprintf(metadataPokemon, strlen(rutaPokemon) + len + 2, "%s/%s", rutaPokemon, directorio->d_name);
+		char* metadataPokemon = string_duplicate(rutaPokemon);
+		string_append_with_format(&metadataPokemon, "/%s", directorio->d_name);
+
 		t_config* config = config_create(metadataPokemon);
 		lvl = config_get_int_value(config, "Nivel");
 
@@ -279,8 +267,9 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 	return listaPokemons;
 }
 
-t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
+t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* nombre){
 	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
+	entrenador->nombre = string_duplicate(nombre);
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;
@@ -328,14 +317,16 @@ void liberarEntrenador(t_entrenador* entrenador){
 	//free(entrenador);
 }
 
-void cargarPokenests(char* rutaPokenests, t_pkmn_factory* fabrica){
+void cargarPokenests(char* rutaPokenests_relativa, t_pkmn_factory* fabrica){
 	DIR* d;
+	char* rutaPokemon, *rutaPokenests_absoluta;
+	rutaPokenests_absoluta = getRutaAbsoluta(rutaPokenests_relativa);
 	struct dirent *directorio;
-	d = opendir(rutaPokenests);
-	char* rutaPokemon;
+	d = opendir(rutaPokenests_absoluta);
+
 	while((directorio = readdir(d)) != NULL){
 		if((!strcmp(directorio->d_name, ".")) || (!strcmp(directorio->d_name, ".."))) continue;
-		rutaPokemon = getRutaPokemon(rutaPokenests, directorio->d_name);
+		rutaPokemon = getRutaPokemon(rutaPokenests_absoluta, directorio->d_name);
 
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
 
@@ -374,9 +365,11 @@ void liberar_variables_globales(){
 void informar_contenido_cola(t_queue* cola){
 	int index;
 	char* contenido_cola = string_new();
-	string_append(&contenido_cola, "cola: [");
+	if(cola == colaListos){
+		string_append(&contenido_cola, "cola Listos: [");
+	} else string_append(&contenido_cola, "cola Bloqueados [");
 	void _append_to_queue(t_entrenador* e){
-		string_append_with_format(&contenido_cola, "%c,", e->simbolo);
+		string_append_with_format(&contenido_cola, "%s,", e->nombre);
 	}
 	list_iterate(cola->elements, (void*)_append_to_queue);
 	string_append(&contenido_cola, "]");
@@ -391,3 +384,16 @@ void enviar_oc(int socket, uint8_t* oc_send){
 	memcpy(buffer + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
 	send(socket, buffer, sizeof(uint8_t) * 2, 0);
 }
+
+char* getRutaAbsoluta(char* rutaRelativa){
+	char* rutaAbsoluta = string_new;
+	rutaAbsoluta = string_duplicate(pto_montaje);
+	string_append(&rutaAbsoluta, rutaRelativa);
+	return rutaAbsoluta;
+}
+
+/*t_infoPokemon* crear_infopokemon(){
+	t_infoPokemon* infopokemon = malloc(sizeof(t_infoPokemon));
+	infopokemon->pokemon = malloc(sizeof(t_pokemon));
+	infopokemon->nombre = malloc
+}*/
