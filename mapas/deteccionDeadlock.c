@@ -227,13 +227,13 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	if (loser == pok1) {
 
-	/*	send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
+		send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador2->id, &size, sizeof(uint8_t), 0);
 
 		enviar_oc(entrenador2->id, &operation_code_winner);
 
-	/*	send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
-		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
+		send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
+		send(entrenador1->id, &size, sizeof(uint8_t), 0);
 
 		enviar_oc(entrenador1->id, &operation_code_loser);
 
@@ -242,13 +242,13 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 		return entrenador1;
 	}
 	else {
-	/*	send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
+		send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador1->id, &size, sizeof(uint8_t), 0);
 
 		enviar_oc(entrenador1->id, &operation_code_winner);
 
-	/*	send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
-		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
+		send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
+		send(entrenador2->id, &size, sizeof(uint8_t), 0);
 
 		enviar_oc(entrenador2->id, &operation_code_loser);
 
@@ -260,20 +260,20 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 }
 void matarEntrenador(t_entrenador * entrenador) {
 
-	int i;
 	uint8_t operation_code = OC_VICTIMA_DEADLOCK;
 	uint8_t tamanio = 0;
-	//memcpy(mandar, &operation_code, sizeof(uint8_t));
+
 	send(entrenador->id, &operation_code, sizeof(uint8_t), 0);
 	send(entrenador->id, &tamanio, sizeof(uint8_t), 0);
 
-	//for (i = 0; entrenador != list_get(entrenadores, i); i++);
-
 	FD_CLR(entrenador->id, &master);
-	//list_remove(entrenadores, i);
 
+	pthread_mutex_lock(&mutex_turno_desbloqueo);
+	pthread_mutex_lock(&mutex_cola_bloqueados);
 	buscarEntrenador(entrenador->id, colaBloqueados->elements);
 	liberarRecursos2(entrenador);
+	pthread_mutex_unlock(&mutex_cola_bloqueados);
+	pthread_mutex_unlock(&mutex_turno_desbloqueo);
 }
 int hayAlguienParaAtender(int atendido[], int cantEntrenadores) {
 	int i;
