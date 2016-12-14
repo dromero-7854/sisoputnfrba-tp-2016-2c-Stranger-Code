@@ -319,7 +319,7 @@ void liberarEntrenador(t_entrenador* entrenador){
 
 void cargarPokenests(char* rutaPokenests_relativa, t_pkmn_factory* fabrica){
 	DIR* d;
-	char* rutaPokemon, *rutaPokenests_absoluta;
+	char* rutaPokemon, *rutaPokenests_absoluta, *nombre_pokemon;
 	rutaPokenests_absoluta = getRutaAbsoluta(rutaPokenests_relativa);
 	struct dirent *directorio;
 	d = opendir(rutaPokenests_absoluta);
@@ -329,8 +329,8 @@ void cargarPokenests(char* rutaPokenests_relativa, t_pkmn_factory* fabrica){
 		rutaPokemon = getRutaPokemon(rutaPokenests_absoluta, directorio->d_name);
 
 		PokeNest* pokenest = crearPokenest(rutaPokemon);
-
-		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, directorio->d_name, pokenest->id);
+		nombre_pokemon = strdup(directorio->d_name);
+		pokenest->listaPokemons = crearPokemons(rutaPokemon, fabrica, nombre_pokemon, pokenest->id);
 		pokenest->cantidad = list_size(pokenest->listaPokemons);
 
 		pthread_mutex_lock(&mutex_lista_pokenest);
@@ -363,16 +363,18 @@ void liberar_variables_globales(){
 }
 
 void informar_contenido_cola(t_queue* cola){
-	int index;
+	int len;
 	char* contenido_cola = string_new();
 	if(cola == colaListos){
-		string_append(&contenido_cola, "cola Listos: [");
-	} else string_append(&contenido_cola, "cola Bloqueados [");
+		string_append(&contenido_cola, "cola Listos: [ ");
+	} else string_append(&contenido_cola, "cola Bloqueados [ ");
 	void _append_to_queue(t_entrenador* e){
 		string_append_with_format(&contenido_cola, "%s,", e->nombre);
 	}
 	list_iterate(cola->elements, (void*)_append_to_queue);
-	string_append(&contenido_cola, "]");
+	len = strlen(contenido_cola);
+	contenido_cola[len-1] = ']';
+	//string_append(&contenido_cola, "]");
 	log_trace(log_mapa, "%s", contenido_cola);
 	free(contenido_cola);
 }

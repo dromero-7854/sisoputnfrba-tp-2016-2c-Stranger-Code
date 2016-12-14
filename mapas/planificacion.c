@@ -20,14 +20,10 @@ void planificar(){
 
 	while(1){
 		if(!strcmp(conf_metadata->algoritmo, "RR")){
-			//log_trace(log_mapa, "Planificacion RR");
 			ejecutarRafagaRR();
 		} else {
-			//log_trace(log_mapa, "Planificacion SRDF");
 			ejecutarRafagaSRDF();
 		}
-		/*set_bloqueados = set_bloq_master;
-		select(fd_bloq_max, &set_bloqueados, NULL, NULL, 0);*/
 	}
 }
 
@@ -37,9 +33,6 @@ int atender(t_entrenador* entrenador){
 		log_trace(log_mapa, "quantum del entrenador: %d", q);
 		nanosleep(&tim, NULL);
 		capturo_pokemon = atenderSolicitud(entrenador);
-
-
-		//if(capturo_pokemon == TERMINO_MAPA) break;
 
 	}
 	return capturo_pokemon;
@@ -55,6 +48,7 @@ void ejecutarRafagaSRDF(){
 	if ((entrenador = buscarEntrenadorSinDistanciaDefinida()) != NULL){
 //		nanosleep(&tim, NULL);
 		usleep(conf_metadata->retardo);
+		log_trace(log_mapa, "atendiendo a: %s", entrenador->nombre);
 		respuesta = atenderSolicitud(entrenador);
 		if(respuesta == DESCONEXION){
 			pthread_mutex_lock(&mutex_turno_desbloqueo);
@@ -81,6 +75,7 @@ void ejecutarRafagaSRDF(){
 			//pthread_mutex_lock(&dibujo);
 //			nanosleep(&tim, NULL);
 			usleep(conf_metadata->retardo);
+			log_trace(log_mapa, "atendiendo a: %s", entrenador->nombre);
 			respuesta = atenderSolicitud(entrenador);
 			sem_post(&sem_dibujo);
 
@@ -124,9 +119,10 @@ void ejecutarRafagaRR(){
 	t_entrenador* entrenador;
 	//sem_wait(&sem_turno);
 	if(!queue_is_empty(colaListos)){
-		log_trace(log_mapa, "atendiendo cola Listos");
 		pthread_mutex_lock(&mutex_cola_listos);
 		entrenador = queue_pop(colaListos);
+		log_trace(log_mapa, "atendiendo a: %s", entrenador->nombre);
+		informar_contenido_cola(colaListos);
 		pthread_mutex_unlock(&mutex_cola_listos);
 		for(q = 0; q < conf_metadata->quantum; q++){
 			log_trace(log_mapa, "quantum del entrenador: %d", q);
@@ -156,6 +152,7 @@ void ejecutarRafagaRR(){
 		default:
 			pthread_mutex_lock(&mutex_cola_listos);
 			queue_push(colaListos, entrenador);
+			informar_contenido_cola(colaListos);
 			pthread_mutex_unlock(&mutex_cola_listos);
 			break;
 		}
