@@ -227,13 +227,7 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	if (loser == pok1) {
 
-		send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador2->id, &size, sizeof(uint8_t), 0);
-
 		enviar_oc(entrenador2->id, &operation_code_winner);
-
-		send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
-		send(entrenador1->id, &size, sizeof(uint8_t), 0);
 
 		enviar_oc(entrenador1->id, &operation_code_loser);
 
@@ -242,13 +236,8 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 		return entrenador1;
 	}
 	else {
-	/*	send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
 
 		enviar_oc(entrenador1->id, &operation_code_winner);
-
-	/*	send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
-		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
 
 		enviar_oc(entrenador2->id, &operation_code_loser);
 

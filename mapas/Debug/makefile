@@ -25,7 +25,7 @@ endif
 all: mapas
 
 dependents:
-	-cd /home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug && $(MAKE) all
+	-cd /home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug && $(MAKE) clean all
 
 # Tool invocations
 mapas: $(OBJS) $(USER_OBJS) /home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug/libBibliotecaCharMander.so
