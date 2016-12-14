@@ -300,7 +300,7 @@ void liberarRecursos2(t_entrenador* entrenadorLiberado){
 						exit(1);
 					}
 
-					enviar_cant_deadlocks(entrenadorBloqueado);
+			//		enviar_cant_deadlocks(entrenadorBloqueado);
 					liberarRecursos2(entrenadorBloqueado);
 					sem_post(&sem_dibujo);
 				} else {

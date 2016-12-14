@@ -88,14 +88,15 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 	return ret;
 }
 
-char handshake(int socketCliente){
+void handshake(int socketCliente, char* simbolo, char** nombre_entrenador){
 
 	uint8_t tam_msg, operation_code;
-	char *buffer;
+	char *buffer,*simbolo_recibido;
 	void *paquete_a_mandar;
 
 	//recv(socketCliente, &operation_code, sizeof(operation_code), 0);
-	connection_recv(socketCliente, &operation_code, &buffer);
+	connection_recv(socketCliente, &operation_code, &simbolo_recibido);
+	*simbolo = *simbolo_recibido;
 	if(operation_code != OC_UBICAR_ENTRENADOR){
 		log_error(log_mapa, "codigo de operacion incorrecto en handshake");
 		exit(1);
@@ -121,12 +122,14 @@ char handshake(int socketCliente){
 	}
 
 	enviar_ruta_medalla(socketCliente);
+	connection_recv(socketCliente, &operation_code, nombre_entrenador);
+
 
 
 	//free(buffer);
 	free(coordenadas);
 
-	return *(buffer);
+//	return *(buffer);
 }
 
 int atenderSolicitud(t_entrenador* entrenador){
@@ -216,7 +219,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 	case OC_ATRAPAR_POKEMON:
 	{
 		char pokenest_id = *((char*)buffer);
-		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
+	//	recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
 		if(infopokemon == NULL){
@@ -263,7 +266,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 			exit(1);
 		}
 
-		enviar_cant_deadlocks(entrenador);
+	//	enviar_cant_deadlocks(entrenador);
 		//enviar_ruta_medalla(entrenador);
 		respuesta = DESCONEXION;
 		free(buffer);
@@ -303,7 +306,7 @@ void notificar_captura_pokemon(t_infoPokemon* infopokemon, t_entrenador* entrena
 	len = strlen(infopokemon->pokemon->species);
 //	restarRecurso(items, infopokemon->id_pokenest);
 
-	uint8_t oc_send = OC_MENSAJE;
+	uint8_t oc_send = OC_POKEMON;
 
 	rutaPokenests = getRutaPokenests();
 	rutaPokemon = getRutaPokemon(rutaPokenests, infopokemon->pokemon->species);

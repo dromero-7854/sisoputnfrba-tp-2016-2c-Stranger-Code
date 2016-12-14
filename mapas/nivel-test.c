@@ -126,7 +126,7 @@ void manejar_select(int socket, t_log* log){
 	//fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
-	char* objetivos;
+	char* objetivos, *nombre_entrenador;
 	char simbolo;
 	t_entrenador* entrenador;
 	//fdMax = socket;
@@ -141,10 +141,10 @@ void manejar_select(int socket, t_log* log){
 			if(FD_ISSET(a, &lectura)){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
-						simbolo = handshake(nuevaConexion);
+						handshake(nuevaConexion, &simbolo, &nombre_entrenador);
 						//FD_SET(nuevaConexion, &master);
 						//if(nuevaConexion > fdMax) fdMax = nuevaConexion;
-						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo);
+						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo, nombre_entrenador);
 
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
@@ -266,8 +266,9 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 	return listaPokemons;
 }
 
-t_entrenador* crearEntrenador(int file_descriptor, char simbolo){
+t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* nombre){
 	t_entrenador* entrenador = malloc(sizeof(t_entrenador));
+	entrenador->nombre = string_duplicate(nombre);
 	entrenador->id = file_descriptor;
 	entrenador->posx = 1;
 	entrenador->posy = 1;

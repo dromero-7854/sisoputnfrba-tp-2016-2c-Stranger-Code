@@ -200,8 +200,8 @@ bool esDeMayorNivel(t_infoPokemon * pokemon1, t_infoPokemon * pokemon2) {
 }
 t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2) {
 
-	uint8_t operation_code_loser;
-	uint8_t operation_code_winner;
+	uint8_t operation_code_loser = OC_PERDIO_BATALLA;
+	uint8_t operation_code_winner = OC_GANO_BATALLA;
 	uint8_t size = 0;
 
 	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
@@ -219,22 +219,30 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	if (loser == pok1) {
 
-		/*send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador2->id, &size, sizeof(uint8_t), 0);
+	/*	send(entrenador2->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
 
-		send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
+		enviar_oc(entrenador2->id, &operation_code_winner);
+
+	/*	send(entrenador1->id, &operation_code_loser, sizeof(uint8_t), 0);
 		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
+
+		enviar_oc(entrenador1->id, &operation_code_loser);
 
 		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador2->simbolo, entrenador1->simbolo);
 
 		return entrenador1;
 	}
 	else {
-		/*send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
-		send(entrenador1->id, &size, sizeof(uint8_t), 0);
+	/*	send(entrenador1->id, &operation_code_winner, sizeof(uint8_t), 0);
+		send(entrenador1->id, &size, sizeof(uint8_t), 0);*/
 
-		send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
+		enviar_oc(entrenador1->id, &operation_code_winner);
+
+	/*	send(entrenador2->id, &operation_code_loser, sizeof(uint8_t), 0);
 		send(entrenador2->id, &size, sizeof(uint8_t), 0);*/
+
+		enviar_oc(entrenador2->id, &operation_code_loser);
 
 		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador1->simbolo, entrenador2->simbolo);
 
