@@ -152,8 +152,8 @@ int main(int argc, char** argv){
 	string_capitalized(nombreEntrenador);
 	logger = crear_log(nombreEntrenador, pathPokedex);
 
-	pathMedallas = string_from_format("%s/Entrenadores/%s/medallas", pathPokedex, nombreEntrenador);
-	pathDirDeBill = string_from_format("%s/Entrenadores/%s/Dir de Bill/", pathPokedex, nombreEntrenador);
+	pathMedallas = string_from_format("%sEntrenadores/%s/medallas", pathPokedex, nombreEntrenador);
+	pathDirDeBill = string_from_format("%sEntrenadores/%s/Dir de Bill/", pathPokedex, nombreEntrenador);
 
 	log_info(logger, "Creando Directorio de Bill...");
 	createDir(pathDirDeBill);
