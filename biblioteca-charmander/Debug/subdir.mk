@@ -3,6 +3,9 @@
 ################################################################################
 
 # Add inputs and outputs from these tool invocations to the build variables 
+O_SRCS += \
+../bibliotecaCharMander.o 
+
 C_SRCS += \
 ../bibliotecaCharMander.c \
 ../coordenadas.c 
