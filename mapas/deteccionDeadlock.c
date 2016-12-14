@@ -8,6 +8,7 @@
 #include "deteccionDeadlock.h"
 #include "nivel-test.h"
 #include <time.h>
+#include <commons/string.h>
 
 bool estaBloqueado(t_entrenador * entrenador);
 int hayAlguienParaAtender(int vectorAtendido[], int cantidad);
@@ -16,7 +17,8 @@ t_list* duplicar_lista(t_list*);
 void detectarDeadlock(t_combo * comboLista) {
 
 	//getchar();
-	log_deadlock = crear_log("deadlock");
+	char * archivoDeadlock = string_from_format("deadlock_%s", nombre_mapa);
+	log_deadlock = crear_log(archivoDeadlock);
 
 	struct timespec retardo, opa;
 	retardo.tv_sec = conf_metadata->tiempoChequeoDeadlock / 1000;
@@ -160,9 +162,15 @@ void detectarDeadlock(t_combo * comboLista) {
 
 			coinciden = list_all_satisfy(deadlockeados, (void *) estaBloqueado);
 
-			log_info(log_deadlock, "HAY DEADLOCK");
+			void _contarDeadlock(t_entrenador* entr) {
+				entr->cantDeadlocks++;
+			}
+
+			list_iterate(deadlockeados, (void *) _contarDeadlock);
 
 			if (conf_metadata->batalla && coinciden) {
+
+				log_info(log_deadlock, "HAY DEADLOCK");
 
 				log_info(log_deadlock, "HAY BATALLA");
 
@@ -294,8 +302,8 @@ void mostrarMatriz(int cantEntrenadores, int pokenests, int matriz[cantEntrenado
 		}
 	}
 	id[2*pokenests] = 0;
-	log_info(log_deadlock, id);
-	log_info(log_deadlock, borde);
+	log_info(log_deadlock, "	| %s", id);
+	//log_info(log_deadlock, borde);
 	for(i = 0; i < cantEntrenadores; i++) {
 
 		t_entrenador * entr = list_get(entrenadores, i);
@@ -306,7 +314,7 @@ void mostrarMatriz(int cantEntrenadores, int pokenests, int matriz[cantEntrenado
 			fila[j+1] = '|';
 		}
 		fila[2*pokenests] = 0;
-		log_info(log_deadlock, "%c | %s", entr->simbolo , fila);
+		log_info(log_deadlock, "%c	| %s", entr->simbolo , fila);
 	}
 	log_info(log_deadlock, borde);
 }
