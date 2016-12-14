@@ -261,18 +261,30 @@ int hayAlguienParaAtender(int atendido[], int cantEntrenadores) {
 	}
 	return 0;
 }
-void mostrarMatriz(int entrenadores, int pokenests, int matriz[entrenadores][pokenests]) {
+void mostrarMatriz(int cantEntrenadores, int pokenests, int matriz[cantEntrenadores][pokenests]) {
 
 	int i, j;
+	char id[2*pokenests+1];
 
 	char borde[2*pokenests+1];
 	borde[2*pokenests]=0;
 	for(j = 0; j < 2*pokenests; j++) {
 		borde[j]='_';
-	}
-	log_info(log_deadlock, borde);
-	for(i = 0; i < entrenadores; i++) {
 
+		i = j/2;
+		if((j % 2)==0) {
+
+			PokeNest * pok = list_get(listaPokenests, i);
+			id[j] = pok->id;
+			id[j+1] = '|';
+		}
+	}
+	id[2*pokenests] = 0;
+	log_info(log_deadlock, id);
+	log_info(log_deadlock, borde);
+	for(i = 0; i < cantEntrenadores; i++) {
+
+		t_entrenador * entr = list_get(entrenadores, i);
 		char fila[2*pokenests+1];
 
 		for(j = 0; j < 2*pokenests; j += 2) {
@@ -280,7 +292,7 @@ void mostrarMatriz(int entrenadores, int pokenests, int matriz[entrenadores][pok
 			fila[j+1] = '|';
 		}
 		fila[2*pokenests] = 0;
-		log_info(log_deadlock, "| %s", fila);
+		log_info(log_deadlock, "%c | %s", entr->simbolo , fila);
 	}
 	log_info(log_deadlock, borde);
 }
