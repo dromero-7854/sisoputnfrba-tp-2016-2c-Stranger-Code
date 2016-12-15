@@ -188,7 +188,9 @@ void detectarDeadlock(t_combo * comboLista) {
 			}
 		}
 		list_clean(entrenadores);
-		free(entrenadores);
+		list_destroy(entrenadores);
+		list_clean(deadlockeados);
+		list_destroy(deadlockeados);
 	}
 
 }
