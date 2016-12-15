@@ -379,13 +379,7 @@ void informar_contenido_cola(t_queue* cola){
 	free(contenido_cola);
 }
 
-void enviar_oc(int socket, uint8_t* oc_send){
-	uint8_t tamanio = 0;
-	void* buffer = malloc(sizeof(uint8_t) * 2);
-	memcpy(buffer, oc_send, sizeof(uint8_t));
-	memcpy(buffer + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
-	send(socket, buffer, sizeof(uint8_t) * 2, 0);
-}
+
 
 char* getRutaAbsoluta(char* rutaRelativa){
 	char* rutaAbsoluta = string_new;

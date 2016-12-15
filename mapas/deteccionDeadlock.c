@@ -210,24 +210,28 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	uint8_t operation_code;
 	char *nombrePokemon;
-	t_pokemon pokemon1;
 	uint8_t operation_code_loser = OC_PERDIO_BATALLA;
 	uint8_t operation_code_winner = OC_GANO_BATALLA;
 	uint8_t size = 0;
+	t_pokemon * pok1;
+	t_pokemon * pok2;
+
 
 	enviar_oc(entrenador1->id, OC_POKEMON_BATALLA);
 	connection_recv(entrenador1->id, &operation_code, &nombrePokemon);
 
+	pok1 = buscar_pokemon_de_entrenador(entrenador1, nombrePokemon);
+
 	enviar_oc(entrenador2->id, OC_POKEMON_BATALLA);
 	connection_recv(entrenador2->id, &operation_code, &nombrePokemon);
 
-	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
+	pok2 = buscar_pokemon_de_entrenador(entrenador2, nombrePokemon);
+
+/*	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
 	list_sort(entrenador2->pokemons, (void*) esDeMayorNivel);
 
 	t_infoPokemon * pokemon1 = list_get(entrenador1->pokemons, 0);
-	t_infoPokemon * pokemon2 = list_get(entrenador2->pokemons, 0);
-	t_pokemon * pok1 = pokemon1->pokemon;
-	t_pokemon * pok2 = pokemon2->pokemon;
+	t_infoPokemon * pokemon2 = list_get(entrenador2->pokemons, 0);*/
 
 	log_info(log_deadlock, "%c eligio a  %s (nivel %d)", entrenador1->simbolo, pok1->species, pok1->level);
 	log_info(log_deadlock, "%c eligio a  %s (nivel %d)", entrenador2->simbolo, pok2->species, pok2->level);
@@ -236,9 +240,9 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	if (loser == pok1) {
 
-		enviar_oc(entrenador2->id, &operation_code_winner);
+		enviar_oc(entrenador2->id, operation_code_winner);
 
-		enviar_oc(entrenador1->id, &operation_code_loser);
+		enviar_oc(entrenador1->id, operation_code_loser);
 
 		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador2->simbolo, entrenador1->simbolo);
 
@@ -246,9 +250,9 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 	}
 	else {
 
-		enviar_oc(entrenador1->id, &operation_code_winner);
+		enviar_oc(entrenador1->id, operation_code_winner);
 
-		enviar_oc(entrenador2->id, &operation_code_loser);
+		enviar_oc(entrenador2->id, operation_code_loser);
 
 		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador1->simbolo, entrenador2->simbolo);
 
@@ -334,4 +338,19 @@ t_list* duplicar_lista(t_list* lista_original){
 	}
 	list_iterate(lista_original, (void*) _duplicar_entrenador);
 	return lista_nueva;
+}
+
+t_pokemon* buscar_pokemon_de_entrenador(t_entrenador* entrenador, char* nombre_pokemon){
+	int _mismo_nombre(t_infoPokemon* infopokemon){
+		return string_equals_ignore_case(infopokemon->nombre, nombre_pokemon);
+	}
+	return list_find(entrenador->pokemons, (void*)_mismo_nombre);
+}
+
+void enviar_oc(int socket, uint8_t oc_send){
+	uint8_t tamanio = 0;
+	void* buffer = malloc(sizeof(uint8_t) * 2);
+	memcpy(buffer, &oc_send, sizeof(uint8_t));
+	memcpy(buffer + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
+	send(socket, buffer, sizeof(uint8_t) * 2, 0);
 }
