@@ -14,6 +14,7 @@
 typedef struct {
 	char *name;
 	char *simbol;
+	int level;
 	t_coor *coor;
 } t_pokemon;
 

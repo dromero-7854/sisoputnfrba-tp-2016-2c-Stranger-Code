@@ -130,9 +130,9 @@ int completar_mapa(t_log* logger, t_map* mapa, t_coach* entrenador, char* pathPo
 		coach_move_to_pokemon(entrenador, pokemon);
 		log_info(logger, "Capturando a %s...", pokemon->simbol);
 		if(map_is_last_pokemon(mapa)){
-			oc = coach_capture_last_pokemon(entrenador, pokemon, pathPokedex);
+			oc = coach_capture_pokemon(entrenador, pokemon, pathPokedex, OC_ATRAPAR_ULTIMO_POKEMON);
 		}else{
-			oc = coach_capture_pokemon(entrenador, pokemon, pathPokedex);
+			oc = coach_capture_pokemon(entrenador, pokemon, pathPokedex, OC_ATRAPAR_POKEMON);
 		}
 		if(oc == OC_VICTIMA_DEADLOCK){
 			return oc;
