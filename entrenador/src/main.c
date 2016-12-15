@@ -111,6 +111,8 @@ void iniciar_ruta_de_viaje(t_coach* entrenador){
 		oc = completar_mapa(logger, mapa, entrenador, pathPokedex);
 		log_info(logger, "Desconectando al entrenador del mapa: %s", mapa->name);
 		desconectar_entrenador_mapa(entrenador, mapa);
+		deleteDir(pathDirDeBill);
+		createDir(pathDirDeBill);
 		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
 
 		if(oc == OC_VICTIMA_DEADLOCK){
