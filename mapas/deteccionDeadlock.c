@@ -343,10 +343,12 @@ t_list* duplicar_lista(t_list* lista_original){
 }
 
 t_pokemon* buscar_pokemon_de_entrenador(t_entrenador* entrenador, char* nombre_pokemon){
+	t_infoPokemon* infoPoke;
 	int _mismo_nombre(t_infoPokemon* infopokemon){
 		return string_equals_ignore_case(infopokemon->nombre, nombre_pokemon);
 	}
-	return list_find(entrenador->pokemons, (void*)_mismo_nombre);
+	infoPoke = list_find(entrenador->pokemons, (void*)_mismo_nombre);
+	return infoPoke->pokemon;
 }
 
 void enviar_oc(int socket, uint8_t oc_send){
