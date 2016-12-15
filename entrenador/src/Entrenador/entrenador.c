@@ -85,7 +85,7 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 	} while (operation_code != OC_POKEMON && operation_code != OC_VICTIMA_DEADLOCK);
 
 	time(&endTime);
-	entrenador->pokenest_time = entrenador->pokenest_time + difftime(endTime, beginTime);
+	entrenador->pokenest_time = entrenador->pokenest_time + difftime(beginTime, endTime);
 	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
 
 	arrayPath = string_split(pathDirDeBillOrigen, "/");

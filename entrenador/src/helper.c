@@ -224,7 +224,11 @@ void deleteDir(char* path) {
 	struct dirent *dir;
 	char file[256];
 
-	d = opendir(path);
+	if( (d = opendir(path)) == NULL){
+		printf("Directorio %s vacio.", path);
+		closedir(d);
+		return;
+	}
 
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {

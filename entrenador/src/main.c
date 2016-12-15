@@ -59,10 +59,10 @@ void game_over(){
 	log_info(logger, "Finalizando el juego...\n");
 	coach_destroy(entrenador);
 
-	deleteDir(pathDirDeBill);
-	deleteDir(pathMedallas);
+	//deleteDir(pathDirDeBill);
+	//deleteDir(pathMedallas);
 
-	free(pathDirDeBill);
+	//free(pathDirDeBill);
 	//free(pathMedallas);
 	free(nombreEntrenador);
 	free(pathPokedex);
@@ -118,6 +118,8 @@ void iniciar_ruta_de_viaje(t_coach* entrenador){
 		if(oc == OC_VICTIMA_DEADLOCK){
 			//se incrementa la cantidad de veces que murió
 			death_count++;
+			//se incrementa la cantidad de deadlocks
+			entrenador->count_deadlock++;
 			// se reinician los objetivos del mapa
 			mapa->index_current_pokemon = -1;
 			log_info(logger, "El entrenador %s ha muerto por Deadlock\n", entrenador->name);

@@ -96,6 +96,7 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 	status = recv(connection->socket, operation_code_value, prot_ope_code_size, 0);
 	if (status <= 0) {
 		printf("ERROR: Socket %d, disconnected...\n", connection->socket);
+		game_over();
 	} else {
 		ret = ret + status;
 		status = recv(connection->socket, &message_size, prot_message_size, 0);
@@ -115,6 +116,7 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 					//free(coor);
 					break;
 				case OC_UBICAR_POKENEST:
+				case OC_VICTIMA_DEADLOCK:
 				case OC_UBICAR_ENTRENADOR:
 				case OC_AVANZAR_POSICION:
 				case OC_CANTIDAD_DEADLOCK:
@@ -137,7 +139,8 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 					//free(buffer);
 					break;
 				default:
-					printf("ERROR: Socket %d, Invalid operation code...\n", connection->socket);
+					printf("ERROR: Socket %d, Invalid operation code(%d)...\n", connection->socket, (int)*operation_code_value);
+					game_over();
 					break;
 			}
 
