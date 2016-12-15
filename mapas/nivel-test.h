@@ -126,5 +126,7 @@ PokeNest* crearPokenest(char* rutaPokenest);
 void leerConfiguracion(metadata* conf_metadata, char* ruta);
 void liberar_variables_globales();
 char* getRutaAbsoluta(char* rutaRelativa);
+void _borrar_pokenest(PokeNest* pokenest);
+void _borrar_pokemon(t_infoPokemon* infopokemon);
 
 #endif /* NIVEL_TEST_H_ */

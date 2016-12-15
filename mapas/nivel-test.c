@@ -63,6 +63,8 @@ int main(int argc, char* argv[]) {
 	log_trace(log_mapa, "se cargo la metadata");
 	pthread_t planificador;
 	pthread_attr_t attr;
+	pthread_attr_t attr2;
+	pthread_attr_t attr3;
 
 	sem_init(&sem_dibujo, 0, 1);
 	sem_init(&sem_turno, 0, 1);
@@ -75,12 +77,15 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&mutex_cola_bloqueados, NULL);
 	pthread_mutex_init(&mutex_turno_desbloqueo, NULL);
 	pthread_attr_init(&attr);
+	pthread_attr_init(&attr2);
+	pthread_attr_init(&attr3);
 
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if(pthread_create(&planificador, &attr, (void *) planificar, NULL) != 0){
 		log_error(log_mapa, "problemas al crear hilo planificador");
 	}
 
+	pthread_attr_destroy(&attr);
 
 	pthread_t pth, guipth;
 	t_combo comboListas;
@@ -89,12 +94,13 @@ int main(int argc, char* argv[]) {
 
 
 	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
+	if(pthread_create(&pth, &attr3, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
-
 	}
+
+	pthread_attr_destroy(&attr3);
 	log_trace(log_mapa, "se creo hilo deadlock");
 
 	char *rutaPokenests;
@@ -102,14 +108,16 @@ int main(int argc, char* argv[]) {
 	t_pkmn_factory* fabrica = create_pkmn_factory();
 
 	cargarPokenests(rutaPokenests, fabrica);
-	pthread_attr_t attr2;
 
-	pthread_attr_init(&attr2);
+
+
 	pthread_attr_setdetachstate(&attr2, PTHREAD_CREATE_DETACHED);
 	if(pthread_create(&guipth, &attr2, (void *) dibujarNivel, &comboListas)) {
 				log_error(log_mapa, "Error creando el hilo de la GUI");
 				return 1;
 	}
+
+	pthread_attr_destroy(&attr2);
 	log_trace(log_mapa, "se creo hilo de dibujo");
 	tv.tv_sec = 10;
 	tv.tv_usec = 0;
@@ -117,7 +125,11 @@ int main(int argc, char* argv[]) {
 	listener = socket_servidor(conf_metadata->ip, conf_metadata->puerto, log_mapa);
 	manejar_select(listener, log_mapa);
 
+	destroy_pkmn_factory(fabrica);
+//	list_clean_and_destroy_elements(listaPokenests, (void*)_borrar_pokenest);
+//	list_destroy(listaPokenests);
 	liberar_variables_globales();
+	free(rutaMetadata);
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
 }
@@ -126,7 +138,7 @@ void manejar_select(int socket, t_log* log){
 	//fd_set lectura, master;
 	int nuevaConexion, a, recibido, fdMax;
 	char buf[512];
-	char* objetivos, *nombre_entrenador;
+	char *nombre_entrenador;
 	char simbolo;
 	t_entrenador* entrenador;
 	//fdMax = socket;
@@ -198,6 +210,7 @@ char* getRutaMetadata(){
 	char* ruta = string_new();
 	string_append_with_format(&ruta, "%s/%s", ruta_mapa, directorio);
 	char* rutaAbsoluta = getRutaAbsoluta(ruta);
+	free(directorio);
 	return rutaAbsoluta;
 }
 
@@ -211,6 +224,7 @@ char* getRutaPokemon(char* rutaPokenests, char* pokemon){
 	char* ruta2 = string_new();
 	char* nombre_pokemon = string_duplicate(pokemon);
 	string_append_with_format(&ruta2, "%s/%s", rutaPokenests, nombre_pokemon);
+	free(nombre_pokemon);
 	return ruta2;
 }
 
@@ -340,6 +354,7 @@ void cargarPokenests(char* rutaPokenests_relativa, t_pkmn_factory* fabrica){
 		CrearCaja(items, pokenest->id, pokenest->posx, pokenest->posy, pokenest->cantidad);
 		free(rutaPokemon);
 	}
+	free(rutaPokenests_absoluta);
 	closedir(d);
 }
 
@@ -388,6 +403,17 @@ char* getRutaAbsoluta(char* rutaRelativa){
 	return rutaAbsoluta;
 }
 
+void _borrar_pokenest(PokeNest* pokenest){
+	free(pokenest->nombrePokemon);
+	list_clean_and_destroy_elements(pokenest->listaPokemons, (void*)_borrar_pokemon);
+	free(pokenest);
+}
+
+void _borrar_pokemon(t_infoPokemon* infopokemon){
+	free(infopokemon->nombre);
+	free(infopokemon->pokemon);
+	free(infopokemon);
+}
 /*t_infoPokemon* crear_infopokemon(){
 	t_infoPokemon* infopokemon = malloc(sizeof(t_infoPokemon));
 	infopokemon->pokemon = malloc(sizeof(t_pokemon));
