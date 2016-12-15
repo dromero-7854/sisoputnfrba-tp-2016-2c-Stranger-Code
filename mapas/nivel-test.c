@@ -29,7 +29,9 @@ void releerConfiguracion(int n){
 	leerConfiguracion(conf_metadata, rutaMetadata);
 }
 
-
+void sigint(){
+	return;
+}
 
 
 int main(int argc, char* argv[]) {
@@ -38,8 +40,15 @@ int main(int argc, char* argv[]) {
 		printf("Faltan ingresar parametos. Se debe ejecutar de la sig. manera:\n ./mapa <nombre_mapa> <punto_montaje>\n");
 		exit(1);
 	}
-	int len_nombre_mapa, len_pto_mnt;
+
+
 	signal(SIGUSR1, releerConfiguracion);
+/*    struct sigaction s;
+    s.sa_handler = sigint;
+    sigemptyset(&s.sa_mask);
+    s.sa_flags = 0;
+    sigaction(SIGINT, &s, NULL);*/
+
 	log_mapa = crear_log(argv[1]);
 
 	nombre_mapa = argv[1];
@@ -55,13 +64,27 @@ int main(int argc, char* argv[]) {
 	colaBloqueados = queue_create();
 
 
-	listaPokenests = list_create();
+	t_combo comboListas;
+	comboListas.entrenadores = entrenadores;
+	comboListas.pokenests = listaPokenests;
+
+	log_trace(log_mapa, "Se iniciaron las colas y listas");
+
 	rutaMetadata = getRutaMetadata();
 	log_trace(log_mapa, "Se obtuvo la ruta a metadata %s", rutaMetadata);
 	conf_metadata = malloc(sizeof(metadata));
 	leerConfiguracion(conf_metadata, rutaMetadata);
 	log_trace(log_mapa, "se cargo la metadata");
+
+	char *rutaPokenests;
+	rutaPokenests = getRutaPokenests();
+	t_pkmn_factory* fabrica = create_pkmn_factory();
+	cargarPokenests(rutaPokenests, fabrica);
+	free(rutaPokenests);
+
 	pthread_t planificador;
+	pthread_t pth, guipth;
+
 	pthread_attr_t attr;
 	pthread_attr_t attr2;
 	pthread_attr_t attr3;
@@ -76,6 +99,7 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&mutex_cola_listos, NULL);
 	pthread_mutex_init(&mutex_cola_bloqueados, NULL);
 	pthread_mutex_init(&mutex_turno_desbloqueo, NULL);
+
 	pthread_attr_init(&attr);
 	pthread_attr_init(&attr2);
 	pthread_attr_init(&attr3);
@@ -87,30 +111,6 @@ int main(int argc, char* argv[]) {
 
 	pthread_attr_destroy(&attr);
 
-	pthread_t pth, guipth;
-	t_combo comboListas;
-	comboListas.entrenadores = entrenadores;
-	comboListas.pokenests = listaPokenests;
-
-
-	log_trace(log_mapa, "Se iniciaron las colas y listas");
-	if(pthread_create(&pth, &attr3, (void *)detectarDeadlock, &comboListas)) {
-
-		log_error(log_mapa, "Error creando hilo deadlock\n");
-		return 1;
-	}
-
-	pthread_attr_destroy(&attr3);
-	log_trace(log_mapa, "se creo hilo deadlock");
-
-	char *rutaPokenests;
-	rutaPokenests = getRutaPokenests();
-	t_pkmn_factory* fabrica = create_pkmn_factory();
-
-	cargarPokenests(rutaPokenests, fabrica);
-
-
-
 	pthread_attr_setdetachstate(&attr2, PTHREAD_CREATE_DETACHED);
 	if(pthread_create(&guipth, &attr2, (void *) dibujarNivel, &comboListas)) {
 				log_error(log_mapa, "Error creando el hilo de la GUI");
@@ -119,6 +119,23 @@ int main(int argc, char* argv[]) {
 
 	pthread_attr_destroy(&attr2);
 	log_trace(log_mapa, "se creo hilo de dibujo");
+
+	pthread_attr_setdetachstate(&attr3, PTHREAD_CREATE_DETACHED);
+	if(pthread_create(&pth, &attr3, (void *)detectarDeadlock, &comboListas)) {
+
+		log_error(log_mapa, "Error creando hilo deadlock\n");
+		return 1;
+	}
+
+	pthread_attr_destroy(&attr3);
+
+	log_trace(log_mapa, "se creo hilo deadlock");
+
+
+  /*  sigset_t sigset, oldset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGINT);
+    pthread_sigmask(SIG_BLOCK, &sigset, &oldset);*/
 	tv.tv_sec = 10;
 	tv.tv_usec = 0;
 	int listener;
@@ -126,8 +143,6 @@ int main(int argc, char* argv[]) {
 	manejar_select(listener, log_mapa);
 
 	destroy_pkmn_factory(fabrica);
-//	list_clean_and_destroy_elements(listaPokenests, (void*)_borrar_pokenest);
-//	list_destroy(listaPokenests);
 	liberar_variables_globales();
 	free(rutaMetadata);
 	//liberar conf_metadata
@@ -136,7 +151,7 @@ int main(int argc, char* argv[]) {
 
 void manejar_select(int socket, t_log* log){
 	//fd_set lectura, master;
-	int nuevaConexion, a, recibido, fdMax;
+	int nuevaConexion, a, recibido;
 	char buf[512];
 	char *nombre_entrenador;
 	char simbolo;
@@ -206,11 +221,12 @@ char* getRutaMapa(char* ptoMnt, char* nombreMapa){
 	return ruta;
 }
 char* getRutaMetadata(){
-	char* directorio = string_duplicate("metadata");
-	char* ruta = string_new();
-	string_append_with_format(&ruta, "%s/%s", ruta_mapa, directorio);
+	char* ruta = string_duplicate(ruta_mapa);
+	//char* archivo = string_new();
+	string_append(&ruta, "/metadata");
 	char* rutaAbsoluta = getRutaAbsoluta(ruta);
-	free(directorio);
+	//free(directorio);
+	free(ruta);
 	return rutaAbsoluta;
 }
 
@@ -230,19 +246,27 @@ char* getRutaPokemon(char* rutaPokenests, char* pokemon){
 
 PokeNest* crearPokenest(char* rutaPokenest){
 	PokeNest* pokeNest = malloc(sizeof(PokeNest));
+	char** array;
 	char* metadata = string_duplicate(rutaPokenest);
 	string_append(&metadata, "/metadata");
 	t_config* config = config_create(metadata);
 	pokeNest->id = *(config_get_string_value(config, "Identificador"));
-	char *posiciones, *posicion;
+	char *posiciones, *posicion ;
 
 	meterStringEnEstructura(&posiciones, config_get_string_value(config, "Posicion"));
-	posicion = strtok(posiciones, ";");
+	array = string_split(posiciones, ";");
+	pokeNest->posx = atoi(array[0]);
+	pokeNest->posy = atoi(array[1]);
+
+	/*posicion = strtok(posiciones, ";");
 	pokeNest->posx = atoi(posicion);
 	posicion = strtok(NULL, ";");
-	pokeNest->posy = atoi(posicion);
+	pokeNest->posy = atoi(posicion);*/
+
 	//free(posiciones);
-	//free(posicion);
+	vaciar_array(array);
+	free(array);
+	free(posiciones);
 	free(metadata);
 	config_destroy(config);
 	return pokeNest;
@@ -252,9 +276,7 @@ t_list* crearPokemons(char* rutaPokemon, t_pkmn_factory* fabrica, char* nombrePo
 	DIR* dir;
 	struct dirent* directorio;
 	dir = opendir(rutaPokemon);
-	char* metadataPokemon;
-	int len, lvl;
-	t_pokemon* pokemon;
+	int lvl;
 	t_list* listaPokemons = list_create();
 	while((directorio = readdir(dir)) != NULL){
 		if(!strcmp(directorio->d_name, ".") || !strcmp(directorio->d_name, "..")) continue;
@@ -397,7 +419,7 @@ void informar_contenido_cola(t_queue* cola){
 
 
 char* getRutaAbsoluta(char* rutaRelativa){
-	char* rutaAbsoluta = string_new;
+	char* rutaAbsoluta;
 	rutaAbsoluta = string_duplicate(pto_montaje);
 	string_append(&rutaAbsoluta, rutaRelativa);
 	return rutaAbsoluta;
@@ -413,6 +435,15 @@ void _borrar_pokemon(t_infoPokemon* infopokemon){
 	free(infopokemon->nombre);
 	free(infopokemon->pokemon);
 	free(infopokemon);
+}
+
+void vaciar_array(char** array){
+	char* palabra;
+	int i = 0;
+	while((palabra = array[i]) != NULL){
+		free(palabra);
+		i++;
+	}
 }
 /*t_infoPokemon* crear_infopokemon(){
 	t_infoPokemon* infopokemon = malloc(sizeof(t_infoPokemon));

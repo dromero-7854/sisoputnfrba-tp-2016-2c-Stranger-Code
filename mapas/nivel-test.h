@@ -128,5 +128,6 @@ void liberar_variables_globales();
 char* getRutaAbsoluta(char* rutaRelativa);
 void _borrar_pokenest(PokeNest* pokenest);
 void _borrar_pokemon(t_infoPokemon* infopokemon);
+void vaciar_array(char** array);
 
 #endif /* NIVEL_TEST_H_ */
