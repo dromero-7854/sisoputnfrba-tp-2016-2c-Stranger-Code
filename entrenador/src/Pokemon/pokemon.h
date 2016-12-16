@@ -8,6 +8,7 @@
 #ifndef SRC_POKEMON_POKEMON_H_
 #define SRC_POKEMON_POKEMON_H_
 
+#include <stdlib.h>
 #include "../Coordenadas/coordenadas.h"
 #include <commons/collections/list.h>
 

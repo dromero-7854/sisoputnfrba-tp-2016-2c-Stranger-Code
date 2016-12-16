@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <string.h>
+#include <time.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -19,6 +20,10 @@
 
 #include "helper.h"
 #include "Entrenador/entrenador.h"
+
+void iniciar_ruta_de_viaje(t_coach* entrenador);
+void game_over(void);
+int zero_lives(void);
 
 t_log* logger;
 t_coach* entrenador;
@@ -170,7 +175,7 @@ int main(int argc, char** argv){
 	log_info(logger, "Archivo de metadata cargado correctamente\n");
 
 	coach_next_map(entrenador);
-	time(&begin_time);
+	begin_time = time(NULL);
 	log_info(logger, "Comenzando la aventura :)");
 	iniciar_ruta_de_viaje(entrenador);
 	if(entrenador->life < 1){
@@ -179,7 +184,7 @@ int main(int argc, char** argv){
 		zero_lives();
 	}
 
-	time(&end_time);
+	end_time = time(NULL);
 	adventure_time = difftime(end_time, begin_time);
 
 	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.\n", entrenador->name);

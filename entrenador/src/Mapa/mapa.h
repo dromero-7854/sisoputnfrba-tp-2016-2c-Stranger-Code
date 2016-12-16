@@ -9,6 +9,7 @@
 #define SRC_MAPA_MAPA_H_
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <commons/collections/list.h>
 #include "../Pokemon/pokemon.h"
 #include "../Conexion/conexion.h"

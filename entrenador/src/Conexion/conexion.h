@@ -10,6 +10,7 @@
 
 #include <sys/socket.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <netdb.h>
 #include <stddef.h>
 #include <commons/string.h>
