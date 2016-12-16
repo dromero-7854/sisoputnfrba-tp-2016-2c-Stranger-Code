@@ -30,9 +30,14 @@ void releerConfiguracion(int n){
 }
 
 void sigint(){
-	return;
+	pthread_kill(planificador, SIGINT);
+	pthread_kill(pth, SIGINT);
+	pthread_kill(guipth, SIGINT);
+	list_clean_and_destroy_elements(listaPokenests, (void*)_borrar_pokenest);
+	list_destroy(listaPokenests);
+	nivel_gui_terminar();
+	exit(1);
 }
-
 
 int main(int argc, char* argv[]) {
 
@@ -43,11 +48,11 @@ int main(int argc, char* argv[]) {
 
 
 	signal(SIGUSR1, releerConfiguracion);
-/*    struct sigaction s;
-    s.sa_handler = sigint;
-    sigemptyset(&s.sa_mask);
-    s.sa_flags = 0;
-    sigaction(SIGINT, &s, NULL);*/
+/*	struct sigaction s;
+	s.sa_handler = sigint;
+	sigemptyset(&s.sa_mask);
+	s.sa_flags = 0;
+	sigaction(SIGINT, &s, NULL);*/
 
 	log_mapa = crear_log(argv[1]);
 
@@ -82,8 +87,7 @@ int main(int argc, char* argv[]) {
 	cargarPokenests(rutaPokenests, fabrica);
 	free(rutaPokenests);
 
-	pthread_t planificador;
-	pthread_t pth, guipth;
+
 
 	pthread_attr_t attr;
 	pthread_attr_t attr2;
@@ -99,20 +103,21 @@ int main(int argc, char* argv[]) {
 	pthread_mutex_init(&mutex_cola_listos, NULL);
 	pthread_mutex_init(&mutex_cola_bloqueados, NULL);
 	pthread_mutex_init(&mutex_turno_desbloqueo, NULL);
+	pthread_mutex_init(&deadlock_ejecutando, NULL);
 
 	pthread_attr_init(&attr);
 	pthread_attr_init(&attr2);
 	pthread_attr_init(&attr3);
 
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if(pthread_create(&planificador, &attr, (void *) planificar, NULL) != 0){
+	if(pthread_create(&planificador, NULL, (void *) planificar, NULL) != 0){
 		log_error(log_mapa, "problemas al crear hilo planificador");
 	}
 
 	pthread_attr_destroy(&attr);
 
 	pthread_attr_setdetachstate(&attr2, PTHREAD_CREATE_DETACHED);
-	if(pthread_create(&guipth, &attr2, (void *) dibujarNivel, &comboListas)) {
+	if(pthread_create(&guipth, NULL, (void *) dibujarNivel, &comboListas)) {
 				log_error(log_mapa, "Error creando el hilo de la GUI");
 				return 1;
 	}
@@ -121,7 +126,7 @@ int main(int argc, char* argv[]) {
 	log_trace(log_mapa, "se creo hilo de dibujo");
 
 	pthread_attr_setdetachstate(&attr3, PTHREAD_CREATE_DETACHED);
-	if(pthread_create(&pth, &attr3, (void *)detectarDeadlock, &comboListas)) {
+	if(pthread_create(&pth, NULL, (void *)detectarDeadlock, &comboListas)) {
 
 		log_error(log_mapa, "Error creando hilo deadlock\n");
 		return 1;
@@ -132,19 +137,18 @@ int main(int argc, char* argv[]) {
 	log_trace(log_mapa, "se creo hilo deadlock");
 
 
-  /*  sigset_t sigset, oldset;
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGINT);
-    pthread_sigmask(SIG_BLOCK, &sigset, &oldset);*/
+	/*sigset_t sigset, oldset;
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGINT);
+	pthread_sigmask(SIG_BLOCK, &sigset, &oldset);*/
+
 	tv.tv_sec = 10;
 	tv.tv_usec = 0;
 	int listener;
 	listener = socket_servidor(conf_metadata->ip, conf_metadata->puerto, log_mapa);
 	manejar_select(listener, log_mapa);
 
-	destroy_pkmn_factory(fabrica);
-	liberar_variables_globales();
-	free(rutaMetadata);
+	iberar_variables_globales();
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
 }
@@ -172,7 +176,7 @@ void manejar_select(int socket, t_log* log){
 						//FD_SET(nuevaConexion, &master);
 						//if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo, nombre_entrenador);
-
+						free(nombre_entrenador);
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
 						list_add(entrenadores, nuevoEntrenador);
 						sem_post(&sem_dibujo);
@@ -181,9 +185,11 @@ void manejar_select(int socket, t_log* log){
 						informar_contenido_cola(colaListos);
 						pthread_mutex_unlock(&mutex_cola_listos);
 					} else {
+						pthread_mutex_lock(&deadlock_ejecutando);
 						pthread_mutex_lock(&mutex_turno_desbloqueo);
 						entrenador = buscarEntrenador(a, colaBloqueados->elements);
 						pthread_mutex_unlock(&mutex_turno_desbloqueo);
+						pthread_mutex_unlock(&deadlock_ejecutando);
 						if(entrenador == NULL)continue;
 						recibido = recv(a, buf, 512, 0);
 						if(recibido == 0){
@@ -312,8 +318,8 @@ t_entrenador* crearEntrenador(int file_descriptor, char simbolo, char* nombre){
 	entrenador->pokenest_buscada = NULL;
 	entrenador->ultimo_pokemon = 0;
 	entrenador->pokemons = list_create();
-	entrenador->tiempos = malloc(sizeof(t_tiempos));
-	entrenador->tiempos->inicio = time(NULL);
+	//entrenador->tiempos = malloc(sizeof(t_tiempos));
+	//entrenador->tiempos->inicio = time(NULL);
 	entrenador->simbolo = simbolo;
 	entrenador->cantDeadlocks = 0;
 	return entrenador;
@@ -335,11 +341,8 @@ void buscar_entrenador_y_borrar(t_queue* cola, int file_descriptor){
 }
 
 void liberarEntrenador(t_entrenador* entrenador){
-	//free(entrenador->objetivos);
-	//free(entrenador->proximoMapa);
-	BorrarItem(items, entrenador->simbolo);
-	//list_clean(entrenador->pokemons);
-	//list_destroy(entrenador->pokemons);
+
+	free(entrenador->nombre);
 	int i;
 	for(i = 0; i < list_size(entrenadores); i++) {
 		t_entrenador *entr = list_get(entrenadores, i);
@@ -348,9 +351,9 @@ void liberarEntrenador(t_entrenador* entrenador){
 			list_remove(entrenadores, i);
 			pthread_mutex_unlock(&mutex_lista_entrenador);
 		}
-
 	}
-	//free(entrenador);
+	BorrarItem(items, entrenador->simbolo);
+	free(entrenador);
 }
 
 void cargarPokenests(char* rutaPokenests_relativa, t_pkmn_factory* fabrica){

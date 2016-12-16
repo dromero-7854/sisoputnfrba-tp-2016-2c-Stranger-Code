@@ -320,6 +320,7 @@ void liberarRecursos2(t_entrenador* entrenadorLiberado){
 		}
 
 	}
+	list_clean(entrenadorLiberado->pokemons);
 	list_destroy(entrenadorLiberado->pokemons);
 	liberarEntrenador(entrenadorLiberado);
 }

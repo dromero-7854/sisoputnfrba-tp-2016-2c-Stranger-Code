@@ -176,6 +176,7 @@ void detectarDeadlock(t_combo * comboLista) {
 
 				t_entrenador * entrenador1 = list_remove(deadlockeados, 0);
 
+				pthread_mutex_lock(&deadlock_ejecutando);
 				while (list_size(deadlockeados)) {
 					t_entrenador * entrenador2 = list_remove(deadlockeados, 0);
 
@@ -185,12 +186,9 @@ void detectarDeadlock(t_combo * comboLista) {
 					entrenador1 = loser;
 				}
 				matarEntrenador(entrenador1);
+				pthread_mutex_unlock(&deadlock_ejecutando);
 			}
 		}
-		list_clean(entrenadores);
-		list_destroy(entrenadores);
-		list_clean(deadlockeados);
-		list_destroy(deadlockeados);
 	}
 
 }
@@ -327,6 +325,7 @@ t_list* duplicar_lista(t_list* lista_original){
 	t_list* lista_nueva = list_create();
 	void _duplicar_entrenador(t_entrenador* e){
 		t_entrenador* e_nuevo = malloc(sizeof(t_entrenador));
+		e_nuevo->nombre = string_duplicate(e->nombre);
 		e_nuevo->cantDeadlocks = e->cantDeadlocks;
 		e_nuevo->id = e->id;
 		e_nuevo->pokemons = e->pokemons;
@@ -334,7 +333,7 @@ t_list* duplicar_lista(t_list* lista_original){
 		e_nuevo->posx = e->posx;
 		e_nuevo->posy = e->posy;
 		e_nuevo->simbolo = e->simbolo;
-		e_nuevo->tiempos = e->tiempos;
+		//e_nuevo->tiempos = e->tiempos;
 		e_nuevo->ultimo_pokemon = e->ultimo_pokemon;
 		list_add(lista_nueva, e_nuevo);
 	}

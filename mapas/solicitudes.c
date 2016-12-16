@@ -274,6 +274,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 	}
 	default:
 		respuesta = TURNO_NORMAL;
+		free(buffer);
 		break;
 	}
 

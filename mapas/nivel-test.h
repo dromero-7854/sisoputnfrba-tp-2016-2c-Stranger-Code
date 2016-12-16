@@ -58,7 +58,7 @@ typedef struct {
 	int cantDeadlocks;
 	int ultimo_pokemon;
 
-	t_tiempos* tiempos;
+//	t_tiempos* tiempos;
 
 	t_list * pokemons;
 
@@ -96,6 +96,9 @@ typedef struct PokeNest {
 	t_list* listaPokemons;
 } PokeNest;
 
+pthread_t planificador;
+pthread_t pth, guipth;
+
 metadata* conf_metadata;
 char* rutaMetadata;
 pthread_mutex_t mutex_cola_listos;
@@ -105,6 +108,7 @@ pthread_mutex_t mutex_turno_desbloqueo;
 pthread_mutex_t mutex_lista_entrenador;
 pthread_mutex_t mutex_lista_pokenest;
 pthread_mutex_t dibujo;
+pthread_mutex_t deadlock_ejecutando;
 sem_t sem_dibujo;
 sem_t sem_turno;
 
