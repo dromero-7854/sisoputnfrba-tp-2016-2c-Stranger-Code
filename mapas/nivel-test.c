@@ -7,20 +7,12 @@
  *      Author: utnso
  */
 
-#include <curses.h>
-#include <tad_items.h>
-#include <nivel.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <commons/collections/list.h>
-#include <commons/collections/queue.h>
+
 #include "nivel-test.h"
 #include "planificacion.h"
 #include "deteccionDeadlock.h"
 #include "dibujarNivel.h"
-#include <bibliotecaCharMander.h>
-#include <signal.h>
+
 
 #define QUANTUM 5
 
@@ -148,7 +140,7 @@ int main(int argc, char* argv[]) {
 	listener = socket_servidor(conf_metadata->ip, conf_metadata->puerto, log_mapa);
 	manejar_select(listener, log_mapa);
 
-	iberar_variables_globales();
+	liberar_variables_globales();
 	//liberar conf_metadata
 	return EXIT_SUCCESS;
 }

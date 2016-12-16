@@ -8,7 +8,7 @@
 #include "deteccionDeadlock.h"
 #include "nivel-test.h"
 #include <time.h>
-#include <commons/string.h>
+//#include <commons/string.h>
 
 bool estaBloqueado(t_entrenador * entrenador);
 int hayAlguienParaAtender(int vectorAtendido[], int cantidad);
@@ -126,7 +126,6 @@ void detectarDeadlock(t_combo * comboLista) {
 		for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
 			t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
 			if (!atendido[i_entrenadores]) {
-				entrenador->cantDeadlocks++;
 				list_add(deadlockeados, entrenador);
 			}
 		}
@@ -174,9 +173,10 @@ void detectarDeadlock(t_combo * comboLista) {
 
 				log_info(log_deadlock, "HAY BATALLA");
 
+				pthread_mutex_lock(&deadlock_ejecutando);
 				t_entrenador * entrenador1 = list_remove(deadlockeados, 0);
 
-				pthread_mutex_lock(&deadlock_ejecutando);
+
 				while (list_size(deadlockeados)) {
 					t_entrenador * entrenador2 = list_remove(deadlockeados, 0);
 
@@ -184,8 +184,13 @@ void detectarDeadlock(t_combo * comboLista) {
 					t_entrenador * loser = mandarAPelear(entrenador1, entrenador2);
 
 					entrenador1 = loser;
+
+					if( loser == -1)
+						break;
 				}
-				matarEntrenador(entrenador1);
+				if(entrenador1 != -1)
+					matarEntrenador(entrenador1);
+
 				pthread_mutex_unlock(&deadlock_ejecutando);
 			}
 		}
@@ -207,6 +212,9 @@ bool esDeMayorNivel(t_infoPokemon * pokemon1, t_infoPokemon * pokemon2) {
 	return pokemon1->pokemon->level > pokemon2->pokemon->level;
 }
 t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador2) {
+
+	if(entrenador1 == NULL|| entrenador2 == NULL)
+		return -1;
 
 	uint8_t operation_code;
 	char *nombrePokemon;

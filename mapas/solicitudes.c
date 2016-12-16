@@ -6,7 +6,7 @@
  */
 
 #include "solicitudes.h"
-#include <stdint.h>
+
 
 int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 /**	╔══════════════════════════════════════════════╦══════════════════════════════════════════╦══════════════════════════════╗

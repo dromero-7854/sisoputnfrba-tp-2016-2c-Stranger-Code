@@ -20,6 +20,14 @@
 #include <semaphore.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <curses.h>
+#include <tad_items.h>
+#include <nivel.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <bibliotecaCharMander.h>
+#include <signal.h>
 
 #define DIRECCION_METADATA "/home/utnso/workspace/tp-2016-2c-Stranger-Code/mapas/Debug/metadata"
 

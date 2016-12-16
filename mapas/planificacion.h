@@ -9,6 +9,9 @@
 #define PLANIFICACION_H_
 
 #include "nivel-test.h"
+#include <stdint.h>
+//#include <commons/log.h>
+//#include <commons/collections/queue.h>
 /*
 #define NO_ENCONTRO_POKEMON -1
 #define TURNO_NORMAL 0

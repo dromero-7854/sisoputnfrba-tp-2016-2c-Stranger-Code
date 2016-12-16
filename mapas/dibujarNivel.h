@@ -8,7 +8,7 @@
 #ifndef DIBUJARNIVEL_H_
 #define DIBUJARNIVEL_H_
 
-#include <commons/collections/list.h>
+//#include <commons/collections/list.h>
 #include "nivel-test.h"
 
 void dibujarNivel(t_combo * comboLista);

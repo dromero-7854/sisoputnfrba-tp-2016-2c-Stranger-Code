@@ -9,7 +9,8 @@
 #define SOLICITUDES_H_
 
 #include "nivel-test.h"
-#include <bibliotecaCharMander.h>
+//#include <bibliotecaCharMander.h>
+//#include <stdint.h>
 
 #define TURNO_NORMAL 1
 #define DESCONEXION -1

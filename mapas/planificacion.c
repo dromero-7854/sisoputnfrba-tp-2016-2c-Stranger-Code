@@ -4,9 +4,7 @@
  *  Created on: 24/9/2016
  *      Author: utnso
  */
-#include <stdint.h>
-#include <commons/log.h>
-#include <commons/collections/queue.h>
+
 #include "planificacion.h"
 #include "solicitudes.h"
 
