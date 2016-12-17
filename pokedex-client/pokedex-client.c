@@ -152,6 +152,9 @@ static int pk_getattr(const char * path, struct stat * stbuf) {
 				stbuf->st_mode = S_IFREG | 0755;
 				stbuf->st_nlink = 2;
 				stbuf->st_size = file_size;
+				memcpy(&(stbuf->st_mtim.tv_sec), &lastmod, sizeof(lastmod));
+				lastmod = 0;
+				memcpy(&(stbuf->st_mtim.tv_nsec), &lastmod, sizeof(lastmod));
 			}
 		}
 
