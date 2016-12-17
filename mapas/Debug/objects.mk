@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lBibliotecaCharMander -lcommons -lnivel-gui -lcurses -lpkmn-battle -lpthread
+LIBS := -lBibliotecaCharMander -lcommons -lnivel-gui -lncurses -lpkmn-battle -lpthread
 

@@ -4,7 +4,11 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 O_SRCS += \
-../nivel-test.o 
+../deteccionDeadlock.o \
+../dibujarNivel.o \
+../nivel-test.o \
+../planificacion.o \
+../solicitudes.o 
 
 C_SRCS += \
 ../deteccionDeadlock.c \

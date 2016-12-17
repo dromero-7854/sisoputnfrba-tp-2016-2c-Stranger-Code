@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <bibliotecaCharMander.h>
+#include "../biblioteca-charmander/bibliotecaCharMander.h"
 #include <signal.h>
 
 #define DIRECCION_METADATA "/home/utnso/workspace/tp-2016-2c-Stranger-Code/mapas/Debug/metadata"

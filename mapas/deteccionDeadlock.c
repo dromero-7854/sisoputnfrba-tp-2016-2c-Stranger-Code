@@ -8,7 +8,6 @@
 #include "deteccionDeadlock.h"
 #include "nivel-test.h"
 #include <time.h>
-//#include <commons/string.h>
 
 bool estaBloqueado(t_entrenador * entrenador);
 int hayAlguienParaAtender(int vectorAtendido[], int cantidad);
@@ -16,7 +15,6 @@ void mostrarMatriz(int entrenadores, int pokenests, int matriz[entrenadores][pok
 t_list* duplicar_lista(t_list*);
 void detectarDeadlock(t_combo * comboLista) {
 
-	//getchar();
 	char * archivoDeadlock = string_from_format("deadlock_%s", nombre_mapa);
 	log_deadlock = crear_log(archivoDeadlock);
 
@@ -33,7 +31,6 @@ void detectarDeadlock(t_combo * comboLista) {
 		nanosleep(&retardo, &opa);
 
 		t_list * entrenadores = duplicar_lista(comboLista->entrenadores);
-		//comboLista->entrenadores);
 		t_list * pokenests = comboLista->pokenests;
 		t_list * deadlockeados = list_create();
 
@@ -150,7 +147,7 @@ void detectarDeadlock(t_combo * comboLista) {
 			}
 			int retieneAlguno = list_any_satisfy(listaIdPokemonsRetenidos, (void *) _esUnPokemonBuscadoPorAlguien);
 			list_clean(listaIdPokemonsRetenidos);
-			//list_destroy(listaIdPokemonsRetenidos);
+			list_destroy(listaIdPokemonsRetenidos);
 			return retieneAlguno;
 		}
 		deadlockeados = list_filter(deadlockeados, (void *) retieneAlgunObjetivo);
@@ -196,9 +193,11 @@ void detectarDeadlock(t_combo * comboLista) {
 			}
 		}
 		list_clean(listaDeObjetivos);
+		list_destroy(listaDeObjetivos);
 		list_clean(deadlockeados);
 		list_destroy(deadlockeados);
-		//list_destroy(listaDeObjetivos);
+		list_clean_and_destroy_elements(entrenadores, (void*) _liberar_entrenador_de_lista);
+		list_destroy(entrenadores);
 	}
 }
 bool estaBloqueado(t_entrenador * entrenador) {
@@ -233,11 +232,13 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 	connection_recv(entrenador1->id, &operation_code, &nombrePokemon);
 
 	pok1 = buscar_pokemon_de_entrenador(entrenador1, nombrePokemon);
+	free(nombrePokemon);
 
 	enviar_oc(entrenador2->id, OC_POKEMON_BATALLA);
 	connection_recv(entrenador2->id, &operation_code, &nombrePokemon);
 
 	pok2 = buscar_pokemon_de_entrenador(entrenador2, nombrePokemon);
+	free(nombrePokemon);
 
 	log_info(log_deadlock, "%s (%c) eligio a  %s (nivel %d)", entrenador1->nombre, entrenador1->simbolo, pok1->species, pok1->level);
 	log_info(log_deadlock, "%s (%c) eligio a  %s (nivel %d)", entrenador2->nombre, entrenador2->simbolo, pok2->species, pok2->level);
@@ -362,4 +363,9 @@ void enviar_oc(int socket, uint8_t oc_send){
 	memcpy(buffer + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
 	send(socket, buffer, sizeof(uint8_t) * 2, 0);
 	free(buffer);
+}
+
+void _liberar_entrenador_de_lista(t_entrenador* e){
+	free(e->nombre);
+	free(e);
 }
