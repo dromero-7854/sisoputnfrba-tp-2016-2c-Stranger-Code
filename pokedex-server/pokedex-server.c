@@ -58,8 +58,8 @@ void closure (char *);
 void unlock_block(int *);
 void semaphore (int, int);
 
-int search_dir(const char *, int, int);
-int search_node(const char *, int, int);
+int search_dir(const char *, int, int, int);
+int search_node(const char *, int, int, int);
 int get_free_file_block(int);
 int create_dir(const char *, int);
 int create_node(const char *, int);
@@ -74,6 +74,7 @@ void osada_read(int *);
 void osada_truncate(int *);
 void osada_unlink(int *);
 void osada_rmdir(int *);
+void osada_rename(int *);
 
 int main(int argc , char * argv[]) {
 	load_properties_file();
@@ -255,8 +256,8 @@ void semaphore(int action, int pos) {
 	}
 }
 
-int search_dir(const char * dir_name, int pb_pos, int lock_type) {
-	int node_pos = search_node(dir_name, pb_pos, lock_type);
+int search_dir(const char * dir_name, int pb_pos, int lock_type, int ignore_pos) {
+	int node_pos = search_node(dir_name, pb_pos, lock_type, ignore_pos );
 	if (node_pos == -OSADA_ENOENT) // no such  file or directory
 		return -OSADA_ENOTDIR; // not a directory
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
@@ -269,7 +270,7 @@ int search_dir(const char * dir_name, int pb_pos, int lock_type) {
 	}
 }
 
-int search_node(const char * node_name, int pb_pos, int lock_type) {
+int search_node(const char * node_name, int pb_pos, int lock_type, int ignore_pos) {
 
 	osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
 
@@ -277,7 +278,7 @@ int search_node(const char * node_name, int pb_pos, int lock_type) {
 	int node_size, i;
 	char * fname = malloc(sizeof(char) * (OSADA_FILENAME_LENGTH + 1));
 	while (file_block_number <= (FILE_BLOCKS_MOUNT - 1)) {
-		if (file_block_number != pb_pos) {
+		if (file_block_number != pb_pos && file_block_number != ignore_pos) {
 			semaphore(lock_type, file_block_number);
 			if (file_table_ptr->state == REGULAR || file_table_ptr->state == DIRECTORY) {
 				for (node_size = 0, i = 0; i < OSADA_FILENAME_LENGTH; i++) {
@@ -406,6 +407,9 @@ void process_request(int * client_socket) {
 		case 9:
 			osada_rmdir(client_socket);
 			break;
+		case 10:
+			osada_rename(client_socket);
+			break;
 		default:;
 		}
 		received_bytes = recv(* client_socket, &op_code, prot_ope_code_size, MSG_WAITALL);
@@ -447,7 +451,7 @@ void osada_mkdir(int * client_socket) {
 		int pb_pos = ROOT;
 		char * dir = strtok(path_c, "/");
 		while (dir != NULL) {
-			dir_pos = search_dir(dir, pb_pos, LOCK_READ);
+			dir_pos = search_dir(dir, pb_pos, LOCK_READ, pb_pos);
 			if (dir_pos == -OSADA_ENOTDIR) {
 				if (strlen(dir) > OSADA_FILENAME_LENGTH) {
 					log_error(logger, "client %d, mkdir '%s', creating directory '%s' : name too long", * client_socket, path, dir);
@@ -539,7 +543,7 @@ void osada_readdir(int * client_socket) {
 
 		char * dir = strtok(path_c, "/");
 		while (dir != NULL) {
-			dir_pos = search_dir(dir, pb_pos, LOCK_READ);
+			dir_pos = search_dir(dir, pb_pos, LOCK_READ, pb_pos);
 			if (dir_pos == -OSADA_ENOTDIR) {
 				log_error(logger, "client %d, readdir '%s', directory '%s' : not a directory", * client_socket, path, dir);
 				if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
@@ -686,7 +690,7 @@ void osada_getattr(int * client_socket) {
 	int pb_pos = ROOT;
 	char * node = strtok(path_c, "/");
 	while (node != NULL) {
-		node_pos = search_node(node, pb_pos, LOCK_READ);
+		node_pos = search_node(node, pb_pos, LOCK_READ, pb_pos);
 		if (node_pos == -OSADA_ENOENT) {
 			log_error(logger, "client %d, getattr '%s', node '%s' : no such file or directory", * client_socket, path, node);
 			if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
@@ -775,7 +779,7 @@ void osada_mknod(int * client_socket) {
 	int pb_pos = ROOT;
 	char * node = strtok(path_c, "/");
 	while (node != NULL) {
-		node_pos = search_dir(node, pb_pos, LOCK_READ);
+		node_pos = search_dir(node, pb_pos, LOCK_READ, pb_pos);
 		if (node_pos == -OSADA_ENOTDIR) {
 			char * rfile = node;
 			node = strtok(NULL, "/");
@@ -920,7 +924,7 @@ void osada_write(int * client_socket) {
 	int pb_pos = ROOT;
 	char * node = strtok(path_c, "/");
 	while (node != NULL) {
-		dir_pos = search_dir(node, pb_pos, LOCK_READ);
+		dir_pos = search_dir(node, pb_pos, LOCK_READ, pb_pos);
 		if (dir_pos == -OSADA_ENOTDIR) {
 			char * rfile = node;
 			node = strtok(NULL, "/");
@@ -928,7 +932,7 @@ void osada_write(int * client_socket) {
 				//
 				// final node, the regular file to write
 				//
-				file_pos = search_node(rfile, pb_pos, LOCK_WRITE);
+				file_pos = search_node(rfile, pb_pos, LOCK_WRITE, pb_pos);
 				if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
 				if (file_pos == -OSADA_ENOENT) {
 					log_error(logger, "client %d, write '%s', node '%s' : no such file or directory", * client_socket, path, rfile);
@@ -1198,7 +1202,7 @@ void osada_read(int * client_socket) {
 	int pb_pos = ROOT;
 	char * node = strtok(path_c, "/");
 	while (node != NULL) {
-		node_pos = search_node(node, pb_pos, LOCK_READ);
+		node_pos = search_node(node, pb_pos, LOCK_READ, pb_pos);
 		if (node_pos == -OSADA_ENOENT) {
 			log_error(logger, "client %d, read '%s', node '%s' : no such file or directory", * client_socket, path, node);
 			if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
@@ -1333,7 +1337,7 @@ void osada_truncate(int * client_socket) {
 	int pb_pos = ROOT;
 	char * node = strtok(path_c, "/");
 	while (node != NULL) {
-		dir_pos = search_dir(node, pb_pos, LOCK_READ);
+		dir_pos = search_dir(node, pb_pos, LOCK_READ, pb_pos);
 		if (dir_pos == -OSADA_ENOTDIR) {
 			char * rfile = node;
 			node = strtok(NULL, "/");
@@ -1341,7 +1345,7 @@ void osada_truncate(int * client_socket) {
 				//
 				// final node, the regular file to write
 				//
-				file_pos = search_node(rfile, pb_pos, LOCK_WRITE);
+				file_pos = search_node(rfile, pb_pos, LOCK_WRITE, pb_pos);
 				if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
 				if (file_pos == -OSADA_ENOENT) {
 					log_error(logger, "client %d, truncate '%s', node '%s' : no such file or directory", * client_socket, path, rfile);
@@ -1536,7 +1540,7 @@ void osada_unlink(int * client_socket) {
 	int pb_pos = ROOT;
 	char * node = strtok(path_c, "/");
 	while (node != NULL) {
-		dir_pos = search_dir(node, pb_pos, LOCK_READ);
+		dir_pos = search_dir(node, pb_pos, LOCK_READ, pb_pos);
 		if (dir_pos == -OSADA_ENOTDIR) {
 			char * rfile = node;
 			node = strtok(NULL, "/");
@@ -1544,7 +1548,7 @@ void osada_unlink(int * client_socket) {
 				//
 				// final node, the regular file to write
 				//
-				file_pos = search_node(rfile, pb_pos, LOCK_WRITE);
+				file_pos = search_node(rfile, pb_pos, LOCK_WRITE, pb_pos);
 				if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
 				if (file_pos == -OSADA_ENOENT) {
 					log_error(logger, "client %d, unlink '%s', node '%s' : no such file or directory", * client_socket, path, node);
@@ -1666,7 +1670,7 @@ void osada_rmdir(int * client_socket) {
 				//
 				lock_type = LOCK_WRITE;
 			}
-			dir_pos = search_dir(dir, pb_pos, lock_type);
+			dir_pos = search_dir(dir, pb_pos, lock_type, pb_pos);
 			if (dir_pos == -OSADA_ENOTDIR) {
 				log_error(logger, "client %d, rmdir '%s', dir '%s' : no such file or directory", * client_socket, path, dir);
 				if (pb_pos != ROOT) semaphore(UNLOCK, pb_pos);
@@ -1710,4 +1714,253 @@ void osada_rmdir(int * client_socket) {
 	memcpy(resp, &resp_code, prot_resp_code_size);
 	write(* client_socket, resp, response_size);
 	free(resp);
+}
+
+void osada_rename(int * client_socket) {
+	//
+	// << receiving message >>
+	// from size
+	uint8_t prot_from_size = 4;
+	uint32_t req_from_size;
+
+	int received_bytes = recv(* client_socket, &req_from_size, prot_from_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
+	}
+	// from
+	char * from = malloc(sizeof(char) * (req_from_size + 1));
+	received_bytes = recv(* client_socket, from, req_from_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
+	}
+	from[req_from_size] = '\0';
+
+	// to size
+	uint8_t prot_to_size = 4;
+	uint32_t req_to_size;
+	received_bytes = recv(* client_socket, &req_to_size, prot_to_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
+	}
+	// to
+	char * to = malloc(sizeof(char) * (req_to_size + 1));
+	received_bytes = recv(* client_socket, to, req_to_size, MSG_WAITALL);
+	if (received_bytes <= 0) {
+		log_error(logger, "client %d disconnected...", * client_socket);
+		return;
+	}
+	to[req_to_size] = '\0';
+
+	log_info(logger, "client %d, rename %s to %s", * client_socket, from, to);
+
+	// creating a copy to work with strtok (it modifies the original str)
+	char * from_c = malloc(sizeof(char) * (req_from_size + 1));
+	strcpy(from_c, from);
+
+	// search file location "from"
+	int node_pos_from, file_pos_from;
+	int pb_pos_from = ROOT;
+	char * node_from = strtok(from_c, "/");
+	while (node_from != NULL) {
+		node_pos_from = search_dir(node_from, pb_pos_from, LOCK_READ, pb_pos_from);
+		if (node_pos_from == -OSADA_ENOTDIR) {
+			char * rfile = node_from;
+			node_from = strtok(NULL, "/");
+			if (node_from == NULL) {
+				//
+				// final node, the regular file or directory to move
+				//
+				node_pos_from = search_node(rfile, pb_pos_from, LOCK_WRITE, pb_pos_from);
+				if (pb_pos_from != ROOT) semaphore(UNLOCK, pb_pos_from);
+				if (node_pos_from == -OSADA_ENOENT) {
+					log_error(logger, "client %d, rename '%s', node '%s' : no such file or directory", * client_socket, from, node_from);
+					//
+					// << sending response >>
+					// response code
+					uint8_t prot_resp_code_size = 1;
+					uint8_t resp_code = OSADA_ENOENT; // no such file or directory
+
+					int response_size = sizeof(char) * (prot_resp_code_size);
+					void * resp = malloc(response_size);
+					memcpy(resp, &resp_code, prot_resp_code_size);
+					write(* client_socket, resp, response_size);
+					free(resp);
+					free(from_c);
+					free(from);
+					return;
+				}
+				break;
+			} else {
+				log_error(logger, "client %d, rename '%s', node '%s' : no such file or directory", * client_socket, from, node_from);
+				if (pb_pos_from != ROOT) semaphore(UNLOCK, pb_pos_from);
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENOENT; // no such file or directory
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, response_size);
+				free(resp);
+				free(from_c);
+				free(from);
+				return;
+			}
+		}
+		if (pb_pos_from != ROOT) semaphore(UNLOCK, pb_pos_from);
+		pb_pos_from = node_pos_from;
+		node_from = strtok(NULL, "/");
+	}
+	free(from_c);
+
+
+
+	// creating a copy to work with strtok (it modifies the original str)
+	char * to_c = malloc(sizeof(char) * (req_to_size + 1));
+	strcpy(to_c, to);
+
+	// search file location "to"
+	int node_pos_to;
+	int pb_pos_to = ROOT;
+	char * node_to = strtok(to_c, "/");
+	while (node_to != NULL) {
+		node_pos_to = search_dir(node_to, pb_pos_to, LOCK_READ, node_pos_from);
+		if (node_pos_to == -OSADA_ENOTDIR) {
+			char * rfile = node_to;
+			node_to = strtok(NULL, "/");
+			if (node_to == NULL) {
+				//
+				// final node, the regular file "to"
+				//
+				node_pos_to = search_node(rfile, pb_pos_to, LOCK_READ, node_pos_from);
+				if (pb_pos_to != ROOT) semaphore(UNLOCK, pb_pos_to);
+				if (node_pos_to == -OSADA_ENOENT) {
+					//Primero reviso extension del nuevo nombre
+					if (strlen(rfile) > OSADA_FILENAME_LENGTH) {
+						log_error(logger, "client %d, rename '%s' to '%s' : name too long", * client_socket, from, to);
+						semaphore(UNLOCK, node_pos_from);
+						//
+						// << sending response >>
+						// response code
+						uint8_t prot_resp_code_size = 1;
+						uint8_t resp_code = OSADA_ENAMETOOLONG; // name too long
+
+						int response_size = sizeof(char) * (prot_resp_code_size);
+						void * resp = malloc(response_size);
+						memcpy(resp, &resp_code, prot_resp_code_size);
+						write(* client_socket, resp, prot_resp_code_size);
+						free(resp);
+						free(to_c);
+						free(to);
+						free(from);
+						return;
+					}
+					//log_error(logger, "client %d, rename '%s', node '%s' : ", * client_socket, to, node);
+					//Archivo destino no existe, se le cambia nombre y parent directory a archivo origen
+					//TODO validar tamanio del nuevo nombre
+					//TODO corregir semaforos
+					osada_file * file_table_ptr = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+					file_table_ptr = file_table_ptr + node_pos_from;
+					int node_name_size = strlen(rfile);
+					file_table_ptr->parent_directory = pb_pos_to;
+					memcpy((char *)(file_table_ptr->fname), rfile, node_name_size);
+					if (node_name_size < OSADA_FILENAME_LENGTH) file_table_ptr->fname[node_name_size] = '\0';
+
+/*					osada_file * o_file = malloc(sizeof(osada_file));
+					int node_name_size = strlen(rfile);
+					memcpy((char *)(o_file->fname), rfile, node_name_size);
+					if (node_name_size < OSADA_FILENAME_LENGTH) o_file->fname[node_name_size] = '\0';
+					o_file->state = file_table_ptr->state;
+					o_file->parent_directory = pb_pos_to;
+					o_file->file_size = file_table_ptr->file_size;
+					o_file->lastmod = time(NULL);
+					o_file->first_block = file_table_ptr->first_block;
+					memcpy(file_table_ptr, o_file, sizeof(osada_file));
+					free(o_file);
+*/
+					semaphore(UNLOCK, node_pos_from);
+
+					//
+					// << sending response >>
+					// response code
+					uint8_t prot_resp_code_size = 1;
+					uint8_t resp_code = OSADA_SEXE;	// successful execution
+
+
+					int response_size = sizeof(char) * (prot_resp_code_size);
+					void * resp = malloc(response_size);
+					memcpy(resp, &resp_code, prot_resp_code_size);
+					write(* client_socket, resp, response_size);
+					free(resp);
+					free(to_c);
+					free(to);
+					free(from);
+					return;
+				} else {
+					//Archivo destino existe, si es un directorio se le cambia solo parent directory a archivo origen
+					//si destino es un archivo devuelve error
+					osada_file * file_table_ptr_to = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+					file_table_ptr_to = file_table_ptr_to + node_pos_to;
+
+					osada_file * file_table_ptr_from = (osada_file *) (osada_fs_ptr + (OSADA_BLOCK_SIZE * FILE_TABLE_0));
+					file_table_ptr_from = file_table_ptr_from + node_pos_from;
+
+					uint8_t prot_resp_code_size = 1;
+					uint8_t resp_code;
+
+					if (file_table_ptr_to->state == DIRECTORY) {
+						file_table_ptr_from->parent_directory = pb_pos_to;
+						file_table_ptr_from->lastmod = time(NULL);
+						resp_code = OSADA_SEXE;	// successful execution
+					} else if (file_table_ptr_to->state == REGULAR){
+						resp_code = OSADA_ISREG; // is a regular file
+					}
+
+					semaphore(UNLOCK, node_pos_from);
+					semaphore(UNLOCK, node_pos_to);
+
+					int response_size = sizeof(char) * (prot_resp_code_size);
+					void * resp = malloc(response_size);
+					memcpy(resp, &resp_code, prot_resp_code_size);
+					write(* client_socket, resp, response_size);
+					free(resp);
+					free(to_c);
+					free(to);
+					return;
+
+
+				}
+				break;
+			} else {
+				log_error(logger, "client %d, rename '%s', node '%s' : no such file or directory", * client_socket, to, node_to);
+				if (pb_pos_to != ROOT) semaphore(UNLOCK, pb_pos_to);
+				//
+				// << sending response >>
+				// response code
+				uint8_t prot_resp_code_size = 1;
+				uint8_t resp_code = OSADA_ENOENT; // no such file or directory
+
+				int response_size = sizeof(char) * (prot_resp_code_size);
+				void * resp = malloc(response_size);
+				memcpy(resp, &resp_code, prot_resp_code_size);
+				write(* client_socket, resp, response_size);
+				free(resp);
+				free(to_c);
+				free(to);
+				return;
+			}
+		}
+		if (pb_pos_to != ROOT) semaphore(UNLOCK, pb_pos_to);
+		pb_pos_to = node_pos_to;
+		node_to = strtok(NULL, "/");
+	}
+	free(to_c);
+	free(to);
+	free(from);
+
 }

@@ -1,4 +1,24 @@
-compilar
-utnso@utnso40:~/pokedex-server$ gcc pokedex-server.c -o pokedex-server -D_FILE_OFFSET_BITS=64 -lpthread -lcommons -w
+ 1 - compilar
+        utnso@utnso40:~/pokedex-server$ gcc pokedex-server.c -o pokedex-server -D_FILE_OFFSET_BITS=64 -lpthread -lcommons -w
 
-importante antes de ejecutar: en el directorio donde se encuentra el ejecutable, crear un subdirectorio "conf" donde se encuentra el archivo de propiedades con la configuraciones necesarias (ver ejemplo repositorio git)
+ 2 - revisar configuración properties
+        conf
+          |_ pokedex-server.properties 
+          
+          port=33000
+          backlog=100
+          fs.path=./osada-fs/osada-fs-2gb                      <---- directorio archivo osada  (ver como crear archivo osada limpio)
+          filelog.name=/home/utnso/log.txt                     <---- directorio donde se ubicará el archivo log
+          filelog.semaphore.name=/home/utnso/semaphore-log.txt <---- directorio donde se ubicará el archivo log para semáforos
+          
+          
+          
+COMO CREAR ARCHIVO OSADA LIMPIO
+utnso@utnso40:~/ git clone https://github.com/sisoputnfrba/osada-utils.git
+utnso@utnso40:~/ cd osada-utils
+utnso@utnso40:~/ touch osada-fs-2g
+utnso@utnso40:~/ truncate -s 2G osada-fs-2g
+utnso@utnso40:~/ ./osada-format osada-fs-2g
+
+
+          

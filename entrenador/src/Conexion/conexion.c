@@ -60,6 +60,7 @@ int connection_send(t_connection* connection, uint8_t operation_code, void* mess
 		case OC_OBTENER_MEDALLA:
 		case OC_MEDALLA:
 		case OC_MENSAJE:
+		case OC_POKEMON:
 			message_size_value = string_length((char*)message);
 			break;
 		default:
@@ -95,6 +96,7 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 	status = recv(connection->socket, operation_code_value, prot_ope_code_size, 0);
 	if (status <= 0) {
 		printf("ERROR: Socket %d, disconnected...\n", connection->socket);
+		game_over();
 	} else {
 		ret = ret + status;
 		status = recv(connection->socket, &message_size, prot_message_size, 0);
@@ -114,12 +116,18 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 					//free(coor);
 					break;
 				case OC_UBICAR_POKENEST:
+				case OC_VICTIMA_DEADLOCK:
 				case OC_UBICAR_ENTRENADOR:
 				case OC_AVANZAR_POSICION:
+				case OC_CANTIDAD_DEADLOCK:
 				case OC_ATRAPAR_POKEMON:
 				case OC_OBTENER_MEDALLA:
 				case OC_MEDALLA:
 				case OC_MENSAJE:
+				case OC_GANO_BATALLA:
+				case OC_PERDIO_BATALLA:
+				case OC_POKEMON_BATALLA:
+				case OC_POKEMON:
 					buffer = malloc(message_size + 1);
 					if(message_size > 0){
 						status = recv(connection->socket, buffer, message_size, 0);
@@ -131,7 +139,8 @@ int connection_recv(t_connection* connection, uint8_t* operation_code_value, voi
 					//free(buffer);
 					break;
 				default:
-					printf("ERROR: Socket %d, Invalid operation code...\n", connection->socket);
+					printf("ERROR: Socket %d, Invalid operation code(%d)...\n", connection->socket, (int)*operation_code_value);
+					game_over();
 					break;
 			}
 

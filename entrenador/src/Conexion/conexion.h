@@ -10,6 +10,7 @@
 
 #include <sys/socket.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <netdb.h>
 #include <stddef.h>
 #include <commons/string.h>
@@ -24,6 +25,15 @@
 #define OC_UBICACION_ENTRENADOR 6
 #define OC_OBTENER_MEDALLA 7
 #define OC_MEDALLA 8
+#define OC_OBTENER_OBJETIVOS 9
+#define OC_VICTIMA_DEADLOCK 10
+#define OC_ATRAPAR_ULTIMO_POKEMON 11
+#define OC_OBTENER_CANTIDAD_DEADLOCK 12
+#define OC_CANTIDAD_DEADLOCK 13
+#define OC_POKEMON 14
+#define OC_PERDIO_BATALLA 15
+#define OC_GANO_BATALLA 16
+#define OC_POKEMON_BATALLA 17
 
 #define MOVE_UP 72
 #define MOVE_RIGHT 77

@@ -9,6 +9,7 @@
 #define SRC_COORDENADAS_COORDENADAS_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef struct {
 	uint8_t x;

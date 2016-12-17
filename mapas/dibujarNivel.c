@@ -17,11 +17,13 @@ void dibujarNivel(t_combo * comboLista) {
 
 	while(1) {
 
-		//pthread_mutex_lock(&mutex);
+		sem_wait(&sem_dibujo);
+		pthread_mutex_lock(&dibujo);
 		nivel_gui_dibujar(items, nombre_mapa);
 
-		sleep(1);
-		//pthread_mutex_unlock(&mutex);
+		//sem_post(&sem_turno);
+		//sleep(1);
+		pthread_mutex_unlock(&dibujo);
 	}
 	nivel_gui_terminar();
 }

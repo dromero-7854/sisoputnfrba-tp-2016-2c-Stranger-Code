@@ -61,11 +61,15 @@ t_pokemon* map_next_pokemon(t_map* self){
 	}
 }
 
+bool map_is_last_pokemon(t_map* self){
+	return (list_size(self->pokemon_list) == self->index_current_pokemon);
+}
+
 int map_locate_pokemon(t_map *mapa, t_pokemon* pokemon, t_connection* conn){
 	t_coor* coor;
 	uint8_t operation_code;
 	connection_send(conn, OC_UBICAR_POKENEST, pokemon->simbol);
-	connection_recv(conn, &operation_code, &coor);
+	connection_recv(conn, &operation_code, (void**)&coor);
 	//setear las coordenadas de dicho pokemon, recibidas del mapa
 	pokemon->coor->x = coor->x;
 	pokemon->coor->y = coor->y;

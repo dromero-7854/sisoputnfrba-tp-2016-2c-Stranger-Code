@@ -6,7 +6,7 @@
  */
 
 #include "solicitudes.h"
-#include <stdint.h>
+
 
 int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 /**	╔══════════════════════════════════════════════╦══════════════════════════════════════════╦══════════════════════════════╗
@@ -51,9 +51,11 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 				case OC_UBICAR_POKENEST:
 				case OC_UBICAR_ENTRENADOR:
 				case OC_AVANZAR_POSICION:
+				case OC_CANTIDAD_DEADLOCK:
 				case OC_ATRAPAR_POKEMON:
 				case OC_OBTENER_MEDALLA:
 				case OC_MEDALLA:
+				case OC_POKEMON:
 				case OC_MENSAJE:
 					buffer = malloc(message_size + 1);
 					if(message_size > 0){
@@ -66,6 +68,9 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 					if(status > 0){
 						buffer[message_size] = '\0';
 						*message = buffer;
+					//	*message = malloc(message_size + 1);
+					//	memcpy(*message, buffer, message_size);
+					//	(*message)[message_size] = '\0';
 					}
 					//free(buffer);
 					break;
@@ -87,14 +92,14 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 	return ret;
 }
 
-char handshake(int socketCliente){
+void handshake(int socketCliente, char* simbolo, char** nombre_entrenador){
 
 	uint8_t tam_msg, operation_code;
-	char *buffer;
+	char *buffer,*simbolo_recibido;
 	void *paquete_a_mandar;
 
-	//recv(socketCliente, &operation_code, sizeof(operation_code), 0);
-	connection_recv(socketCliente, &operation_code, &buffer);
+	connection_recv(socketCliente, &operation_code, &simbolo_recibido);
+	*simbolo = *simbolo_recibido;
 	if(operation_code != OC_UBICAR_ENTRENADOR){
 		log_error(log_mapa, "codigo de operacion incorrecto en handshake");
 		exit(1);
@@ -104,8 +109,8 @@ char handshake(int socketCliente){
 	t_coor* coordenadas = malloc(sizeof(t_coor));
 	coordenadas->x = 1;
 	coordenadas->y = 1;
-	paquete_a_mandar = malloc(sizeof(uint8_t) * 2 + tam_msg);
 	tam_msg = sizeof(coordenadas);
+	paquete_a_mandar = malloc(sizeof(uint8_t) * 2 + tam_msg);
 	operation_code = OC_UBICACION_ENTRENADOR;
 	memcpy(paquete_a_mandar, &operation_code, sizeof(uint8_t));
 	memcpy(paquete_a_mandar + offset, &tam_msg, sizeof(uint8_t));
@@ -113,41 +118,40 @@ char handshake(int socketCliente){
 	memcpy(paquete_a_mandar + offset, coordenadas, sizeof(t_coor));
 	send(socketCliente, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t) + sizeof(t_coor), 0);
 
-	operation_code = OC_OBTENER_OBJETIVOS;
-	tam_msg = 0;
-/*
-	memset(paquete_a_mandar, 0, sizeof(paquete_a_mandar));
-	memcpy(paquete_a_mandar, &operation_code, sizeof(uint8_t));					// LE PIDE LOS OBJETIVOS //
-	memcpy(paquete_a_mandar, &tam_msg, sizeof(uint8_t));
-	send(socketCliente, paquete_a_mandar, sizeof(uint8_t) + sizeof(uint8_t), 0);
-
 	connection_recv(socketCliente, &operation_code, &buffer);
-	objetivos = buffer;*/
+	if(operation_code != OC_OBTENER_MEDALLA){
+		log_error(log_mapa, "codigo de operacion incorrecto en handshake");
+		exit(1);
+	}
 
-	//printf("FUNCIONOO\n");
-	//printf("%s", buffer);
-	//free(buffer);
+	enviar_ruta_medalla(socketCliente);
+	connection_recv(socketCliente, &operation_code, nombre_entrenador);
+
+	free(paquete_a_mandar);
+	free(simbolo_recibido);
+	free(buffer);
 	free(coordenadas);
 
-	return *(buffer);
+//	return *(buffer);
 }
 
 int atenderSolicitud(t_entrenador* entrenador){
 	int recibido;
 	uint8_t operation_code, tam_msg;
 	t_coor* coor;
-	int capturo_pokemon, offset;
+	int respuesta, offset;
 	void *buffer, *paquete_a_mandar;
 	log_trace(log_mapa, "atendiendo solicitud");
 	recibido = connection_recv(entrenador->id, &operation_code, &buffer);
 
 	if(recibido == 0){
-		return 2;
+		return DESCONEXION;
 	}
 	switch(operation_code){
 	case OC_UBICAR_POKENEST:
 	{
 		char pokenest_id = *((char*)buffer);
+		//entrenador->pokenest_buscada = pokenest_id;
 		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		//void *buffer;
 		//recibidos = recv(entrenador->id, buffer, 1, 0);
@@ -171,7 +175,7 @@ int atenderSolicitud(t_entrenador* entrenador){
 		free(paquete_a_mandar);
 		free(buffer);
 
-		capturo_pokemon = 0;
+		respuesta = TURNO_NORMAL;
 		break;
 	}
 	case OC_AVANZAR_POSICION:
@@ -211,91 +215,73 @@ int atenderSolicitud(t_entrenador* entrenador){
 		free(paquete_a_mandar);
 		free(buffer);
 		MoverPersonaje(items, entrenador->simbolo, entrenador->posx, entrenador->posy);
-		capturo_pokemon = 0;
+		respuesta = TURNO_NORMAL;
 		break;
 	}
 		// volver a dibujar ??????
 	case OC_ATRAPAR_POKEMON:
 	{
-		int lenRuta, lenArchivo;
-		char *rutaPokenests, *rutaPokemon, *rutaArchivoPokemon;
 		char pokenest_id = *((char*)buffer);
-		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
+	//	recv(entrenador->id, &pokenest_id, sizeof(char), 0);
 		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
 		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
 		if(infopokemon == NULL){
-			return -1;
+			respuesta = NO_ENCONTRO_POKEMON;
+			break;
 		}
 		list_add(entrenador->pokemons, infopokemon);
 
 		pthread_mutex_lock(&mutex_lista_pokenest);
 		pokenest->cantidad--;
 		pthread_mutex_unlock(&mutex_lista_pokenest);
-		entrenador->objetivoActual++;
 
-		int len = strlen(infopokemon->pokemon->species);
+		notificar_captura_pokemon(infopokemon, entrenador);
+//		int len = strlen(infopokemon->pokemon->species);
+		restarRecurso(items, infopokemon->id_pokenest);
 
-
-		uint8_t oc_send = OC_MENSAJE;
-
-		rutaPokenests = getRutaPokenests();
-		rutaPokemon = getRutaPokemon(rutaPokenests, infopokemon->pokemon->species);
-		len = strlen(rutaPokemon);
-		lenArchivo = strlen(infopokemon->nombre);
-		rutaArchivoPokemon = malloc(len + lenArchivo + 1 + 1);
-		snprintf(rutaArchivoPokemon, len + lenArchivo + 1 + 1, "%s/%s", rutaPokemon, infopokemon->nombre);
-
-		uint8_t tamanio_mensaje = strlen(rutaArchivoPokemon);
-		int bytes_a_mandar = sizeof(uint8_t) * 2 + tamanio_mensaje;
-		//char* mensaje ;
-		//mensaje = strdup("/home/utnso/git/tp-2016-2c-Stranger-Code/mapas/PuebloPaleta/PokeNests/Picachu/pikachu001.dat");
-		paquete_a_mandar = malloc(tamanio_mensaje + sizeof(uint8_t) * 2);
-		memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
-		//int offset = len;
-		memcpy(paquete_a_mandar + sizeof(uint8_t), &tamanio_mensaje, sizeof(uint8_t));
-		//offset += sizeof(t_pokemon_type);
-		memcpy(paquete_a_mandar + sizeof(uint8_t) * 2, rutaArchivoPokemon, tamanio_mensaje);
-		//offset += sizeof(t_pokemon_type);
-		//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
-		send(entrenador->id, paquete_a_mandar, bytes_a_mandar, 0);
-		entrenador->pokenest_buscada = NULL;
-		//free(mensaje);
-		free(paquete_a_mandar);
 		free(buffer);
-		capturo_pokemon = 1;
+		respuesta = CAPTURO_POKEMON;
 		break;
 	}
-	case OC_OBTENER_MEDALLA:
+	case OC_ATRAPAR_ULTIMO_POKEMON:
 	{
-		uint8_t oc_send = OC_MEDALLA;
-		char* medalla = strdup("medalla-");
-		char* extension_archivo_medalla = strdup(".jpg");
-		uint8_t tamanio = strlen(ruta_mapa) + 1 + strlen(medalla) + strlen(nombre_mapa) + strlen(extension_archivo_medalla);
-		char* ruta_medalla = malloc(tamanio + 1);
-		snprintf(ruta_medalla, tamanio + 1, "%s/%s%s%s", ruta_mapa, medalla, nombre_mapa, extension_archivo_medalla);
+		char pokenest_id = *((char*)buffer);
+		//recv(entrenador->id, &pokenest_id, sizeof(char), 0);
+		PokeNest* pokenest = buscarPokenest(listaPokenests, pokenest_id);
+		t_infoPokemon* infopokemon = buscarPrimerPokemon(pokenest->listaPokemons);
+		if(infopokemon == NULL){
+			entrenador->ultimo_pokemon = 1;
+			respuesta = NO_ENCONTRO_POKEMON;
+			break;
+		}
+		list_add(entrenador->pokemons, infopokemon);
 
-		uint8_t tamanio_mensaje = strlen("/home/utnso/pokedex/Mapas/Pueblo Paleta/medalla.jpg");
+		pthread_mutex_lock(&mutex_lista_pokenest);
+		pokenest->cantidad--;
+		pthread_mutex_unlock(&mutex_lista_pokenest);
 
-		//char* mensaje  = malloc(tamanio_mensaje + 1);
-		//mensaje = strdup("/home/utnso/git/tp-2016-2c-Stranger-Code/mapas/PuebloPaleta/PokeNests/Picachu/pikachu001.dat");
-		paquete_a_mandar = malloc(tamanio + sizeof(uint8_t) * 2);
-		memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
-		//int offset = len;
-		memcpy(paquete_a_mandar + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
-		//offset += sizeof(t_pokemon_type);
-		memcpy(paquete_a_mandar + sizeof(uint8_t) * 2, ruta_medalla, tamanio);
-		//offset += sizeof(t_pokemon_type);
-		//memcpy(buffer + offset, &(infopokemon->pokemon->level), sizeof(t_level));
-		send(entrenador->id, paquete_a_mandar, tamanio + sizeof(uint8_t) * 2, 0);
-		capturo_pokemon = 2;
+		notificar_captura_pokemon(infopokemon, entrenador);
+		restarRecurso(items, infopokemon->id_pokenest);
+
+		connection_recv(entrenador->id, &operation_code, &buffer);
+		if(operation_code != OC_OBTENER_CANTIDAD_DEADLOCK){
+			log_error(log_mapa, "error durante solicitud de deadlocks");
+			exit(1);
+		}
+
+	//	enviar_cant_deadlocks(entrenador);
+		//enviar_ruta_medalla(entrenador);
+		respuesta = DESCONEXION;
+		free(buffer);
 		break;
 	}
 	default:
-		capturo_pokemon = 2;
+		respuesta = TURNO_NORMAL;
+		free(buffer);
 		break;
 	}
 
-	return capturo_pokemon;
+	return respuesta;
 }
 
 PokeNest* buscarPokenest(t_list* lista, char id){
@@ -306,13 +292,77 @@ PokeNest* buscarPokenest(t_list* lista, char id){
 }
 
 t_infoPokemon* buscarPrimerPokemon(t_list* listaDePokemons){
-	t_list* listaAux;
-	t_infoPokemon* infoPokemon;
-	//list_add_all(listaAux, listaDePokemons);
 	int _pokemon_de_menor_nombre(t_infoPokemon* infoPokemon1, t_infoPokemon* infoPokemon2){
 		return comparar_strings(infoPokemon1->nombre, infoPokemon2->nombre);
 	}
 	list_sort(listaDePokemons, (void*) _pokemon_de_menor_nombre);
-	//infoPokemon = list_get(listaAux)
 	return list_remove(listaDePokemons, 0);
+}
+
+void notificar_captura_pokemon(t_infoPokemon* infopokemon, t_entrenador* entrenador){
+	char *rutaPokenests, *rutaPokemon;
+	void* paquete_a_mandar;
+
+	uint8_t oc_send = OC_POKEMON;
+
+	rutaPokenests = getRutaPokenests();
+	rutaPokemon = getRutaPokemon(rutaPokenests, infopokemon->pokemon->species);
+	free(rutaPokenests);
+	string_append_with_format(&rutaPokemon, "/%s", infopokemon->nombre);
+	log_trace(log_mapa,"rutaPokemon: %s",rutaPokemon);
+	uint8_t tamanio_mensaje = strlen(rutaPokemon);
+	int bytes_a_mandar = sizeof(uint8_t) * 2 + tamanio_mensaje;
+
+	paquete_a_mandar = malloc(tamanio_mensaje + sizeof(uint8_t) * 2);
+	memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
+
+	memcpy(paquete_a_mandar + sizeof(uint8_t), &tamanio_mensaje, sizeof(uint8_t));
+
+	memcpy(paquete_a_mandar + sizeof(uint8_t) * 2, rutaPokemon, tamanio_mensaje);
+
+	send(entrenador->id, paquete_a_mandar, bytes_a_mandar, 0);
+	entrenador->pokenest_buscada = NULL;
+	free(rutaPokemon);
+	free(paquete_a_mandar);
+}
+
+void enviar_ruta_medalla(int socket){
+	uint8_t oc_send = OC_MEDALLA;
+	void* paquete_a_mandar;
+	char* medalla = strdup("medalla-");
+	char* extension_archivo_medalla = strdup(".jpg");
+
+	char* ruta_medalla;
+
+	ruta_medalla = getRutaMapa(pto_montaje, nombre_mapa);
+	string_append_with_format(&ruta_medalla, "/medalla-%s.jpg", nombre_mapa);
+
+	uint8_t tamanio = strlen(ruta_medalla);
+	paquete_a_mandar = malloc(tamanio + sizeof(uint8_t) * 2);
+	memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
+
+	memcpy(paquete_a_mandar + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
+
+	memcpy(paquete_a_mandar + sizeof(uint8_t) * 2, ruta_medalla, tamanio);
+
+	send(socket, paquete_a_mandar, tamanio + sizeof(uint8_t) * 2, 0);
+	free(medalla);
+	free(extension_archivo_medalla);
+	free(ruta_medalla);
+	free(paquete_a_mandar);
+}
+
+void enviar_cant_deadlocks(t_entrenador* entrenador){
+	void* paquete_a_mandar = malloc(10);
+	uint8_t oc_send = OC_CANTIDAD_DEADLOCK;
+	uint8_t tamanio = sizeof(char);
+	int offset;
+	memcpy(paquete_a_mandar, &oc_send, sizeof(uint8_t));
+	offset = sizeof(uint8_t);
+	memcpy(paquete_a_mandar + offset, &tamanio, sizeof(uint8_t));
+	offset += sizeof(uint8_t);
+	memcpy(paquete_a_mandar + offset, (char*)(entrenador->cantDeadlocks), sizeof(int));
+	offset += sizeof(char);
+
+	send(entrenador->id, paquete_a_mandar, offset, 0);
 }
