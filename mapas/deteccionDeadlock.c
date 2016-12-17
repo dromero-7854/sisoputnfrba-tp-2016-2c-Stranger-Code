@@ -91,7 +91,6 @@ void detectarDeadlock(t_combo * comboLista) {
 		int hayDeadlock = 0;
 		int tieneUnPedido = 0;
 
-		log_trace(log_deadlock, "cant. de lista Entrenadores: %d", list_size(entrenadores));
 		while (!hayDeadlock && hayAlguienParaAtender(atendido, cantidadEntrenadores)) {
 
 			if (cantidadEntrenadores >= 2)
@@ -122,7 +121,6 @@ void detectarDeadlock(t_combo * comboLista) {
 				}
 			}
 		}
-		log_trace(log_deadlock, "cant. de lista Entrenadores: %d", list_size(entrenadores));
 		for (i_entrenadores = 0; i_entrenadores < cantidadEntrenadores; i_entrenadores++) {
 			t_entrenador * entrenador = list_get(entrenadores, i_entrenadores);
 			if (!atendido[i_entrenadores]) {
@@ -167,9 +165,10 @@ void detectarDeadlock(t_combo * comboLista) {
 
 			list_iterate(deadlockeados, (void *) _contarDeadlock);
 
-			if (conf_metadata->batalla && coinciden) {
-
+			if(coinciden)
 				log_info(log_deadlock, "HAY DEADLOCK");
+
+			if (conf_metadata->batalla && coinciden) {
 
 				log_info(log_deadlock, "HAY BATALLA");
 
@@ -235,14 +234,8 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	pok2 = buscar_pokemon_de_entrenador(entrenador2, nombrePokemon);
 
-/*	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
-	list_sort(entrenador2->pokemons, (void*) esDeMayorNivel);
-
-	t_infoPokemon * pokemon1 = list_get(entrenador1->pokemons, 0);
-	t_infoPokemon * pokemon2 = list_get(entrenador2->pokemons, 0);*/
-
-	log_info(log_deadlock, "%c eligio a  %s (nivel %d)", entrenador1->simbolo, pok1->species, pok1->level);
-	log_info(log_deadlock, "%c eligio a  %s (nivel %d)", entrenador2->simbolo, pok2->species, pok2->level);
+	log_info(log_deadlock, "%s (%c) eligio a  %s (nivel %d)", entrenador1->nombre, entrenador1->simbolo, pok1->species, pok1->level);
+	log_info(log_deadlock, "%s (%c) eligio a  %s (nivel %d)", entrenador2->nombre, entrenador2->simbolo, pok2->species, pok2->level);
 
 	t_pokemon * loser = pkmn_battle(pok1, pok2);
 
@@ -252,7 +245,7 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 		enviar_oc(entrenador1->id, operation_code_loser);
 
-		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador2->simbolo, entrenador1->simbolo);
+		log_info(log_deadlock, "%s (%c) ha ganado la batalla frente a %s (%c)", entrenador2->nombre, entrenador2->simbolo, entrenador1->nombre, entrenador1->simbolo);
 
 		return entrenador1;
 	}
@@ -262,7 +255,7 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 		enviar_oc(entrenador2->id, operation_code_loser);
 
-		log_info(log_deadlock, "%c ha ganado la batalla frente a %c", entrenador1->simbolo, entrenador2->simbolo);
+		log_info(log_deadlock, "%s (%c) ha ganado la batalla frente a %s (%c)", entrenador1->nombre, entrenador1->simbolo, entrenador2->nombre, entrenador2->simbolo);
 
 		return entrenador2;
 	}
@@ -312,8 +305,7 @@ void mostrarMatriz(int cantEntrenadores, int pokenests, int matriz[cantEntrenado
 		}
 	}
 	id[2*pokenests] = 0;
-	log_info(log_deadlock, "	| %s", id);
-	//log_info(log_deadlock, borde);
+	log_info(log_deadlock, "			| %s", id);
 	for(i = 0; i < cantEntrenadores; i++) {
 
 		t_entrenador * entr = list_get(entrenadores, i);
@@ -324,9 +316,9 @@ void mostrarMatriz(int cantEntrenadores, int pokenests, int matriz[cantEntrenado
 			fila[j+1] = '|';
 		}
 		fila[2*pokenests] = 0;
-		log_info(log_deadlock, "%c	| %s", entr->simbolo , fila);
+		log_info(log_deadlock, "%s (%c)	| %s", entr->nombre, entr->simbolo , fila);
 	}
-	log_info(log_deadlock, borde);
+	log_info(log_deadlock, "		%s", borde);
 }
 
 t_list* duplicar_lista(t_list* lista_original){
