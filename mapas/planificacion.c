@@ -61,6 +61,8 @@ void ejecutarRafagaSRDF(){
 		}
 		pthread_mutex_lock(&mutex_cola_listos);
 		queue_push(colaListos, entrenador);
+		informar_contenido_cola(colaListos);
+		informar_contenido_cola(colaBloqueados);
 		pthread_mutex_unlock(&mutex_cola_listos);
 		return;
 	}else if(!queue_is_empty(colaListos)){
@@ -88,6 +90,8 @@ void ejecutarRafagaSRDF(){
 		case CAPTURO_POKEMON:
 			pthread_mutex_lock(&mutex_cola_listos);
 			queue_push(colaListos, entrenador);
+			informar_contenido_cola(colaListos);
+			informar_contenido_cola(colaBloqueados);
 			pthread_mutex_unlock(&mutex_cola_listos);
 			break;
 		default:
@@ -105,9 +109,10 @@ void ejecutarRafagaRR(){
 		entrenador = queue_pop(colaListos);
 		log_trace(log_mapa, "atendiendo a: %s", entrenador->nombre);
 		informar_contenido_cola(colaListos);
+		informar_contenido_cola(colaBloqueados);
 		pthread_mutex_unlock(&mutex_cola_listos);
 		for(q = 0; q < conf_metadata->quantum; q++){
-			log_trace(log_mapa, "quantum del entrenador: %d", q);
+			//log_trace(log_mapa, "quantum del entrenador: %d", q);
 			usleep(conf_metadata->retardo);
 			respuesta = atenderSolicitud(entrenador);
 			sem_post(&sem_dibujo);
@@ -230,6 +235,7 @@ void bloquearEntrenador(t_entrenador* entrenador){
 	queue_push(colaBloqueados, entrenador);
 	FD_SET(entrenador->id, &master);
 	if(entrenador->id > set_fd_max) set_fd_max = entrenador->id;
+	informar_contenido_cola(colaListos);
 	informar_contenido_cola(colaBloqueados);
 	pthread_mutex_unlock(&mutex_cola_bloqueados);
 }
@@ -239,4 +245,5 @@ void desbloquearEntrenador(t_entrenador* entrenador){
 	queue_push(colaListos, trainer);
 	FD_CLR(entrenador->id, &master);
 	informar_contenido_cola(colaListos);
+	informar_contenido_cola(colaBloqueados);
 }

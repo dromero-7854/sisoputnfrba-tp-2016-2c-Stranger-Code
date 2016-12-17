@@ -158,14 +158,14 @@ void detectarDeadlock(t_combo * comboLista) {
 
 			coinciden = list_all_satisfy(deadlockeados, (void *) estaBloqueado);
 
-			void _contarDeadlock(t_entrenador* entr) {
-				entr->cantDeadlocks++;
-			}
+			if(coinciden){
 
-			list_iterate(deadlockeados, (void *) _contarDeadlock);
-
-			if(coinciden)
+				void _contarDeadlock(t_entrenador* entr) {
+					entr->cantDeadlocks++;
+				}
 				log_info(log_deadlock, "HAY DEADLOCK");
+				list_iterate(deadlockeados, (void *) _contarDeadlock);
+			}
 
 			if (conf_metadata->batalla && coinciden) {
 

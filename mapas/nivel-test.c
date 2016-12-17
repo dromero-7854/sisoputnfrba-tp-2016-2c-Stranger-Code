@@ -39,17 +39,19 @@ int main(int argc, char* argv[]) {
 	}
 
 
-	signal(SIGUSR1, releerConfiguracion);
+/*	signal(SIGUSR1, releerConfiguracion);
 	struct sigaction s;
 	s.sa_handler = sigint;
 	sigemptyset(&s.sa_mask);
 	s.sa_flags = 0;
-	sigaction(SIGINT, &s, NULL);
-
-	log_mapa = crear_log(argv[1]);
+	sigaction(SIGINT, &s, NULL);*/
 
 	nombre_mapa = argv[1];
 	pto_montaje = argv[2];
+
+	log_mapa = crear_log(argv[1]);
+
+
 
 	ruta_mapa = getRutaMapa(pto_montaje, nombre_mapa);
 
@@ -129,10 +131,10 @@ int main(int argc, char* argv[]) {
 	log_trace(log_mapa, "se creo hilo deadlock");
 
 
-	sigset_t sigset, oldset;
+/*	sigset_t sigset, oldset;
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGINT);
-	pthread_sigmask(SIG_BLOCK, &sigset, &oldset);
+	pthread_sigmask(SIG_BLOCK, &sigset, &oldset);*/
 
 	tv.tv_sec = 10;
 	tv.tv_usec = 0;
@@ -375,7 +377,7 @@ void cargarPokenests(char* rutaPokenests_relativa, t_pkmn_factory* fabrica){
 t_log* crear_log(char* nombre){
 	char nombre_archivo[256];
 	snprintf((char *)&nombre_archivo, 256, "%s.log", nombre);
-	t_log* logger = log_create(nombre_archivo, "MAPA", false, LOG_LEVEL_TRACE);
+	t_log* logger = log_create(nombre_archivo, nombre, false, LOG_LEVEL_TRACE);
 	return logger;
 }
 void destruir_config(metadata* config){

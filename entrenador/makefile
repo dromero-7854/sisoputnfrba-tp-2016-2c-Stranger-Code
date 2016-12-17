@@ -1,5 +1,5 @@
 entrenador:	pokemon.o mapa.o entrenador.o coordenadas.o conexion.o helper.o main.o
-	gcc -L../biblioteca-charmander/Debug -Wall -o entrenador pokemon.o mapa.o entrenador.o coordenadas.o conexion.o helper.o main.o -lcommons -lBibliotecaCharMander
+	gcc -L../biblioteca-charmander -Wall -o entrenador pokemon.o mapa.o entrenador.o coordenadas.o conexion.o helper.o main.o -lcommons -lBibliotecaCharMander
 
 pokemon.o:	src/Pokemon/pokemon.c src/Pokemon/pokemon.h
 	gcc -c src/Pokemon/pokemon.c

@@ -53,6 +53,7 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 				case OC_AVANZAR_POSICION:
 				case OC_CANTIDAD_DEADLOCK:
 				case OC_ATRAPAR_POKEMON:
+				case OC_ATRAPAR_ULTIMO_POKEMON:
 				case OC_OBTENER_MEDALLA:
 				case OC_MEDALLA:
 				case OC_POKEMON:
@@ -263,11 +264,11 @@ int atenderSolicitud(t_entrenador* entrenador){
 		notificar_captura_pokemon(infopokemon, entrenador);
 		restarRecurso(items, infopokemon->id_pokenest);
 
-		connection_recv(entrenador->id, &operation_code, &buffer);
+		/*connection_recv(entrenador->id, &operation_code, &buffer);
 		if(operation_code != OC_OBTENER_CANTIDAD_DEADLOCK){
 			log_error(log_mapa, "error durante solicitud de deadlocks");
 			exit(1);
-		}
+		}*/
 
 	//	enviar_cant_deadlocks(entrenador);
 		//enviar_ruta_medalla(entrenador);
