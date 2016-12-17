@@ -179,7 +179,10 @@ int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pa
 
 void coach_connect_to_map(t_coach* entrenador, t_map* mapa){
 	entrenador->conn = connection_create(mapa->ip, mapa->port);
-	connection_open(entrenador->conn);
+	if(connection_open(entrenador->conn)){
+		printf("\nNo se puedo conectar con el mapa %s\n\n", mapa->name);
+		game_over();
+	}
 }
 
 void coach_medal_copy(t_coach* self, t_map* mapa, char* pathPokedex){

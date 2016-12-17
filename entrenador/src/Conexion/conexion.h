@@ -56,7 +56,7 @@ typedef struct {
 t_connection* connection_create(char* ip, char* port);
 void connection_destroy(t_connection* self);
 
-void connection_open(t_connection* connection);
+int connection_open(t_connection* connection);
 void connection_close(t_connection* connection);
 int connection_send(t_connection* connection, uint8_t operation_code, void* message);
 int connection_recv(t_connection* connection, uint8_t* operation_code, void** message);

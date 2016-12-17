@@ -52,7 +52,7 @@ void destroy_maps_list(t_list* maps_list){
 }
 
 t_pokemon* map_next_pokemon(t_map* self){
-	if(list_size(self->pokemon_list) > self->index_current_pokemon){
+	if(list_size(self->pokemon_list) > self->index_current_pokemon+1){
 		self->index_current_pokemon++;
 		t_pokemon* current_pokemon = list_get(self->pokemon_list, self->index_current_pokemon);
 		return current_pokemon;
@@ -62,7 +62,7 @@ t_pokemon* map_next_pokemon(t_map* self){
 }
 
 bool map_is_last_pokemon(t_map* self){
-	return (list_size(self->pokemon_list) == self->index_current_pokemon);
+	return (list_size(self->pokemon_list) == self->index_current_pokemon+1);
 }
 
 int map_locate_pokemon(t_map *mapa, t_pokemon* pokemon, t_connection* conn){
