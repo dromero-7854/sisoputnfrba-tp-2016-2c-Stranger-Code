@@ -1,5 +1,5 @@
 mapa:	nivel-test.o deteccionDeadlock.o dibujarNivel.o planificacion.o solicitudes.o
-	gcc -L/home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander/Debug -Wall -o mapa deteccionDeadlock.o dibujarNivel.o nivel-test.o planificacion.o solicitudes.o -lBibliotecaCharMander -lcommons -lnivel-gui -lcurses -lpkmn-battle -lpthread
+	gcc -L/home/utnso/tp-2016-2c-Stranger-Code/biblioteca-charmander -Wall -o mapa deteccionDeadlock.o dibujarNivel.o nivel-test.o planificacion.o solicitudes.o -lBibliotecaCharMander -lcommons -lnivel-gui -lcurses -lpkmn-battle -lpthread
 
 nivel-test.o:	nivel-test.c nivel-test.h
 	gcc -c nivel-test.c
