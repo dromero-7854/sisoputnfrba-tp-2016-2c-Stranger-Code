@@ -78,6 +78,12 @@ void game_over(){
 
 int zero_lives() {
 	char respuesta[2];
+	int aux_countDeadlock;
+	double aux_pokenestTime;
+
+	t_map* current_map = list_get(entrenador->travel_sheet, entrenador->index_current_map);
+	desconectar_entrenador_mapa(entrenador, current_map);
+
 	printf("El entrenador se ha quedado sin vidas. Ya se han realizado %d reintentos. Desea reiniciar el juego? (y/n) ", reintentos);
 	fgets(respuesta, 2, stdin);
 
@@ -89,10 +95,15 @@ int zero_lives() {
 		reintentos++;
 		deleteDir(pathDirDeBill);
 		deleteDir(pathMedallas);
+		//guardo el valor de estas variables antes de perderlas
+		aux_countDeadlock = entrenador->count_deadlock;
+		aux_pokenestTime = entrenador->pokenest_time;
 		coach_destroy(entrenador);
 		log_info(logger, "Volviendo a cargar archivo de metadata: %s", pathPokedex);
 		entrenador = cargar_metadata(logger, pathPokedex, nombreEntrenador);
 		log_info(logger, "Archivo de metadata cargado correctamente\n");
+		entrenador->count_deadlock = aux_countDeadlock;
+		entrenador->pokenest_time = aux_pokenestTime;
 		log_info(logger, "Creando Directorio de Bill...");
 		createDir(pathDirDeBill);
 		log_info(logger, "Creando Directorio de Medallas...");
@@ -179,8 +190,8 @@ int main(int argc, char** argv){
 	log_info(logger, "Comenzando la aventura :)");
 	iniciar_ruta_de_viaje(entrenador);
 	if(entrenador->life < 1){
-		entrenador->index_current_map = 0;
-		entrenador->life = life;
+		/*entrenador->index_current_map = 0;
+		entrenador->life = life;*/
 		zero_lives();
 	}
 
