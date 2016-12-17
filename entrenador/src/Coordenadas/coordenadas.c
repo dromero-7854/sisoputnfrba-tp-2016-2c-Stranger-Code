@@ -4,7 +4,7 @@
  *  Created on: 21/10/2016
  *      Author: utnso
  */
-#include "coordenadas.h";
+#include "coordenadas.h"
 
 t_coor *coor_create(uint8_t* coorX, uint8_t* coorY){
 	t_coor *new = malloc( sizeof(t_coor) );

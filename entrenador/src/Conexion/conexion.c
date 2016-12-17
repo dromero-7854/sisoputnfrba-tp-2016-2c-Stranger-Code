@@ -22,18 +22,20 @@ void connection_destroy(t_connection* self){
 	free(self);
 }
 
-void connection_open(t_connection* self) {
+int connection_open(t_connection* self) {
+	int result;
 	struct addrinfo hints;
 	struct addrinfo* server_info;
-
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
 	getaddrinfo(self->ip, self->port, &hints, &server_info);
 	self->socket = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
-	connect(self->socket, server_info->ai_addr, server_info->ai_addrlen);
+	result = connect(self->socket, server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
+
+	return result;
 }
 
 void connection_close(t_connection* self) {

@@ -61,7 +61,7 @@ void signal_handler(int signal) {
 }
 
 void game_over(){
-	log_info(logger, "Finalizando el juego...\n");
+	log_info(logger, "Finalizando el juego...");
 	coach_destroy(entrenador);
 
 	//deleteDir(pathDirDeBill);
@@ -69,9 +69,9 @@ void game_over(){
 
 	//free(pathDirDeBill);
 	//free(pathMedallas);
-	free(nombreEntrenador);
-	free(pathPokedex);
-	log_info(logger, "Juego finalizado.");
+	/*free(nombreEntrenador);
+	free(pathPokedex);*/
+	log_info(logger, "Juego finalizado.\n");
 	log_destroy(logger);
 	exit(EXIT_SUCCESS);
 }
@@ -87,11 +87,11 @@ int zero_lives() {
 	printf("El entrenador se ha quedado sin vidas. Ya se han realizado %d reintentos. Desea reiniciar el juego? (y/n) ", reintentos);
 	fgets(respuesta, 2, stdin);
 
-	while( strcmp(respuesta,"y\n") && strcmp(respuesta,"n\n")){
+	/*while( strcmp(respuesta,"y\n") && strcmp(respuesta,"n\n")){
 		printf("Por favor, ingrese 'y' o 'n'\n");
 		fgets(respuesta, 2, stdin);
-	}
-	if (!strcmp(respuesta,"y\n")) {
+	}*/
+	if (true/*!strcmp(respuesta,"y")*/) {
 		reintentos++;
 		deleteDir(pathDirDeBill);
 		deleteDir(pathMedallas);
@@ -109,6 +109,7 @@ int zero_lives() {
 		log_info(logger, "Creando Directorio de Medallas...");
 		createDir(pathMedallas);
 
+		coach_next_map(entrenador);
 		iniciar_ruta_de_viaje(entrenador);
 		return EXIT_SUCCESS;
 	} else {
@@ -132,6 +133,8 @@ void iniciar_ruta_de_viaje(t_coach* entrenador){
 		log_info(logger, "Desconexión éxitosa del mapa: %s\n", mapa->name);
 
 		if(oc == OC_VICTIMA_DEADLOCK){
+			//se le descuenta una vida
+			entrenador->life--;
 			//se incrementa la cantidad de veces que murió
 			death_count++;
 			//se incrementa la cantidad de deadlocks
