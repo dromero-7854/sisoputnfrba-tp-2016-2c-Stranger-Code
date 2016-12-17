@@ -150,8 +150,10 @@ void detectarDeadlock(t_combo * comboLista) {
 				}
 				return list_any_satisfy(listaDeObjetivos, (void *) _esIgual);
 			}
-
-			return list_any_satisfy(listaIdPokemonsRetenidos, (void *) _esUnPokemonBuscadoPorAlguien);
+			int retieneAlguno = list_any_satisfy(listaIdPokemonsRetenidos, (void *) _esUnPokemonBuscadoPorAlguien);
+			list_clean(listaIdPokemonsRetenidos);
+			//list_destroy(listaIdPokemonsRetenidos);
+			return retieneAlguno;
 		}
 		deadlockeados = list_filter(deadlockeados, (void *) retieneAlgunObjetivo);
 
@@ -194,8 +196,11 @@ void detectarDeadlock(t_combo * comboLista) {
 				pthread_mutex_unlock(&deadlock_ejecutando);
 			}
 		}
+		list_clean(listaDeObjetivos);
+		list_clean(deadlockeados);
+		list_destroy(deadlockeados);
+		//list_destroy(listaDeObjetivos);
 	}
-
 }
 bool estaBloqueado(t_entrenador * entrenador) {
 
@@ -235,6 +240,7 @@ t_entrenador * mandarAPelear(t_entrenador* entrenador1, t_entrenador* entrenador
 
 	pok2 = buscar_pokemon_de_entrenador(entrenador2, nombrePokemon);
 
+	free(nombrePokemon);
 /*	list_sort(entrenador1->pokemons, (void*) esDeMayorNivel);
 	list_sort(entrenador2->pokemons, (void*) esDeMayorNivel);
 
@@ -364,4 +370,5 @@ void enviar_oc(int socket, uint8_t oc_send){
 	memcpy(buffer, &oc_send, sizeof(uint8_t));
 	memcpy(buffer + sizeof(uint8_t), &tamanio, sizeof(uint8_t));
 	send(socket, buffer, sizeof(uint8_t) * 2, 0);
+	free(buffer);
 }
