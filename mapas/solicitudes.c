@@ -68,6 +68,9 @@ int connection_recv(int socket, uint8_t* operation_code_value, void** message){
 					if(status > 0){
 						buffer[message_size] = '\0';
 						*message = buffer;
+					//	*message = malloc(message_size + 1);
+					//	memcpy(*message, buffer, message_size);
+					//	(*message)[message_size] = '\0';
 					}
 					//free(buffer);
 					break;
@@ -289,8 +292,6 @@ PokeNest* buscarPokenest(t_list* lista, char id){
 }
 
 t_infoPokemon* buscarPrimerPokemon(t_list* listaDePokemons){
-	t_list* listaAux;
-	t_infoPokemon* infoPokemon;
 	int _pokemon_de_menor_nombre(t_infoPokemon* infoPokemon1, t_infoPokemon* infoPokemon2){
 		return comparar_strings(infoPokemon1->nombre, infoPokemon2->nombre);
 	}
@@ -300,18 +301,13 @@ t_infoPokemon* buscarPrimerPokemon(t_list* listaDePokemons){
 
 void notificar_captura_pokemon(t_infoPokemon* infopokemon, t_entrenador* entrenador){
 	char *rutaPokenests, *rutaPokemon;
-	int lenArchivo, len;
 	void* paquete_a_mandar;
-	len = strlen(infopokemon->pokemon->species);
 
 	uint8_t oc_send = OC_POKEMON;
 
 	rutaPokenests = getRutaPokenests();
 	rutaPokemon = getRutaPokemon(rutaPokenests, infopokemon->pokemon->species);
 	free(rutaPokenests);
-	len = strlen(rutaPokemon);
-	lenArchivo = strlen(infopokemon->nombre);
-	//rutaPokemon = getRutaAbsoluta(rutaPokemon);
 	string_append_with_format(&rutaPokemon, "/%s", infopokemon->nombre);
 	log_trace(log_mapa,"rutaPokemon: %s",rutaPokemon);
 	uint8_t tamanio_mensaje = strlen(rutaPokemon);
@@ -357,7 +353,7 @@ void enviar_ruta_medalla(int socket){
 }
 
 void enviar_cant_deadlocks(t_entrenador* entrenador){
-	void* paquete_a_mandar;
+	void* paquete_a_mandar = malloc(10);
 	uint8_t oc_send = OC_CANTIDAD_DEADLOCK;
 	uint8_t tamanio = sizeof(char);
 	int offset;

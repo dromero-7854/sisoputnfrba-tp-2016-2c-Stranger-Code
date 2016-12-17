@@ -38,5 +38,6 @@ t_entrenador* buscarEntrenadorSinDistanciaDefinida();
 t_entrenador* buscarEntrenador(int socket, t_list* lista);
 void desbloquearEntrenador(t_entrenador* entrenador);
 void bloquearEntrenador(t_entrenador* entrenador);
+void liberarRecursos2(t_entrenador* entrenadorLiberado);
 
 #endif /* PLANIFICACION_H_ */

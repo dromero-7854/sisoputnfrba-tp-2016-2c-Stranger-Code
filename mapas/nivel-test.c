@@ -40,11 +40,11 @@ int main(int argc, char* argv[]) {
 
 
 	signal(SIGUSR1, releerConfiguracion);
-/*	struct sigaction s;
+	struct sigaction s;
 	s.sa_handler = sigint;
 	sigemptyset(&s.sa_mask);
 	s.sa_flags = 0;
-	sigaction(SIGINT, &s, NULL);*/
+	sigaction(SIGINT, &s, NULL);
 
 	log_mapa = crear_log(argv[1]);
 
@@ -129,10 +129,10 @@ int main(int argc, char* argv[]) {
 	log_trace(log_mapa, "se creo hilo deadlock");
 
 
-	/*sigset_t sigset, oldset;
+	sigset_t sigset, oldset;
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGINT);
-	pthread_sigmask(SIG_BLOCK, &sigset, &oldset);*/
+	pthread_sigmask(SIG_BLOCK, &sigset, &oldset);
 
 	tv.tv_sec = 10;
 	tv.tv_usec = 0;
@@ -152,7 +152,6 @@ void manejar_select(int socket, t_log* log){
 	char *nombre_entrenador;
 	char simbolo;
 	t_entrenador* entrenador;
-	//fdMax = socket;
 	set_fd_max = socket;
 	FD_ZERO(&lectura);
 	FD_ZERO(&master);
@@ -165,8 +164,6 @@ void manejar_select(int socket, t_log* log){
 					if(a == socket){
 						nuevaConexion = aceptar_conexion(socket, log);
 						handshake(nuevaConexion, &simbolo, &nombre_entrenador);
-						//FD_SET(nuevaConexion, &master);
-						//if(nuevaConexion > fdMax) fdMax = nuevaConexion;
 						t_entrenador* nuevoEntrenador = crearEntrenador(nuevaConexion, simbolo, nombre_entrenador);
 						free(nombre_entrenador);
 						CrearPersonaje(items, nuevoEntrenador->simbolo, nuevoEntrenador -> posx, nuevoEntrenador -> posy);
@@ -399,7 +396,9 @@ void informar_contenido_cola(t_queue* cola){
 	char* contenido_cola = string_new();
 	if(cola == colaListos){
 		string_append(&contenido_cola, "cola Listos: [ ");
-	} else string_append(&contenido_cola, "cola Bloqueados [ ");
+	} else {
+		string_append(&contenido_cola, "cola Bloqueados [ ");
+	}
 	void _append_to_queue(t_entrenador* e){
 		string_append_with_format(&contenido_cola, "%s,", e->nombre);
 	}
@@ -423,11 +422,13 @@ char* getRutaAbsoluta(char* rutaRelativa){
 void _borrar_pokenest(PokeNest* pokenest){
 	free(pokenest->nombrePokemon);
 	list_clean_and_destroy_elements(pokenest->listaPokemons, (void*)_borrar_pokemon);
+	list_destroy(pokenest->listaPokemons);
 	free(pokenest);
 }
 
 void _borrar_pokemon(t_infoPokemon* infopokemon){
 	free(infopokemon->nombre);
+	free(infopokemon->pokemon->species);
 	free(infopokemon->pokemon);
 	free(infopokemon);
 }
