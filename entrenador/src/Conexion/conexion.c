@@ -59,6 +59,7 @@ int connection_send(t_connection* connection, uint8_t operation_code, void* mess
 		case OC_UBICAR_ENTRENADOR:
 		case OC_AVANZAR_POSICION:
 		case OC_ATRAPAR_POKEMON:
+		case OC_ATRAPAR_ULTIMO_POKEMON:
 		case OC_OBTENER_MEDALLA:
 		case OC_MEDALLA:
 		case OC_MENSAJE:

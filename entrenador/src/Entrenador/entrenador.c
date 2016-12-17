@@ -20,7 +20,7 @@ t_coach *coach_create(char *name, char *simbol, int life){
 	new->index_current_map = -1;
 	new->pokenest_time = 0;
 	new->count_deadlock = 0;
-
+	//new->pokenest_time = malloc(time_t);
 	return new;
 }
 
@@ -89,7 +89,7 @@ int coach_capture_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pathPok
 	} while (operation_code != OC_POKEMON && operation_code != OC_VICTIMA_DEADLOCK);
 
 	endTime = time(NULL);
-	entrenador->pokenest_time = entrenador->pokenest_time + difftime(beginTime, endTime);
+	entrenador->pokenest_time = entrenador->pokenest_time + (endTime-beginTime);
 	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
 
 	arrayPath = string_split(pathDirDeBillOrigen, "/");
@@ -140,7 +140,7 @@ int coach_capture_last_pokemon(t_coach* entrenador, t_pokemon* pokemon, char* pa
 	connection_send(entrenador->conn, OC_ATRAPAR_ULTIMO_POKEMON, pokemon->simbol);
 	connection_recv(entrenador->conn, &operation_code, (void**)&pathDirDeBillOrigen);
 	endTime = time(NULL);
-	entrenador->pokenest_time = entrenador->pokenest_time + difftime(endTime, beginTime);
+	entrenador->pokenest_time = entrenador->pokenest_time + (endTime-beginTime);
 	if(operation_code == OC_VICTIMA_DEADLOCK) return operation_code;
 	// como se envió el pedido de capturar al ultimo pokemon, ahora se envia la petición
 	// para saber los deadlocks en los que estuvo involucrado este entrenador
@@ -242,6 +242,7 @@ int handshake(t_coach* entrenador, t_map* mapa){
 
 int desconectar_entrenador_mapa(t_coach* entrenador, t_map* mapa){
 	connection_destroy(entrenador->conn);
+	list_clean(entrenador->pokemons);
 	return 0;
 }
 

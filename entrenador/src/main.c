@@ -35,13 +35,14 @@ char* pathMedallas;
 char* pathDirDeBill;
 time_t begin_time;
 time_t end_time;
-double adventure_time;
+time_t adventure_time;
 int death_count;
 
 void signal_handler(int signal) {
 	switch (signal) {
 	case SIGTERM:
 		entrenador->life--;
+		death_count++;
 		if (entrenador->life > 0) {
 			log_info(logger, "El entrenador ha perdido una vida. Cantidad actual de vidas: %d \n", entrenador->life);
 		} else
@@ -87,11 +88,11 @@ int zero_lives() {
 	printf("El entrenador se ha quedado sin vidas. Ya se han realizado %d reintentos. Desea reiniciar el juego? (y/n) ", reintentos);
 	fgets(respuesta, 2, stdin);
 
-	/*while( strcmp(respuesta,"y\n") && strcmp(respuesta,"n\n")){
+	while( (strcmp(respuesta,"y") != 0) && (strcmp(respuesta,"n") != 0)){
 		printf("Por favor, ingrese 'y' o 'n'\n");
 		fgets(respuesta, 2, stdin);
-	}*/
-	if (true/*!strcmp(respuesta,"y")*/) {
+	}
+	if ((strcmp(respuesta,"y")) ==0) {
 		reintentos++;
 		deleteDir(pathDirDeBill);
 		deleteDir(pathMedallas);
@@ -111,6 +112,24 @@ int zero_lives() {
 
 		coach_next_map(entrenador);
 		iniciar_ruta_de_viaje(entrenador);
+		if(entrenador->life < 1){
+			/*entrenador->index_current_map = 0;
+			entrenador->life = life;*/
+			zero_lives();
+		}
+
+		end_time = time(NULL);
+		adventure_time = (end_time-begin_time);
+
+		log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.\n", entrenador->name);
+
+		log_info(logger, "El Entrenador %s se ha convertido en Maestro Pokémon!", entrenador->name);
+		log_info(logger, "Tiempo total del viaje: %d segundos", adventure_time);
+		log_info(logger, "Tiempo bloqueado en las PokeNests: %d segundos", entrenador->pokenest_time);
+		log_info(logger, "Cantidad de deadlocks: %d", entrenador->count_deadlock);
+		log_info(logger, "Cantidad de veces muerto: %d", death_count);
+
+		game_over();
 		return EXIT_SUCCESS;
 	} else {
 		game_over();
@@ -199,7 +218,7 @@ int main(int argc, char** argv){
 	}
 
 	end_time = time(NULL);
-	adventure_time = difftime(end_time, begin_time);
+	adventure_time = (end_time-begin_time);
 
 	log_info(logger, "El Entrenador %s ha completado correctamente su Hoja de Viaje.\n", entrenador->name);
 

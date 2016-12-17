@@ -30,4 +30,3 @@ INSTALAR SÓLO SI LA LIBRERIA COMMONS NO SE ENCUENTRA
 	utnso@utnso40:~$ make
 	utnso@utnso40:~$ sudo make install
 	utnso@utnso40:~$ ls -l /usr/include/commons
-	
